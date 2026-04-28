@@ -299,7 +299,165 @@ model SysUser {
   dept        SysDept?  @relation(fields: [deptId], references: [deptId])
   posts       SysPost[] @relation("sys_post_to_sys_user")
   roles       SysRole[] @relation("sys_role_to_sys_user")
+  appUser     AppUser?
 
   @@index([deptId], map: "sys_user_deptId_fkey")
   @@map("sys_user")
+}
+
+// ============================================
+// 中药数字标本馆相关表
+// ============================================
+
+/// 馆/博物馆表
+model Museum {
+  museumId     Int        @id @default(autoincrement())
+  museumName   String     @db.VarChar(100)
+  museumCode   String     @unique @db.VarChar(50)
+  description  String?    @db.VarChar(500)
+  status       String     @default("0") @db.Char(1)
+  sort         Int        @default(0)
+  createBy     String     @default("") @db.VarChar(64)
+  createTime   DateTime?
+  updateBy     String?    @default("") @db.VarChar(64)
+  updateTime   DateTime?
+  categories   Category[]
+  specimens    Specimen[]
+  exams        Exam[]
+
+  @@map("museum")
+}
+
+/// 标本分类表
+model Category {
+  categoryId   Int        @id @default(autoincrement())
+  museumId     Int
+  museum       Museum     @relation(fields: [museumId], references: [museumId])
+  parentId     Int?
+  categoryName String     @db.VarChar(50)
+  categoryCode String     @db.VarChar(50)
+  sort         Int        @default(0)
+  status       String     @default("0") @db.Char(1)
+  createBy     String     @default("") @db.VarChar(64)
+  createTime   DateTime?
+  updateBy     String?    @default("") @db.VarChar(64)
+  updateTime   DateTime?
+  specimens    Specimen[]
+
+  @@map("category")
+}
+
+/// 标本表
+model Specimen {
+  specimenId   Int            @id @default(autoincrement())
+  museumId     Int
+  museum       Museum         @relation(fields: [museumId], references: [museumId])
+  categoryId   Int
+  category     Category       @relation(fields: [categoryId], references: [categoryId])
+  specimenName String         @db.VarChar(100)
+  remark       String?        @db.Text
+  status       String         @default("0") @db.Char(1)
+  createBy     String         @default("") @db.VarChar(64)
+  createTime   DateTime?
+  updateBy     String?        @default("") @db.VarChar(64)
+  updateTime   DateTime?
+  images       SpecimenImage[]
+  examQuestions ExamQuestion[]
+
+  @@map("specimen")
+}
+
+/// 标本图片表
+model SpecimenImage {
+  imageId      Int       @id @default(autoincrement())
+  specimenId   Int
+  specimen     Specimen  @relation(fields: [specimenId], references: [specimenId])
+  imageUrl     String    @db.VarChar(255)
+  isCover      Boolean   @default(false)
+  sort         Int       @default(0)
+  createBy     String    @default("") @db.VarChar(64)
+  createTime   DateTime?
+  auditStatus  String    @default("0") @db.Char(1)
+  auditBy      String?   @db.VarChar(64)
+  auditTime    DateTime?
+  auditRemark  String?   @db.VarChar(255)
+
+  @@map("specimen_image")
+}
+
+/// 小程序用户扩展表
+model AppUser {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique
+  user         SysUser   @relation(fields: [userId], references: [userId])
+  userType     String    @default("student") @db.VarChar(20)
+  realName     String    @db.VarChar(50)
+  phone        String    @db.VarChar(11)
+  institution  String    @db.VarChar(100)
+  majorGrade   String?   @db.VarChar(50)
+  studentNo    String?   @db.VarChar(30)
+  contact      String?   @db.VarChar(50)
+  vipStatus    String    @default("0") @db.Char(1)
+  vipApplyTime DateTime?
+  vipApproveTime DateTime?
+  vipApproveBy String?   @db.VarChar(64)
+  regStatus    String    @default("0") @db.Char(1)
+  regApplyTime DateTime?
+  regApproveTime DateTime?
+  regApproveBy String?   @db.VarChar(64)
+  createTime   DateTime?
+
+  @@map("app_user")
+}
+
+/// 考试记录表
+model Exam {
+  examId         Int            @id @default(autoincrement())
+  userId         Int
+  museumId       Int?
+  museum         Museum?        @relation(fields: [museumId], references: [museumId])
+  score          Int            @default(0)
+  totalQuestions Int            @default(0)
+  correctCount   Int            @default(0)
+  examTime       DateTime       @default(now())
+  status         String         @default("0") @db.Char(1)
+  questions      ExamQuestion[]
+
+  @@map("exam")
+}
+
+/// 考试题目表
+model ExamQuestion {
+  id           Int       @id @default(autoincrement())
+  examId       Int
+  exam         Exam      @relation(fields: [examId], references: [examId])
+  specimenId   Int
+  specimen     Specimen  @relation(fields: [specimenId], references: [specimenId])
+  imageId      Int
+  userAnswer   String?   @db.VarChar(100)
+  isCorrect    Boolean   @default(false)
+  sort         Int
+
+  @@map("exam_question")
+}
+
+/// 系统访问统计表
+model AppVisitLog {
+  id         Int       @id @default(autoincrement())
+  userId     Int?
+  ip         String?   @db.VarChar(50)
+  visitTime  DateTime  @default(now())
+  path       String?   @db.VarChar(255)
+
+  @@map("app_visit_log")
+}
+
+/// 标本访问记录表
+model SpecimenVisitLog {
+  id         Int       @id @default(autoincrement())
+  specimenId Int
+  userId     Int?
+  visitTime  DateTime  @default(now())
+
+  @@map("specimen_visit_log")
 }

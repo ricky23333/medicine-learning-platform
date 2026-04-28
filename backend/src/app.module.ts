@@ -14,9 +14,29 @@ import { SysModule } from './modules/sys/sys.module';
 import { LoginModule } from './modules/login/login.module';
 import { MonitorModule } from './modules/monitor/monitor.module';
 import { CommonModule } from './modules/common/common.module';
+import { MuseumModule } from './modules/museum/museum.module';
+import { CategoryModule } from './modules/category/category.module';
+import { SpecimenModule } from './modules/specimen/specimen.module';
+import { ExamModule } from './modules/exam/exam.module';
+import { StatsModule } from './modules/stats/stats.module';
+import { AppUserModule } from './modules/app-user/app-user.module';
+import { VipModule } from './modules/vip/vip.module';
 
 @Module({
-  imports: [SharedModule, CommonModule, SysModule, LoginModule, MonitorModule],
+  imports: [
+    SharedModule,
+    CommonModule,
+    SysModule,
+    LoginModule,
+    MonitorModule,
+    MuseumModule,
+    CategoryModule,
+    SpecimenModule,
+    ExamModule,
+    StatsModule,
+    AppUserModule,
+    VipModule,
+  ],
   controllers: [AppController],
 })
 export class AppModule {}

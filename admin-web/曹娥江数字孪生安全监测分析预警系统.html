@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>数字孪生曹娥江安全监测分析预警系统</title>
+<meta name="viewport" content="width=1920, initial-scale=1" />
+<link href="https://cdn.jsdelivr.net/npm/cesium@1.116.0/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.116.0/Build/Cesium/Cesium.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#040b1a;
+  --bg-1:#081a36;
+  --bg-2:#0d2950;
+  --line:rgba(0,212,255,.25);
+  --line-2:rgba(0,212,255,.5);
+  --primary:#00d4ff;
+  --primary-2:#00e5ff;
+  --accent:#39f1ff;
+  --warn:#ffb547;
+  --danger:#ff4d6d;
+  --ok:#3ee089;
+  --text:#dff3ff;
+  --text-2:#7fb3d8;
+  --text-3:#4d7ea3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-0);color:var(--text);overflow:hidden}
+body{
+  width:1920px;height:1080px;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(0,90,180,.25), transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(0,200,255,.18), transparent 60%),
+    linear-gradient(180deg,#03101f 0%, #050e1d 50%, #02080f 100%);
+}
+
+/* ============ Header ============ */
+.top-bar{
+  position:relative;height:74px;
+  background:linear-gradient(180deg,rgba(8,28,60,.95),rgba(5,18,40,.7));
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;
+  padding:0 28px;
+  z-index:100;
+}
+.top-bar::before{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--primary) 50%,transparent);
+  opacity:.6;
+}
+.top-bar .logo{display:flex;align-items:center;gap:12px}
+.top-bar .logo .icon{
+  width:42px;height:42px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#00d4ff,#0066a8);
+  box-shadow:0 0 18px rgba(0,212,255,.7);
+  position:relative;
+}
+.top-bar .logo .icon::after{
+  content:"";position:absolute;inset:6px;border:2px solid rgba(255,255,255,.4);border-radius:50%;
+  border-top-color:transparent;border-right-color:transparent;
+  animation:spin 4s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.title-block{margin-left:14px}
+.title-block .main-t{font-size:26px;font-weight:700;letter-spacing:4px;
+  background:linear-gradient(180deg,#fff,#7fdfff 60%, #00aaff);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 18px rgba(0,212,255,.4);
+}
+.title-block .sub-t{font-size:12px;color:var(--text-3);letter-spacing:2px;margin-top:2px}
+
+.top-info{margin-left:auto;display:flex;align-items:center;gap:24px;font-size:13px;color:var(--text-2)}
+.top-info .item{display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--line);
+  background:rgba(0,40,80,.35);border-radius:3px;}
+.top-info .item .v{color:var(--primary-2);font-family:'DIN Alternate','Consolas',monospace;font-weight:700}
+.top-info .item .lbl{color:var(--text-3)}
+.top-info .item i{color:var(--primary)}
+.user-block{display:flex;align-items:center;gap:10px;padding:0 12px;border-left:1px solid var(--line);height:42px}
+.user-block .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#19c2ff,#0a64a4);text-align:center;line-height:30px;color:#fff;font-size:13px}
+
+/* ============ Layout ============ */
+.layout{display:flex;height:calc(1080px - 74px);}
+.sidebar{
+  width:80px;background:linear-gradient(180deg,rgba(7,22,46,.95),rgba(5,15,32,.95));
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;
+  padding:18px 0;gap:6px;
+}
+.sidebar .nav-item{
+  width:64px;padding:10px 0;border-radius:4px;text-align:center;cursor:pointer;
+  color:var(--text-2);font-size:12px;letter-spacing:1px;
+  transition:.25s;position:relative;
+}
+.sidebar .nav-item i{display:block;font-size:20px;margin-bottom:6px;color:var(--text-3)}
+.sidebar .nav-item:hover{background:rgba(0,150,200,.15);color:var(--primary)}
+.sidebar .nav-item:hover i{color:var(--primary)}
+.sidebar .nav-item.active{
+  background:linear-gradient(180deg,rgba(0,150,255,.25),rgba(0,80,160,.1));
+  color:var(--primary-2);border:1px solid var(--line-2);
+  box-shadow:inset 0 0 12px rgba(0,212,255,.2);
+}
+.sidebar .nav-item.active i{color:var(--primary-2);text-shadow:0 0 8px var(--primary)}
+.sidebar .nav-item.active::before{
+  content:"";position:absolute;left:-1px;top:8px;bottom:8px;width:2px;background:var(--primary);
+  box-shadow:0 0 6px var(--primary);
+}
+
+.content{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;padding:14px;gap:14px}
+.screen.active{display:flex;flex-direction:column}
+
+/* ============ Card / Panel ============ */
+.panel{
+  background:linear-gradient(180deg,rgba(8,28,60,.55),rgba(4,16,36,.65));
+  border:1px solid var(--line);
+  border-radius:3px;
+  position:relative;padding:10px 12px;
+  box-shadow:inset 0 0 30px rgba(0,80,180,.08);
+}
+.panel::before,.panel::after{content:"";position:absolute;width:10px;height:10px;border-color:var(--primary-2);border-style:solid;border-width:0}
+.panel::before{left:-1px;top:-1px;border-top-width:1px;border-left-width:1px}
+.panel::after{right:-1px;bottom:-1px;border-bottom-width:1px;border-right-width:1px}
+.panel .ph{display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.panel .ph .bar{width:3px;height:12px;background:var(--primary);box-shadow:0 0 6px var(--primary)}
+.panel .ph h3{font-size:14px;font-weight:600;color:#fff;letter-spacing:2px}
+.panel .ph .sub{font-size:11px;color:var(--text-3);letter-spacing:1px;margin-left:4px}
+.panel .ph .extra{margin-left:auto;display:flex;gap:4px}
+.panel .ph .tab{padding:2px 8px;font-size:11px;color:var(--text-2);border:1px solid var(--line);cursor:pointer;border-radius:2px}
+.panel .ph .tab.on{background:rgba(0,150,255,.25);color:var(--primary-2);border-color:var(--line-2)}
+
+/* ============ Twin Scene ============ */
+#sceneRoot{position:absolute;inset:0;z-index:1}
+#cesiumContainer{position:absolute;inset:0;background:#000}
+#fallback3D{position:absolute;inset:0;z-index:2}
+.scene-overlay{position:absolute;inset:0;pointer-events:none;z-index:3}
+.scene-overlay > *{pointer-events:auto}
+
+.scene-toolbar{
+  position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:6px;
+}
+.tool-btn{
+  width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(8,28,60,.75);border:1px solid var(--line);color:var(--text-2);cursor:pointer;
+  font-size:10px;letter-spacing:1px;transition:.2s;
+}
+.tool-btn i{font-size:14px;color:var(--primary);margin-bottom:2px}
+.tool-btn:hover{background:rgba(0,150,255,.25);color:#fff;border-color:var(--line-2)}
+
+.layer-switch{
+  position:absolute;right:14px;top:14px;width:200px;
+  background:rgba(8,28,60,.75);border:1px solid var(--line);
+  padding:10px 14px;
+}
+.layer-switch h4{font-size:13px;color:#fff;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--line);letter-spacing:1px}
+.layer-switch .ls-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;color:var(--text-2);font-size:12px}
+.toggle{width:34px;height:16px;background:rgba(0,40,80,.6);border:1px solid var(--line);border-radius:9px;position:relative;cursor:pointer}
+.toggle::after{content:"";position:absolute;left:2px;top:1px;width:11px;height:11px;background:#666;border-radius:50%;transition:.2s}
+.toggle.on{background:rgba(0,150,255,.4);border-color:var(--line-2)}
+.toggle.on::after{left:18px;background:var(--primary)}
+
+.scene-switch{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+  display:flex;gap:1px;background:rgba(0,0,0,.4);border:1px solid var(--line);padding:1px;
+}
+.scene-switch button{padding:8px 22px;background:transparent;border:none;color:var(--text-2);font-size:13px;letter-spacing:2px;cursor:pointer;font-family:inherit}
+.scene-switch button.on{background:linear-gradient(180deg,rgba(0,180,255,.45),rgba(0,80,160,.3));color:#fff;text-shadow:0 0 6px var(--primary)}
+
+/* Floating side panels on the scene screen */
+.scene-side-l{position:absolute;left:74px;top:14px;bottom:14px;width:340px;display:flex;flex-direction:column;gap:10px;z-index:5}
+.scene-side-r{position:absolute;right:14px;top:74px;bottom:14px;width:340px;display:flex;flex-direction:column;gap:10px;z-index:5}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{
+  border:1px solid var(--line);padding:10px 12px;background:rgba(0,30,60,.5);position:relative;
+}
+.kpi .k{font-size:11px;color:var(--text-3);letter-spacing:1px}
+.kpi .v{font-size:22px;color:var(--primary-2);font-family:'DIN Alternate','Consolas',monospace;font-weight:700;margin-top:2px}
+.kpi .v small{font-size:11px;color:var(--text-2);margin-left:4px}
+.kpi .trend{font-size:10px;color:var(--ok);margin-top:2px}
+.kpi .trend.dn{color:var(--danger)}
+.kpi.warn .v{color:var(--warn)}
+.kpi.danger .v{color:var(--danger)}
+
+.eval-score{display:flex;align-items:center;gap:14px;padding:12px 0}
+.eval-circle{
+  width:96px;height:96px;border-radius:50%;
+  background:conic-gradient(var(--ok) 0% 92%, rgba(255,255,255,.08) 92% 100%);
+  display:flex;align-items:center;justify-content:center;position:relative;
+}
+.eval-circle::before{content:"";position:absolute;inset:6px;background:var(--bg-1);border-radius:50%}
+.eval-circle .num{position:relative;font-size:30px;font-weight:700;color:var(--ok);font-family:'DIN Alternate',monospace}
+.eval-circle .num small{font-size:14px;color:var(--text-2)}
+.eval-info{flex:1;font-size:12px;color:var(--text-2);line-height:1.8}
+.eval-info .lvl{display:inline-block;padding:2px 10px;background:rgba(60,200,120,.2);color:var(--ok);border:1px solid rgba(60,200,120,.5);font-weight:700;letter-spacing:2px}
+
+.eval-detail{font-size:12px;color:var(--text-2)}
+.eval-detail .row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
+.eval-detail .row .v{color:#fff;font-family:'DIN Alternate',monospace}
+.eval-detail .bar{height:4px;background:rgba(255,255,255,.06);margin-top:3px;border-radius:2px;overflow:hidden}
+.eval-detail .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--ok))}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:rgba(0,80,140,.3);color:var(--text-2);padding:6px 8px;text-align:left;font-weight:500;letter-spacing:1px;border-bottom:1px solid var(--line)}
+.tbl td{padding:6px 8px;color:var(--text);border-bottom:1px solid rgba(255,255,255,.05)}
+.tbl tr:hover td{background:rgba(0,150,255,.08)}
+.tag{display:inline-block;padding:1px 8px;font-size:11px;border-radius:2px}
+.tag.ok{background:rgba(60,200,120,.15);color:var(--ok);border:1px solid rgba(60,200,120,.5)}
+.tag.warn{background:rgba(255,180,70,.15);color:var(--warn);border:1px solid rgba(255,180,70,.5)}
+.tag.danger{background:rgba(255,80,110,.15);color:var(--danger);border:1px solid rgba(255,80,110,.5)}
+.tag.info{background:rgba(0,200,255,.15);color:var(--primary-2);border:1px solid var(--line-2)}
+
+/* Marker pulse */
+.marker{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--primary);box-shadow:0 0 12px var(--primary);transform:translate(-50%,-50%)}
+.marker::before{content:"";position:absolute;inset:-6px;border:1px solid var(--primary);border-radius:50%;animation:ping 1.6s infinite}
+.marker.warn{background:var(--warn);box-shadow:0 0 12px var(--warn)}
+.marker.warn::before{border-color:var(--warn)}
+.marker.danger{background:var(--danger);box-shadow:0 0 12px var(--danger)}
+.marker.danger::before{border-color:var(--danger)}
+@keyframes ping{0%{transform:scale(.8);opacity:1}100%{transform:scale(2.5);opacity:0}}
+.marker .lbl{position:absolute;left:14px;top:-8px;background:rgba(0,0,0,.5);border:1px solid var(--line);padding:1px 6px;font-size:11px;color:var(--text);white-space:nowrap}
+
+/* ============ Other Module Layouts ============ */
+.row{display:flex;gap:12px}
+.col{display:flex;flex-direction:column;gap:12px}
+.f1{flex:1;min-width:0;min-height:0}
+.f2{flex:2;min-width:0;min-height:0}
+.f3{flex:3;min-width:0;min-height:0}
+.full{height:100%}
+
+.chart{width:100%;height:100%;min-height:160px}
+
+.video-wall{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;height:100%}
+.video-cell{
+  background:#000;border:1px solid var(--line);position:relative;overflow:hidden;
+  background-image:
+    linear-gradient(180deg,rgba(0,40,80,.6),rgba(0,10,20,.9)),
+    repeating-linear-gradient(0deg,transparent 0,transparent 3px,rgba(255,255,255,.02) 3px,rgba(255,255,255,.02) 4px);
+}
+.video-cell::before{content:"●  REC";position:absolute;left:6px;top:6px;font-size:10px;color:var(--danger);letter-spacing:1px}
+.video-cell .name{position:absolute;left:6px;bottom:4px;font-size:11px;color:#fff}
+.video-cell .ts{position:absolute;right:6px;bottom:4px;font-size:11px;color:#9ad0e8;font-family:'DIN Alternate',monospace}
+.video-cell .focus{position:absolute;inset:30% 35%;border:1px solid rgba(255,255,255,.5);}
+.video-cell .focus::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;border:1px solid rgba(255,255,255,.5);transform:translate(-50%,-50%);border-radius:50%}
+/* Animated water in video cell */
+.water{position:absolute;left:0;right:0;bottom:0;height:48%;
+  background:
+    linear-gradient(180deg,rgba(20,80,140,.6),rgba(5,30,60,.95)),
+    repeating-linear-gradient(90deg,transparent 0,transparent 14px,rgba(0,180,255,.08) 14px,rgba(0,180,255,.08) 16px);
+  animation:wave 4s linear infinite;
+}
+@keyframes wave{from{background-position:0 0,0 0}to{background-position:0 0,200px 0}}
+.gate{position:absolute;left:50%;bottom:48%;width:40%;height:25%;transform:translateX(-50%);
+  background:linear-gradient(180deg,#445a72,#1c2a3c);border:1px solid #5b7891;
+}
+.gate::before{content:"";position:absolute;inset:2px;border-top:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.2);
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 4px,rgba(255,255,255,.07) 4px,rgba(255,255,255,.07) 5px);
+}
+
+/* form inputs */
+.form-row{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text-2);margin-bottom:8px}
+.form-row label{min-width:64px;color:var(--text-3)}
+.input,.select{
+  background:rgba(0,30,60,.6);border:1px solid var(--line);color:#fff;padding:5px 8px;font-size:12px;height:28px;flex:1;
+  font-family:inherit;
+}
+.btn{padding:5px 14px;background:linear-gradient(180deg,rgba(0,180,255,.4),rgba(0,80,160,.3));border:1px solid var(--line-2);color:#fff;font-size:12px;letter-spacing:2px;cursor:pointer;font-family:inherit}
+.btn:hover{background:linear-gradient(180deg,rgba(0,200,255,.55),rgba(0,90,180,.35))}
+.btn.line{background:transparent}
+
+/* tree menu list */
+.tree{font-size:12px;color:var(--text)}
+.tree .node{padding:4px 6px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.tree .node:hover{background:rgba(0,150,255,.08)}
+.tree .node i{color:var(--primary);font-size:11px}
+.tree .node.lv2{padding-left:18px;color:var(--text-2)}
+.tree .node.lv3{padding-left:30px;color:var(--text-2);font-size:11px}
+.tree .node.active{background:rgba(0,150,255,.18);color:#fff}
+
+/* Cloud image */
+.cloud-canvas{width:100%;height:100%;background:#000}
+
+/* Gauge */
+.gauge-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* knowledge chat */
+.chat-list{flex:1;overflow:hidden;padding:0 4px}
+.chat-msg{margin-bottom:10px;font-size:12px}
+.chat-msg.q{text-align:right}
+.chat-msg .bub{display:inline-block;max-width:80%;padding:8px 10px;border:1px solid var(--line);border-radius:2px;background:rgba(0,40,80,.5);color:var(--text);text-align:left}
+.chat-msg.q .bub{background:rgba(0,150,255,.18);border-color:var(--line-2)}
+.chat-msg .src{margin-top:4px;font-size:10px;color:var(--text-3)}
+.chat-input{display:flex;gap:6px;margin-top:8px}
+
+/* alarm list */
+.alarm-row{display:grid;grid-template-columns:18px 1fr 80px 80px;gap:8px;padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;align-items:center}
+.alarm-row .dot{width:10px;height:10px;border-radius:50%}
+.alarm-row .name{color:#fff}
+.alarm-row .desc{color:var(--text-3);font-size:11px;margin-top:2px}
+
+/* gradient bar legend */
+.cmap{display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--text-2)}
+.cmap-bar{width:14px;height:140px;background:linear-gradient(180deg,#ff3355,#ffaa33,#ffff66,#66ff99,#33ccff,#3366ff)}
+
+/* Status bar bottom */
+.status-bar{
+  display:flex;gap:10px;align-items:center;font-size:11px;color:var(--text-3);padding:4px 0;
+}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok)}
+
+.section-title{font-size:12px;color:var(--text-2);margin-bottom:6px;letter-spacing:1px}
+.section-title b{color:var(--primary-2);margin-right:6px}
+
+/* Misc */
+.scroll{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.scroll::-webkit-scrollbar{width:4px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line)}
+
+/* Page-screen specific grids */
+.grid-9{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;gap:12px;height:100%}
+.grid-3-1{display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px;height:100%}
+.grid-2-3{display:grid;grid-template-columns:1.2fr 1.6fr 1fr;gap:12px;height:100%}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;height:100%}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:100%}
+.grid-pred{display:grid;grid-template-columns:300px 1fr 280px;gap:12px;height:100%}
+.grid-bg{display:grid;grid-template-columns:240px 1fr;gap:12px;height:100%}
+
+.legend{display:flex;gap:10px;font-size:11px;color:var(--text-2);align-items:center}
+.legend .li{display:flex;gap:4px;align-items:center}
+.legend .li::before{content:"";display:inline-block;width:10px;height:3px;background:var(--c,#00d4ff)}
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="top-bar">
+  <div class="logo">
+    <div class="icon"></div>
+  </div>
+  <div class="title-block">
+    <div class="main-t">数字孪生曹娥江安全监测分析预警系统</div>
+    <div class="sub-t">DIGITAL TWIN · CAOE-RIVER GATE · SAFETY MONITORING & EARLY-WARNING PLATFORM</div>
+  </div>
+  <div class="top-info">
+    <div class="item"><i class="fa fa-cloud"></i><span class="lbl">气象</span><span class="v">多云 26℃</span></div>
+    <div class="item"><i class="fa fa-tint"></i><span class="lbl">闸上水位</span><span class="v">5.42 m</span></div>
+    <div class="item"><i class="fa fa-anchor"></i><span class="lbl">闸下潮位</span><span class="v">2.18 m</span></div>
+    <div class="item"><i class="fa fa-bell"></i><span class="lbl">实时报警</span><span class="v" style="color:var(--warn)">3</span></div>
+    <div class="item"><i class="fa fa-clock-o"></i><span class="v" id="topTime">2026-04-28 10:42:18</span></div>
+    <div class="user-block">
+      <div class="av">管</div>
+      <div>
+        <div style="color:#fff;font-size:13px">运维管理员</div>
+        <div style="font-size:10px;color:var(--text-3)">在线 · L3权限</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== LAYOUT ==================== -->
+<div class="layout">
+  <!-- ============ Sidebar Nav ============ -->
+  <aside class="sidebar">
+    <div class="nav-item active" data-target="screen-scene"><i class="fa fa-cubes"></i>孪生场景</div>
+    <div class="nav-item" data-target="screen-monitor"><i class="fa fa-tachometer"></i>综合监视</div>
+    <div class="nav-item" data-target="screen-predict"><i class="fa fa-line-chart"></i>性态预测</div>
+    <div class="nav-item" data-target="screen-warn"><i class="fa fa-bell-o"></i>风险预警</div>
+    <div class="nav-item" data-target="screen-sim"><i class="fa fa-cog"></i>仿真预演</div>
+    <div class="nav-item" data-target="screen-plan"><i class="fa fa-medkit"></i>处置预案</div>
+    <div class="nav-item" data-target="screen-eval"><i class="fa fa-star"></i>综合评价</div>
+    <div class="nav-item" data-target="screen-data"><i class="fa fa-database"></i>数据分析</div>
+    <div class="nav-item" data-target="screen-bg"><i class="fa fa-cogs"></i>后台管理</div>
+  </aside>
+
+  <!-- ============ Main Content ============ -->
+  <main class="content">
+
+  <!-- ===== 1. 孪生场景 ===== -->
+  <section id="screen-scene" class="screen active">
+    <div id="sceneRoot">
+      <div id="cesiumContainer"></div>
+      <div id="fallback3D"></div>
+
+      <div class="scene-overlay">
+        <!-- toolbar -->
+        <div class="scene-toolbar">
+          <div class="tool-btn" title="场景复位"><i class="fa fa-home"></i>复位</div>
+          <div class="tool-btn" title="第一/三人称漫游"><i class="fa fa-male"></i>漫游</div>
+          <div class="tool-btn" title="对象拾取"><i class="fa fa-mouse-pointer"></i>拾取</div>
+          <div class="tool-btn" title="天气控制"><i class="fa fa-sun-o"></i>天气</div>
+          <div class="tool-btn" title="测量"><i class="fa fa-arrows-h"></i>测距</div>
+          <div class="tool-btn" title="全屏"><i class="fa fa-expand"></i>全屏</div>
+        </div>
+
+        <!-- markers on the dam -->
+        <div class="marker" style="left:54%;top:48%"><div class="lbl">L1-沉降#28 12.3mm</div></div>
+        <div class="marker warn" style="left:46%;top:55%"><div class="lbl">渗压P-04 ⚠ 78.4kPa</div></div>
+        <div class="marker" style="left:62%;top:52%"><div class="lbl">位移X-12 1.8mm</div></div>
+        <div class="marker danger" style="left:38%;top:62%"><div class="lbl">脱空V-02 ❌ 4.2mm</div></div>
+        <div class="marker" style="left:70%;top:60%"><div class="lbl">钢筋拉力S-09</div></div>
+
+        <!-- 场景切换 bottom -->
+        <div class="scene-switch">
+          <button class="on">大闸</button>
+          <button>堵坝</button>
+          <button>堤塘</button>
+        </div>
+
+        <!-- 图层切换 right top -->
+        <div class="layer-switch">
+          <h4>图层切换</h4>
+          <div class="ls-row"><span><i class="fa fa-building" style="color:#00d4ff"></i> 建筑物</span><div class="toggle on"></div></div>
+          <div class="ls-row"><span><i class="fa fa-bolt" style="color:#ffb547"></i> 机电设备</span><div class="toggle on"></div></div>
+          <div class="ls-row"><span><i class="fa fa-square" style="color:#3ee089"></i> 闸门</span><div class="toggle on"></div></div>
+          <div class="ls-row"><span><i class="fa fa-microchip" style="color:#ff4d6d"></i> 监测设备</span><div class="toggle on"></div></div>
+          <div class="ls-row"><span><i class="fa fa-tint" style="color:#39f1ff"></i> 水流场</span><div class="toggle"></div></div>
+          <div class="ls-row"><span><i class="fa fa-cloud" style="color:#cdd5e8"></i> 天气粒子</span><div class="toggle"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- left panels overlay -->
+    <div class="scene-side-l">
+      <div class="panel" style="flex:0 0 auto">
+        <div class="ph"><span class="bar"></span><h3>大闸基本信息</h3><span class="sub">CAO-E RIVER GATE</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--text-2)">
+          <div>流域面积<br><b style="color:#fff;font-size:14px">6,080 km²</b></div>
+          <div>挡潮闸孔数<br><b style="color:#fff;font-size:14px">28 孔</b></div>
+          <div>闸顶高程<br><b style="color:#fff;font-size:14px">11.50 m</b></div>
+          <div>导流堤长度<br><b style="color:#fff;font-size:14px">510 m</b></div>
+          <div>堵坝最大坝高<br><b style="color:#fff;font-size:14px">29.5 m</b></div>
+          <div>设计洪水位<br><b style="color:#fff;font-size:14px">7.85 m</b></div>
+        </div>
+      </div>
+
+      <div class="panel" style="flex:0 0 auto">
+        <div class="ph"><span class="bar"></span><h3>安全综合评价</h3><span class="sub">SAFETY ASSESSMENT</span></div>
+        <div class="eval-score">
+          <div class="eval-circle"><div class="num">92<small>分</small></div></div>
+          <div class="eval-info">
+            <div class="lvl">A 级 · 安全</div>
+            <div style="margin-top:6px">评价时间：2026-04-28 09:00<br>权重模型：博弈论组合赋权<br>下次复评：2026-05-28</div>
+          </div>
+        </div>
+        <div class="eval-detail">
+          <div class="row"><span>工程质量</span><span class="v">95</span></div>
+          <div class="bar"><i style="width:95%"></i></div>
+          <div class="row"><span>防洪标准</span><span class="v">93</span></div>
+          <div class="bar"><i style="width:93%"></i></div>
+          <div class="row"><span>渗流安全</span><span class="v">88</span></div>
+          <div class="bar"><i style="width:88%"></i></div>
+          <div class="row"><span>结构安全</span><span class="v">94</span></div>
+          <div class="bar"><i style="width:94%"></i></div>
+          <div class="row"><span>金结机电</span><span class="v">90</span></div>
+          <div class="bar"><i style="width:90%"></i></div>
+        </div>
+      </div>
+
+      <div class="panel f1">
+        <div class="ph"><span class="bar"></span><h3>金结机电监测</h3><span class="sub">METAL & ELECTROMECHANICAL</span></div>
+        <table class="tbl">
+          <thead><tr><th>闸门</th><th>开度</th><th>闸前水位</th><th>过流</th><th>状态</th></tr></thead>
+          <tbody>
+            <tr><td>1#</td><td>0.0</td><td>5.42</td><td>0</td><td><span class="tag ok">关闭</span></td></tr>
+            <tr><td>5#</td><td>2.4</td><td>5.40</td><td>148</td><td><span class="tag info">运行</span></td></tr>
+            <tr><td>14#</td><td>3.0</td><td>5.41</td><td>196</td><td><span class="tag info">运行</span></td></tr>
+            <tr><td>22#</td><td>0.0</td><td>5.43</td><td>0</td><td><span class="tag ok">关闭</span></td></tr>
+            <tr><td>28#</td><td>1.8</td><td>5.44</td><td>112</td><td><span class="tag warn">告警</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- right panels overlay -->
+    <div class="scene-side-r">
+      <div class="panel" style="flex:0 0 auto">
+        <div class="ph"><span class="bar"></span><h3>气象 / 水雨情</h3>
+          <div class="extra"><span class="tab on">实时</span><span class="tab">24H</span><span class="tab">7D</span></div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><div class="k">气温</div><div class="v">26.4<small>℃</small></div><div class="trend">↑ 0.8</div></div>
+          <div class="kpi"><div class="k">湿度</div><div class="v">68<small>%</small></div><div class="trend dn">↓ 1.2</div></div>
+          <div class="kpi"><div class="k">风向风速</div><div class="v">SE 4.2<small>m/s</small></div></div>
+          <div class="kpi"><div class="k">降雨强度</div><div class="v">0.0<small>mm/h</small></div></div>
+        </div>
+        <div class="chart" id="rainChart" style="height:120px;margin-top:6px"></div>
+      </div>
+
+      <div class="panel f1">
+        <div class="ph"><span class="bar"></span><h3>挡潮闸实时变形</h3><span class="sub">DEFORMATION</span></div>
+        <div class="chart" id="deformChart" style="height:140px"></div>
+        <div class="section-title" style="margin-top:8px"><b>|</b>闸基实测渗流</div>
+        <div class="chart" id="seepChart" style="height:120px"></div>
+      </div>
+
+      <div class="panel" style="flex:0 0 auto">
+        <div class="ph"><span class="bar"></span><h3>异常报警</h3>
+          <div class="extra"><span class="tag danger">3 异常</span></div>
+        </div>
+        <div class="alarm-row" style="background:rgba(255,77,109,.08)">
+          <div class="dot" style="background:var(--danger)"></div>
+          <div><div class="name">28#闸室底板脱空 V-02</div><div class="desc">超阈值 4.2mm（限 3.0mm）</div></div>
+          <div style="color:var(--danger);font-size:11px">超阈值</div>
+          <div style="color:var(--text-3);font-size:11px">10:38</div>
+        </div>
+        <div class="alarm-row">
+          <div class="dot" style="background:var(--warn)"></div>
+          <div><div class="name">右岸渗压计 P-04</div><div class="desc">接近预警阈值</div></div>
+          <div style="color:var(--warn);font-size:11px">变幅</div>
+          <div style="color:var(--text-3);font-size:11px">10:25</div>
+        </div>
+        <div class="alarm-row">
+          <div class="dot" style="background:var(--warn)"></div>
+          <div><div class="name">28#启闭机电流偏高</div><div class="desc">建议检查液压系统</div></div>
+          <div style="color:var(--warn);font-size:11px">设备</div>
+          <div style="color:var(--text-3);font-size:11px">09:51</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. 综合监视 ===== -->
+  <section id="screen-monitor" class="screen">
+    <div class="row" style="height:100%">
+      <div class="col" style="flex:1.1;height:100%">
+        <div class="panel" style="height:32%">
+          <div class="ph"><span class="bar"></span><h3>安全综合评价</h3></div>
+          <div style="display:flex;gap:18px;align-items:center;height:calc(100% - 38px)">
+            <div class="eval-circle" style="width:130px;height:130px">
+              <div class="num" style="font-size:38px">92<small>分</small></div>
+            </div>
+            <div style="flex:1">
+              <div class="eval-info">
+                <div class="lvl" style="font-size:14px;padding:4px 14px">A 级 · 安全运行</div>
+                <div style="margin-top:8px;line-height:2">
+                  目标层确定度：<b style="color:#fff">0.928</b><br>
+                  准则层数量：<b style="color:#fff">7</b><br>
+                  指标层数量：<b style="color:#fff">26</b><br>
+                  评分模型：<b style="color:#fff">AHP+熵权法 (博弈论组合)</b>
+                </div>
+              </div>
+            </div>
+            <div class="chart" id="radarMon" style="flex:1.4;height:100%"></div>
+          </div>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>金结机电监测</h3>
+            <div class="extra"><span class="tab on">实时</span><span class="tab">异常</span><span class="tab">诊断</span></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>闸门编号</th><th>设备名称</th><th>开度(m)</th><th>最大开度</th><th>闸前水位</th><th>过闸流量</th><th>启闭机</th><th>状态</th></tr></thead>
+            <tbody id="gateTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col" style="flex:1.4;height:100%">
+        <div class="panel" style="height:50%">
+          <div class="ph"><span class="bar"></span><h3>安全监测信息 · 水雨情/气象</h3></div>
+          <div class="grid-2" style="height:calc(100% - 38px);gap:8px">
+            <div>
+              <div class="section-title"><b>|</b>闸上水位 / 闸下潮位</div>
+              <div class="chart" id="waterChart" style="height:calc(100% - 22px)"></div>
+            </div>
+            <div>
+              <div class="section-title"><b>|</b>降雨量 / 气温</div>
+              <div class="chart" id="airChart" style="height:calc(100% - 22px)"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>挡潮闸实时变形 · 闸基实测渗流</h3></div>
+          <div class="grid-2" style="height:calc(100% - 38px);gap:8px">
+            <div>
+              <div class="section-title"><b>|</b>28闸室水平位移 / 沉降</div>
+              <div class="chart" id="deformChart2" style="height:calc(100% - 22px)"></div>
+            </div>
+            <div>
+              <div class="section-title"><b>|</b>6断面渗压 (kPa)</div>
+              <div class="chart" id="seepChart2" style="height:calc(100% - 22px)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col" style="flex:1;height:100%">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>异常报警</h3>
+            <div class="extra"><span class="tag info">总览</span><span class="tag ok">正常 248</span><span class="tag danger">异常 3</span></div>
+          </div>
+          <div class="grid-2" style="height:calc(100% - 38px);gap:8px">
+            <div class="chart" id="alarmPie"></div>
+            <div class="chart" id="alarmBar"></div>
+          </div>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>视频监控</h3>
+            <div class="extra"><span class="tab on">画面墙</span><span class="tab">树形</span></div>
+          </div>
+          <div class="video-wall">
+            <div class="video-cell">
+              <div class="water"></div><div class="gate"></div>
+              <span class="name">CH-01 闸顶东侧</span><span class="ts">10:42:18</span>
+            </div>
+            <div class="video-cell">
+              <div class="water"></div><div class="gate" style="left:30%"></div><div class="gate" style="left:70%"></div>
+              <span class="name">CH-02 闸下游俯视</span><span class="ts">10:42:18</span>
+            </div>
+            <div class="video-cell">
+              <div class="water"></div>
+              <div class="focus"></div>
+              <span class="name">CH-03 鱼道观察</span><span class="ts">10:42:18</span>
+            </div>
+            <div class="video-cell">
+              <div class="water" style="height:30%"></div>
+              <div class="gate" style="bottom:30%;height:35%"></div>
+              <span class="name">CH-04 启闭机房</span><span class="ts">10:42:18</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3. 性态预测 ===== -->
+  <section id="screen-predict" class="screen">
+    <div class="grid-pred">
+      <!-- left: 模型入参 -->
+      <div class="col">
+        <div class="panel" style="height:55%">
+          <div class="ph"><span class="bar"></span><h3>模型入参</h3><span class="sub">MODEL INPUTS</span></div>
+          <div class="form-row"><label>预测时间</label><input class="input" value="2026-04-28 ~ 2026-05-05"></div>
+          <div class="form-row"><label>闸上水位</label><input class="input" value="5.42 m"></div>
+          <div class="form-row"><label>闸下水位</label><input class="input" value="2.18 m"></div>
+          <div class="form-row"><label>气温</label><input class="input" value="26.4 ℃"></div>
+          <div class="form-row"><label>闸门状态</label><select class="select"><option>正常运行</option><option>检修</option></select></div>
+          <div class="form-row"><label>预测模型</label>
+            <select class="select">
+              <option>统计回归模型 (HSTM)</option>
+              <option>确定性模型</option>
+              <option>混合模型</option>
+              <option>时间序列 ARIMA</option>
+              <option>灰色 GM(1,1)</option>
+              <option>BP/LSTM 神经网络</option>
+            </select>
+          </div>
+          <div class="section-title" style="margin-top:6px"><b>|</b>模型因子勾选</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:var(--text-2)">
+            <label><input type="checkbox" checked> H¹·H²·H³ 水压</label>
+            <label><input type="checkbox" checked> T·sinT·cosT 温度</label>
+            <label><input type="checkbox" checked> θ·lnθ 时效</label>
+            <label><input type="checkbox"> 降雨</label>
+            <label><input type="checkbox"> 泥沙</label>
+            <label><input type="checkbox"> 潮汐</label>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn">▶ 运行预测</button>
+            <button class="btn line">重置</button>
+          </div>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>测点筛选</h3></div>
+          <div class="form-row"><label>建筑物</label><select class="select"><option>挡潮闸</option><option>堵坝</option><option>堤塘</option></select></div>
+          <div class="form-row"><label>部位</label><select class="select"><option>闸室</option><option>闸基</option><option>翼墙</option></select></div>
+          <div class="form-row"><label>项目</label><select class="select"><option>水平位移</option><option>沉降</option><option>渗流</option></select></div>
+          <div class="tree" style="margin-top:6px">
+            <div class="node"><i class="fa fa-folder-open"></i> 挡潮闸 (28)</div>
+            <div class="node lv2 active"><i class="fa fa-circle"></i> SW-01 沉降</div>
+            <div class="node lv2"><i class="fa fa-circle"></i> SW-02 沉降</div>
+            <div class="node lv2"><i class="fa fa-circle"></i> XW-12 水平位移</div>
+            <div class="node lv2"><i class="fa fa-circle"></i> P-04 渗压</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- center: 变形预测 + 监控曲线 -->
+      <div class="col">
+        <div class="panel" style="height:55%">
+          <div class="ph"><span class="bar"></span><h3>变形预测 · 未来7日</h3>
+            <div class="extra legend"><span class="li" style="--c:#00d4ff">实测值</span><span class="li" style="--c:#ffb547">预测值</span><span class="li" style="--c:#3ee089">设计值</span><span class="li" style="--c:#ff4d6d">阈值</span></div>
+          </div>
+          <div class="chart" id="predictChart" style="height:calc(100% - 38px)"></div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>监控曲线 · SW-01 沉降量</h3>
+            <div class="extra"><span class="tab">日</span><span class="tab on">月</span><span class="tab">年</span></div>
+          </div>
+          <div class="chart" id="trackChart" style="height:calc(100% - 38px)"></div>
+        </div>
+      </div>
+
+      <!-- right: 未来预警 + 推送 -->
+      <div class="col">
+        <div class="panel" style="height:55%">
+          <div class="ph"><span class="bar"></span><h3>未来预警</h3>
+            <div class="extra"><span class="tag warn">5 待推送</span></div>
+          </div>
+          <div class="scroll" style="height:calc(100% - 38px)">
+            <div class="alarm-row"><div class="dot" style="background:var(--danger)"></div>
+              <div><div class="name">28#闸室 V-02 脱空</div><div class="desc">预计 04-30 22:00 突破阈值</div></div>
+              <div style="color:var(--danger);font-size:11px">极高</div><div style="color:var(--text-3);font-size:11px">+48h</div></div>
+            <div class="alarm-row"><div class="dot" style="background:var(--warn)"></div>
+              <div><div class="name">P-04 渗压</div><div class="desc">趋势上升 (+0.8 kPa/d)</div></div>
+              <div style="color:var(--warn);font-size:11px">高</div><div style="color:var(--text-3);font-size:11px">+72h</div></div>
+            <div class="alarm-row"><div class="dot" style="background:var(--warn)"></div>
+              <div><div class="name">SW-09 沉降</div><div class="desc">预测值 12.6mm 接近变幅上限</div></div>
+              <div style="color:var(--warn);font-size:11px">中</div><div style="color:var(--text-3);font-size:11px">+96h</div></div>
+            <div class="alarm-row"><div class="dot" style="background:var(--primary)"></div>
+              <div><div class="name">XW-12 水平位移</div><div class="desc">趋势平稳，建议持续观察</div></div>
+              <div style="color:var(--primary);font-size:11px">低</div><div style="color:var(--text-3);font-size:11px">+120h</div></div>
+            <div class="alarm-row"><div class="dot" style="background:var(--primary)"></div>
+              <div><div class="name">SW-15 沉降</div><div class="desc">预测合理，回归方差 R²=0.93</div></div>
+              <div style="color:var(--primary);font-size:11px">低</div><div style="color:var(--text-3);font-size:11px">+168h</div></div>
+          </div>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>预警推送</h3></div>
+          <div class="form-row"><label>推送方式</label><select class="select"><option>短信 + 邮件 + 钉钉</option></select></div>
+          <div class="form-row"><label>模板</label><select class="select"><option>标准预警模板 V2</option><option>专家组通报模板</option></select></div>
+          <div class="form-row"><label>接收人</label><input class="input" value="王工(13800138001) ; 李主任 ; 运维组"></div>
+          <div class="section-title" style="margin-top:8px"><b>|</b>近期推送日志</div>
+          <table class="tbl">
+            <tr><td>10:38</td><td>V-02 脱空 突破</td><td>王工/李主任</td><td><span class="tag ok">已送达</span></td></tr>
+            <tr><td>10:25</td><td>P-04 渗压预警</td><td>运维组</td><td><span class="tag ok">已送达</span></td></tr>
+            <tr><td>09:51</td><td>28#启闭机故障</td><td>机电二组</td><td><span class="tag warn">重发</span></td></tr>
+          </table>
+          <button class="btn" style="margin-top:8px;width:100%">立即推送 · 5条预警</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4. 风险预警 ===== -->
+  <section id="screen-warn" class="screen">
+    <div class="grid-pred">
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>阈值查看</h3></div>
+          <div class="form-row"><label>测点分类</label><select class="select"><option>按部位</option><option>按仪器</option><option>按类型</option></select></div>
+          <div class="tree" style="margin-top:6px;font-size:12px">
+            <div class="node"><i class="fa fa-folder-open"></i> 拟合预警值 (28)</div>
+            <div class="node"><i class="fa fa-folder"></i> 专家建议预警值 (26)</div>
+            <div class="node"><i class="fa fa-folder"></i> 自定义预警值 (12)</div>
+            <div class="node"><i class="fa fa-folder"></i> 量程上限 (28)</div>
+            <div class="node"><i class="fa fa-folder"></i> 变幅阈值 (28)</div>
+          </div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>异常分类统计</h3></div>
+          <div class="chart" id="warnPie" style="height:46%"></div>
+          <div class="section-title" style="margin-top:6px"><b>|</b>异常报警分类</div>
+          <div class="chart" id="warnBar" style="height:42%"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:35%">
+          <div class="ph"><span class="bar"></span><h3>监测状态实时报警</h3>
+            <div class="extra">
+              <select class="select" style="height:24px">
+                <option>全部建筑物</option></select>
+              <select class="select" style="height:24px">
+                <option>全部预警类型</option></select>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>测点编码</th><th>测点名称</th><th>部位</th><th>类型</th><th>实测值</th><th>阈值</th><th>报警类型</th><th>时间</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>V-02</td><td>28#闸室底板脱空</td><td>闸基</td><td>底板脱空</td><td style="color:var(--danger)">4.2mm</td><td>3.0mm</td><td><span class="tag danger">超阈值</span></td><td>10:38:21</td><td>已推送</td></tr>
+              <tr><td>P-04</td><td>右岸渗压计</td><td>翼墙</td><td>渗流压力</td><td style="color:var(--warn)">78.4kPa</td><td>80.0kPa</td><td><span class="tag warn">变幅</span></td><td>10:25:11</td><td>处置中</td></tr>
+              <tr><td>QB-28</td><td>28#启闭机电流</td><td>机房</td><td>金结机电</td><td style="color:var(--warn)">12.8A</td><td>12.0A</td><td><span class="tag warn">设备</span></td><td>09:51:42</td><td>处置中</td></tr>
+              <tr><td>SW-09</td><td>9#闸室沉降</td><td>闸室</td><td>沉降</td><td>11.8mm</td><td>15.0mm</td><td><span class="tag info">趋势</span></td><td>09:32:18</td><td>观察</td></tr>
+              <tr><td>S-09</td><td>钢筋拉力</td><td>闸室</td><td>钢筋拉力</td><td>185N/mm²</td><td>210N/mm²</td><td><span class="tag info">关注</span></td><td>09:18:52</td><td>正常</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>监控曲线 · V-02 底板脱空位移</h3>
+            <div class="extra legend"><span class="li" style="--c:#00d4ff">实测</span><span class="li" style="--c:#ffb547">拟合</span><span class="li" style="--c:#3ee089">设计</span><span class="li" style="--c:#ff4d6d">专家</span></div>
+          </div>
+          <div class="chart" id="warnCurve" style="height:calc(100% - 38px)"></div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>异常详情</h3></div>
+          <div style="padding:6px 4px;font-size:12px;color:var(--text-2);line-height:2">
+            <div><span style="color:var(--text-3)">测点编号：</span><b style="color:#fff">V-02</b></div>
+            <div><span style="color:var(--text-3)">测点名称：</span><b style="color:#fff">28#闸室底板脱空位移</b></div>
+            <div><span style="color:var(--text-3)">位置信息：</span><b style="color:#fff">28号闸室基础+0.18m</b></div>
+            <div><span style="color:var(--text-3)">报警级别：</span><span class="tag danger">III 红色</span></div>
+            <div><span style="color:var(--text-3)">报警类型：</span>超阈值</div>
+            <div><span style="color:var(--text-3)">报警来源：</span>拟合预警 (统计回归模型)</div>
+            <div><span style="color:var(--text-3)">处理状态：</span><span class="tag warn">已推送 · 待处置</span></div>
+            <div style="margin-top:6px;color:var(--text-3)">处置建议：建议立即派员现场核查；启动闸基灌浆方案预备；通知设计单位复核结构受力。</div>
+          </div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>报警推送 · 处置流程跟踪</h3></div>
+          <div style="padding:8px 4px">
+            <div class="alarm-row" style="grid-template-columns:32px 1fr">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--ok);text-align:center;line-height:24px;color:#fff">1</div>
+              <div><div class="name">10:38 触发报警</div><div class="desc">系统自动识别 V-02 突破阈值</div></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:32px 1fr">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--ok);text-align:center;line-height:24px;color:#fff">2</div>
+              <div><div class="name">10:38 推送至运维协同</div><div class="desc">已生成工单 #WO-20260428-038</div></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:32px 1fr">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--ok);text-align:center;line-height:24px;color:#fff">3</div>
+              <div><div class="name">10:39 短信送达</div><div class="desc">王工/李主任 已签收</div></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:32px 1fr">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--warn);text-align:center;line-height:24px;color:#fff">4</div>
+              <div><div class="name">10:42 派员现场核查</div><div class="desc">巡检小组已抵达现场</div></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:32px 1fr;opacity:.55">
+              <div style="width:24px;height:24px;border-radius:50%;background:#3a4d65;text-align:center;line-height:24px;color:#fff">5</div>
+              <div><div class="name">— 处置反馈</div><div class="desc">等待现场处置结果回填</div></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:32px 1fr;opacity:.5">
+              <div style="width:24px;height:24px;border-radius:50%;background:#3a4d65;text-align:center;line-height:24px;color:#fff">6</div>
+              <div><div class="name">— 关闭报警</div><div class="desc">归档至典型案例库</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5. 仿真预演 ===== -->
+  <section id="screen-sim" class="screen">
+    <div class="grid-pred">
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>仿真模型入参</h3></div>
+          <div class="form-row"><label>工况</label><select class="select"><option>50年一遇洪水 + 闸门全开</option><option>设计水位 + 闸门关闭</option><option>地震工况 7度</option></select></div>
+          <div class="form-row"><label>闸上水位</label><input class="input" value="7.85"> m</div>
+          <div class="form-row"><label>闸下水位</label><input class="input" value="3.20"> m</div>
+          <div class="form-row"><label>气温</label><input class="input" value="22.0"> ℃</div>
+          <div class="form-row"><label>闸门开度</label><input class="input" value="3.0"> m</div>
+          <div class="section-title" style="margin-top:6px"><b>|</b>分析项目</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:var(--text-2)">
+            <label><input type="checkbox" checked> 变形预演</label>
+            <label><input type="checkbox" checked> 渗流预演</label>
+            <label><input type="checkbox" checked> 应力分布</label>
+            <label><input type="checkbox"> 抗滑稳定</label>
+            <label><input type="checkbox"> 抗倾覆</label>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn">▶ 启动仿真</button>
+            <button class="btn line">导出报告</button>
+          </div>
+
+          <div class="section-title" style="margin-top:14px"><b>|</b>特征值统计</div>
+          <table class="tbl" style="font-size:11px">
+            <thead><tr><th>测点</th><th>最大值</th><th>最小值</th><th>均值</th></tr></thead>
+            <tbody>
+              <tr><td>SW-01 沉降</td><td>12.3</td><td>2.1</td><td>7.8</td></tr>
+              <tr><td>SW-09 沉降</td><td>11.8</td><td>3.2</td><td>8.4</td></tr>
+              <tr><td>XW-12 位移</td><td>3.5</td><td>-1.2</td><td>1.8</td></tr>
+              <tr><td>P-04 渗压</td><td>78.4</td><td>62.1</td><td>71.2</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>云图可视化 · 闸室位移场</h3>
+            <div class="extra"><span class="tab on">变形</span><span class="tab">渗流</span><span class="tab">应力</span></div>
+          </div>
+          <div style="position:relative;height:calc(100% - 80px)">
+            <canvas id="cloudCanvas" class="cloud-canvas"></canvas>
+            <div style="position:absolute;right:10px;top:10px;display:flex;align-items:flex-start;gap:6px">
+              <div class="cmap">
+                <span>+12.0</span>
+                <div class="cmap-bar"></div>
+                <span>-2.0 mm</span>
+              </div>
+            </div>
+            <div style="position:absolute;left:10px;bottom:10px;font-size:11px;color:var(--text-2);background:rgba(0,0,0,.45);padding:5px 8px;border:1px solid var(--line)">
+              工况：50年一遇洪水 · 闸门 3.0m | 时间：t=720s | 节点数：38,420
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--text-2)">
+            <span>仿真时刻</span>
+            <input type="range" min="0" max="100" value="48" style="flex:1">
+            <span>t = <b style="color:var(--primary-2)">720s</b> / 1500s</span>
+            <button class="btn" style="padding:3px 12px">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>变形预演 · 沉降时程</h3></div>
+          <div class="chart" id="simDeform" style="height:calc(100% - 38px)"></div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>渗流预演 · 浸润线高程</h3></div>
+          <div class="chart" id="simSeep" style="height:calc(100% - 38px)"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6. 处置预案 ===== -->
+  <section id="screen-plan" class="screen">
+    <div class="grid-pred">
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>问题总览</h3>
+            <div class="extra"><span class="tag info">监测设备 12</span><span class="tag warn">机电设备 5</span></div>
+          </div>
+          <div class="chart" id="planRing" style="height:calc(100% - 38px)"></div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>典型案例库</h3>
+            <div class="extra"><input class="input" placeholder="搜索案例..." style="height:24px;width:120px"></div>
+          </div>
+          <div class="scroll" style="height:calc(100% - 38px)">
+            <div class="alarm-row" style="grid-template-columns:1fr 80px;padding:10px 8px">
+              <div>
+                <div class="name">闸室底板脱空灌浆处置案例</div>
+                <div class="desc">2024-09 · 12#闸室 · 灌浆方量 45m³ · 持续时间 6天</div>
+              </div>
+              <div><span class="tag ok">已结案</span></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:1fr 80px;padding:10px 8px">
+              <div>
+                <div class="name">右岸渗流量异常处置</div>
+                <div class="desc">2024-07 · 上游导流堤 · 防渗墙加固</div>
+              </div>
+              <div><span class="tag ok">已结案</span></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:1fr 80px;padding:10px 8px">
+              <div>
+                <div class="name">弧形闸门启闭异常</div>
+                <div class="desc">2024-04 · 18#闸门 · 液压系统更换密封件</div>
+              </div>
+              <div><span class="tag ok">已结案</span></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:1fr 80px;padding:10px 8px">
+              <div>
+                <div class="name">导流堤局部沉降处置</div>
+                <div class="desc">2023-11 · 上游导流堤桩号0+120 · 注浆加固</div>
+              </div>
+              <div><span class="tag ok">已结案</span></div>
+            </div>
+            <div class="alarm-row" style="grid-template-columns:1fr 80px;padding:10px 8px">
+              <div>
+                <div class="name">堵坝防浪墙渗水修补</div>
+                <div class="desc">2023-08 · 堵坝桩号0+340 · 表面环氧封闭</div>
+              </div>
+              <div><span class="tag ok">已结案</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>处置方案推荐 · V-02 闸室底板脱空</h3>
+            <div class="extra"><span class="tag info">大模型 · 知识库</span></div>
+          </div>
+          <div class="scroll" style="height:calc(100% - 38px);font-size:12px;color:var(--text-2);line-height:2;padding:0 4px">
+            <div style="padding:8px;border:1px solid var(--line-2);background:rgba(0,150,255,.06);margin-bottom:10px">
+              <div style="color:#fff;font-weight:600;margin-bottom:4px">⚙ 知识库推荐处置方案 (置信度 92%)</div>
+              <div style="color:var(--text-3)">基于 SL/T 803-2020 与曹娥江大闸 2024 年灌浆案例匹配</div>
+            </div>
+            <div style="color:#fff;font-weight:600">一、应急处置 (0~24h)</div>
+            <div>1. 立即派遣巡检组现场核查测点 V-02 数据真实性，比对周边 V-01/V-03 是否同步突破；</div>
+            <div>2. 启用应急监测频次 (10min/次) 加密观测，确认变化速率；</div>
+            <div>3. 上报水利局值班室，启动一级值班响应。</div>
+
+            <div style="color:#fff;font-weight:600;margin-top:10px">二、专项处置 (24~168h)</div>
+            <div>4. 现场钻孔取芯，确定脱空范围、深度及与基础接触状态；</div>
+            <div>5. 编制灌浆专项方案，推荐采用<b style="color:var(--primary-2)">水泥-水玻璃双液浆</b>，浆液配比 W:C=0.8~1.0；</div>
+            <div>6. 灌浆压力 0.4~0.6 MPa，单孔灌浆量按设计图纸控制；</div>
+            <div>7. 灌浆期间持续监测 V-02、相邻测点变化。</div>
+
+            <div style="color:#fff;font-weight:600;margin-top:10px">三、复评与归档</div>
+            <div>8. 处置完成后再次开展工程安全综合评价；</div>
+            <div>9. 资料归档至处置预案 → 典型案例库；</div>
+            <div>10. 更新模型参数与拟合预警阈值。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>智能问答 · 知识库检索</h3></div>
+          <div class="scroll chat-list" style="flex:1">
+            <div class="chat-msg q"><div class="bub">闸室底板脱空多少需要立即处置？</div></div>
+            <div class="chat-msg"><div class="bub">根据《水闸安全评价导则 SL 214-2015》及曹娥江大闸专项规定：<br>
+              · 脱空位移 ≤ 2.0mm 为正常监测；<br>
+              · 2.0~3.0mm 为重点关注；<br>
+              · <b style="color:var(--warn)">≥ 3.0mm</b> 立即启动处置流程。<br>
+              当前 V-02 测值 4.2mm 已达红色预警，建议立即派员核查并启动灌浆预案。</div>
+              <div class="src">📚 来源：SL 214-2015 §6.3 / 曹娥江大闸 2024 年监测报告</div>
+            </div>
+            <div class="chat-msg q"><div class="bub">推荐的灌浆材料是？</div></div>
+            <div class="chat-msg"><div class="bub">优先推荐<b style="color:var(--primary-2)">水泥-水玻璃双液浆</b>（W:C=0.8~1.0），具有早强、可控凝特性，适用于水下/潮湿环境。次选环氧化学浆液用于细微裂隙加固。</div>
+              <div class="src">📚 来源：典型案例库 · 12#闸室处置档案</div>
+            </div>
+          </div>
+          <div class="chat-input">
+            <input class="input" placeholder="请输入问题，基于知识库智能回答..." style="flex:1">
+            <button class="btn">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 7. 综合评价 ===== -->
+  <section id="screen-eval" class="screen">
+    <div class="grid-2-3">
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>水闸安全评价指标体系</h3></div>
+          <div class="tree scroll" style="height:calc(100% - 38px)">
+            <div class="node"><i class="fa fa-flag"></i><b>目标层：水闸安全状态</b></div>
+            <div class="node lv2 active"><i class="fa fa-folder-open"></i> 工程质量 (W=0.18)</div>
+            <div class="node lv3"><i class="fa fa-circle-o"></i> 混凝土结构</div>
+            <div class="node lv3"><i class="fa fa-circle-o"></i> 钢闸门</div>
+            <div class="node lv3"><i class="fa fa-circle-o"></i> 启闭机</div>
+            <div class="node lv3"><i class="fa fa-circle-o"></i> 机电设备</div>
+            <div class="node lv3"><i class="fa fa-circle-o"></i> 安全监测设施</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 防洪标准 (W=0.16)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 渗流安全 (W=0.15)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 结构安全 (W=0.18)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 抗震安全 (W=0.10)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 金属结构安全 (W=0.12)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 机电设备安全 (W=0.11)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:48%">
+          <div class="ph"><span class="bar"></span><h3>评价打分</h3>
+            <div class="extra"><span class="tab on">客观赋分</span><span class="tab">专家赋分</span><span class="tab">组合权重</span></div>
+          </div>
+          <div class="row" style="height:calc(100% - 38px);gap:14px">
+            <div style="flex:1">
+              <div class="chart" id="evalRadar"></div>
+            </div>
+            <div style="flex:1.1">
+              <table class="tbl">
+                <thead><tr><th>分项</th><th>类型</th><th>权重</th><th>得分</th></tr></thead>
+                <tbody>
+                  <tr><td>混凝土结构</td><td>定量</td><td>0.20</td><td style="color:var(--ok)">95</td></tr>
+                  <tr><td>钢闸门</td><td>定量</td><td>0.25</td><td style="color:var(--ok)">92</td></tr>
+                  <tr><td>启闭机</td><td>定性</td><td>0.20</td><td style="color:var(--ok)">90</td></tr>
+                  <tr><td>机电设备</td><td>定性</td><td>0.20</td><td style="color:var(--warn)">85</td></tr>
+                  <tr><td>安全监测设施</td><td>定量</td><td>0.15</td><td style="color:var(--ok)">94</td></tr>
+                </tbody>
+              </table>
+              <div style="margin-top:8px;padding:8px;border:1px solid var(--line);background:rgba(0,40,80,.45)">
+                <div style="font-size:12px;color:var(--text-3)">本准则层加权得分</div>
+                <div style="font-size:24px;color:var(--primary-2);font-family:'DIN Alternate',monospace">91.55 <span style="font-size:12px;color:var(--text-2)">/ 100</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>分项资料 · 钢闸门</h3>
+            <div class="extra"><span class="tab">设计文件</span><span class="tab on">检测报告</span><span class="tab">影像</span></div>
+          </div>
+          <div class="row" style="gap:8px;height:calc(100% - 38px)">
+            <div class="video-cell" style="flex:1;position:relative">
+              <div style="position:absolute;inset:8px;background:repeating-linear-gradient(45deg,rgba(0,80,140,.4) 0,rgba(0,80,140,.4) 8px,rgba(0,40,80,.6) 8px,rgba(0,40,80,.6) 16px);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:13px">弧形钢闸门检测影像</div>
+            </div>
+            <div style="flex:1;font-size:12px;color:var(--text-2);line-height:2">
+              <div><span style="color:var(--text-3)">检测单位：</span>浙江省水利科学研究院</div>
+              <div><span style="color:var(--text-3)">检测日期：</span>2025-12-20</div>
+              <div><span style="color:var(--text-3)">闸门型式：</span>露顶式弧形钢闸门</div>
+              <div><span style="color:var(--text-3)">单孔尺寸：</span>20m × 9.7m</div>
+              <div><span style="color:var(--text-3)">主梁应力：</span>156 N/mm² (允许 210)</div>
+              <div><span style="color:var(--text-3)">支铰磨损：</span>0.8mm (允许 2.0)</div>
+              <div><span style="color:var(--text-3)">防腐涂层：</span>有效厚度 220μm</div>
+              <div><span style="color:var(--text-3)">检测结论：</span><span class="tag ok">A 级 · 完好</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>综合得分</h3></div>
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:calc(100% - 38px)">
+            <div class="eval-circle" style="width:160px;height:160px">
+              <div class="num" style="font-size:48px">92<small>分</small></div>
+            </div>
+            <div class="eval-info" style="margin-top:14px;text-align:center">
+              <div class="lvl" style="font-size:16px;padding:6px 22px">A 级 · 安全运行</div>
+              <div style="margin-top:10px">目标层确定度 0.928 / 1.000</div>
+            </div>
+          </div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>评分记录 · 评价报告</h3></div>
+          <table class="tbl">
+            <thead><tr><th>评价时间</th><th>得分</th><th>等级</th><th>报告</th></tr></thead>
+            <tbody>
+              <tr><td>2026-04-28</td><td style="color:var(--ok)">92</td><td><span class="tag ok">A 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+              <tr><td>2026-03-28</td><td style="color:var(--ok)">93</td><td><span class="tag ok">A 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+              <tr><td>2026-02-28</td><td style="color:var(--ok)">91</td><td><span class="tag ok">A 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+              <tr><td>2026-01-28</td><td style="color:var(--ok)">90</td><td><span class="tag ok">A 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+              <tr><td>2025-12-28</td><td style="color:var(--warn)">86</td><td><span class="tag warn">B 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+              <tr><td>2025-11-28</td><td style="color:var(--ok)">90</td><td><span class="tag ok">A 级</span></td><td><i class="fa fa-file-pdf-o" style="color:var(--primary)"></i> 查看</td></tr>
+            </tbody>
+          </table>
+          <div class="section-title" style="margin-top:8px"><b>|</b>得分趋势</div>
+          <div class="chart" id="evalTrend" style="height:120px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 8. 数据分析 ===== -->
+  <section id="screen-data" class="screen">
+    <div class="grid-pred">
+      <div class="col">
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>测点分类</h3>
+            <div class="extra"><span class="tab on">部位</span><span class="tab">仪器</span><span class="tab">类型</span></div>
+          </div>
+          <div class="form-row" style="margin-bottom:6px"><input class="input" placeholder="搜索测点..." style="flex:1"></div>
+          <div class="tree scroll" style="height:calc(100% - 78px);font-size:12px">
+            <div class="node"><i class="fa fa-folder-open"></i> 挡潮闸 (28)</div>
+            <div class="node lv2"><i class="fa fa-folder-open"></i> 闸室 (16)</div>
+            <div class="node lv3 active"><i class="fa fa-circle"></i> SW-01 沉降</div>
+            <div class="node lv3"><i class="fa fa-circle"></i> SW-02 沉降</div>
+            <div class="node lv3"><i class="fa fa-circle"></i> SW-03 沉降</div>
+            <div class="node lv3"><i class="fa fa-circle"></i> XW-12 水平位移</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 闸基 (8)</div>
+            <div class="node lv2"><i class="fa fa-folder"></i> 翼墙 (4)</div>
+            <div class="node"><i class="fa fa-folder"></i> 堵坝 (12)</div>
+            <div class="node"><i class="fa fa-folder"></i> 堤塘 (8)</div>
+            <div class="node"><i class="fa fa-folder"></i> 上游导流堤 (6)</div>
+            <div class="node"><i class="fa fa-folder"></i> 下游海塘 (10)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:38%">
+          <div class="ph"><span class="bar"></span><h3>过程线 · SW-01 沉降量</h3>
+            <div class="extra"><span class="tab">实时</span><span class="tab on">日</span><span class="tab">月</span><span class="tab">年</span></div>
+          </div>
+          <div class="chart" id="dataLine" style="height:calc(100% - 38px)"></div>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>相关图 · SW-01 vs 闸上水位</h3></div>
+          <div class="row" style="height:calc(100% - 38px);gap:8px">
+            <div style="flex:1.4"><div class="chart" id="dataScatter"></div></div>
+            <div style="flex:1">
+              <div class="section-title"><b>|</b>分布图 · 28闸室沉降</div>
+              <div class="chart" id="dataDist" style="height:calc(100% - 22px)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:42%">
+          <div class="ph"><span class="bar"></span><h3>测点属性 / 特征值</h3></div>
+          <div style="font-size:12px;color:var(--text-2);line-height:2">
+            <div><span style="color:var(--text-3)">测点编号：</span><b style="color:#fff">SW-01</b></div>
+            <div><span style="color:var(--text-3)">所属建筑物：</span>挡潮闸</div>
+            <div><span style="color:var(--text-3)">所属部位：</span>1#闸室</div>
+            <div><span style="color:var(--text-3)">仪器型号：</span>静力水准仪 LJ-150</div>
+            <div><span style="color:var(--text-3)">物理量：</span>沉降量 (mm)</div>
+            <div><span style="color:var(--text-3)">安装高程：</span>+5.20 m</div>
+          </div>
+          <div class="section-title" style="margin-top:8px"><b>|</b>历史特征值</div>
+          <table class="tbl" style="font-size:11px">
+            <thead><tr><th></th><th>极大值</th><th>极小值</th><th>均值</th><th>当前</th></tr></thead>
+            <tbody>
+              <tr><td>近24h</td><td>8.2</td><td>7.6</td><td>7.9</td><td>7.8</td></tr>
+              <tr><td>近30d</td><td>9.8</td><td>6.4</td><td>8.1</td><td>7.8</td></tr>
+              <tr><td>历史</td><td>12.3</td><td>2.1</td><td>7.8</td><td>7.8</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel f1">
+          <div class="ph"><span class="bar"></span><h3>报表 / 模型分析</h3>
+            <div class="extra"><span class="tab on">日报</span><span class="tab">月报</span><span class="tab">年报</span><span class="tab">模型</span></div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>测点</th><th>仪器</th><th>物理量</th><th>测值</th><th>时间</th></tr></thead>
+            <tbody>
+              <tr><td>SW-01</td><td>LJ-150</td><td>沉降</td><td>7.82</td><td>10:30</td></tr>
+              <tr><td>SW-02</td><td>LJ-150</td><td>沉降</td><td>8.14</td><td>10:30</td></tr>
+              <tr><td>SW-09</td><td>LJ-150</td><td>沉降</td><td>11.84</td><td>10:30</td></tr>
+              <tr><td>XW-12</td><td>引张线</td><td>水平位移</td><td>1.78</td><td>10:30</td></tr>
+              <tr><td>P-04</td><td>振弦渗压计</td><td>渗流压力</td><td>78.4</td><td>10:30</td></tr>
+            </tbody>
+          </table>
+          <div class="section-title" style="margin-top:8px"><b>|</b>统计回归模型分量</div>
+          <div class="chart" id="dataModel" style="height:120px"></div>
+          <div style="margin-top:6px;font-size:11px;color:var(--text-3)">
+            R² = 0.932 · 标准差 = 0.42 · 建模时间：2026-04-28 09:00
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 9. 后台管理 ===== -->
+  <section id="screen-bg" class="screen">
+    <div class="grid-bg">
+      <div class="panel">
+        <div class="ph"><span class="bar"></span><h3>后台管理菜单</h3></div>
+        <div class="tree" style="font-size:13px">
+          <div class="node"><i class="fa fa-folder-open"></i> 系统管理</div>
+          <div class="node lv2 active"><i class="fa fa-circle-o"></i> 字典管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 日志管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 权限管理</div>
+          <div class="node"><i class="fa fa-folder"></i> 信息管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 设备管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 供应商管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 阈值管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 因子管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 模型管理</div>
+          <div class="node lv2"><i class="fa fa-circle-o"></i> 指标管理</div>
+        </div>
+        <div class="section-title" style="margin-top:14px"><b>|</b>系统状态</div>
+        <div style="font-size:12px;color:var(--text-2);line-height:2">
+          <div><span class="status-dot"></span> 数据底板服务 · 在线</div>
+          <div><span class="status-dot"></span> 工程安全模型库 · 在线</div>
+          <div><span class="status-dot"></span> 知识库平台 · 在线</div>
+          <div><span class="status-dot"></span> 数字化运维协同 · 在线</div>
+          <div><span class="status-dot" style="background:var(--warn);box-shadow:0 0 6px var(--warn)"></span> 短信网关 · 限流中</div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel" style="height:48%">
+          <div class="ph"><span class="bar"></span><h3>设备管理</h3>
+            <div class="extra">
+              <button class="btn" style="padding:3px 10px"><i class="fa fa-plus"></i> 新增</button>
+              <button class="btn line" style="padding:3px 10px"><i class="fa fa-download"></i> 导出</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <select class="select" style="flex:0 0 120px"><option>全部建筑物</option></select>
+            <select class="select" style="flex:0 0 120px"><option>全部仪器</option></select>
+            <input class="input" placeholder="设备编码 / 名称">
+            <button class="btn">查询</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>设备编码</th><th>设备名称</th><th>所属部位</th><th>型号</th><th>供应商</th><th>安装日期</th><th>下次维护</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>SW-01</td><td>静力水准仪</td><td>1#闸室</td><td>LJ-150</td><td>南京水利仪器厂</td><td>2022-08-12</td><td>2026-08-12</td><td><span class="tag ok">正常</span></td><td>编辑 / 删除</td></tr>
+              <tr><td>P-04</td><td>振弦渗压计</td><td>右翼墙</td><td>VW-150</td><td>基康仪器</td><td>2022-08-15</td><td>2026-05-15</td><td><span class="tag warn">告警</span></td><td>编辑 / 删除</td></tr>
+              <tr><td>XW-12</td><td>引张线位移计</td><td>12#闸室</td><td>YZ-50</td><td>南京水利仪器厂</td><td>2022-08-18</td><td>2026-08-18</td><td><span class="tag ok">正常</span></td><td>编辑 / 删除</td></tr>
+              <tr><td>V-02</td><td>底板脱空仪</td><td>28#闸基</td><td>TK-30</td><td>基康仪器</td><td>2022-08-20</td><td>2026-08-20</td><td><span class="tag danger">异常</span></td><td>编辑 / 删除</td></tr>
+              <tr><td>S-09</td><td>钢筋计</td><td>9#闸室</td><td>GJ-300</td><td>基康仪器</td><td>2022-08-22</td><td>2026-08-22</td><td><span class="tag ok">正常</span></td><td>编辑 / 删除</td></tr>
+              <tr><td>CH-01</td><td>球型摄像机</td><td>闸顶东侧</td><td>HK-2DC</td><td>海康威视</td><td>2023-04-12</td><td>2026-10-12</td><td><span class="tag ok">正常</span></td><td>编辑 / 删除</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row f1" style="gap:12px">
+          <div class="panel f1">
+            <div class="ph"><span class="bar"></span><h3>阈值管理</h3>
+              <div class="extra"><button class="btn" style="padding:3px 10px"><i class="fa fa-plus"></i> 新增</button></div>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>测点</th><th>类型</th><th>物理量</th><th>上限</th><th>下限</th><th>启用</th></tr></thead>
+              <tbody>
+                <tr><td>SW-01</td><td>拟合预警</td><td>沉降</td><td>15.0</td><td>-</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>P-04</td><td>专家建议</td><td>渗压</td><td>80.0</td><td>40.0</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>V-02</td><td>自定义</td><td>脱空位移</td><td>3.0</td><td>-</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>XW-12</td><td>变幅</td><td>水平位移</td><td>±5.0</td><td>-</td><td><span class="tag ok">已启用</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel f1">
+            <div class="ph"><span class="bar"></span><h3>模型 / 因子 / 指标</h3>
+              <div class="extra"><span class="tab on">模型</span><span class="tab">因子</span><span class="tab">指标</span></div>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>模型名称</th><th>类型</th><th>因子数</th><th>R²</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr><td>HSTM 统计回归</td><td>统计</td><td>8</td><td>0.932</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>有限元确定性</td><td>确定性</td><td>—</td><td>—</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>HSTM + ANN 混合</td><td>混合</td><td>10</td><td>0.951</td><td><span class="tag ok">已启用</span></td></tr>
+                <tr><td>ARIMA(2,1,1)</td><td>时序</td><td>—</td><td>0.882</td><td><span class="tag info">候选</span></td></tr>
+                <tr><td>GM(1,1) 灰色</td><td>灰色</td><td>—</td><td>0.864</td><td><span class="tag info">候选</span></td></tr>
+                <tr><td>BP 神经网络 (8-12-1)</td><td>神经网络</td><td>8</td><td>0.943</td><td><span class="tag ok">已启用</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+ * Top time
+ * ============================================================ */
+function pad(n){return n<10?'0'+n:''+n}
+function tickTime(){
+  const d=new Date();
+  document.getElementById('topTime').textContent=
+    d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
+    pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+}
+setInterval(tickTime,1000);tickTime();
+
+/* ============================================================
+ * Sidebar nav switch
+ * ============================================================ */
+document.querySelectorAll('.sidebar .nav-item').forEach(el=>{
+  el.addEventListener('click',()=>{
+    document.querySelectorAll('.sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(el.dataset.target).classList.add('active');
+    setTimeout(()=>{ window.dispatchEvent(new Event('resize')); },50);
+  });
+});
+
+/* ============================================================
+ * Toggle switches
+ * ============================================================ */
+document.querySelectorAll('.toggle').forEach(t=>{
+  t.addEventListener('click',()=>t.classList.toggle('on'));
+});
+document.querySelectorAll('.scene-switch button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  });
+});
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    if(!t.parentElement) return;
+    t.parentElement.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+  });
+});
+
+/* ============================================================
+ * Cesium 3D Twin Scene  (with offline fallback)
+ * ============================================================ */
+let cesiumOk = false;
+try {
+  if (typeof Cesium !== 'undefined') {
+    // No Ion token by default → use OpenStreetMap raster + ellipsoid terrain
+    Cesium.Ion.defaultAccessToken = '';
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      animation:false, baseLayerPicker:false, fullscreenButton:false, geocoder:false,
+      homeButton:false, infoBox:false, sceneModePicker:false, selectionIndicator:false,
+      timeline:false, navigationHelpButton:false, navigationInstructionsInitiallyVisible:false,
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        credit: 'OSM'
+      }),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider()
+    });
+    viewer._cesiumWidget._creditContainer.style.display='none';
+    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString('#04101e');
+    viewer.scene.skyBox.show = false;
+    viewer.scene.skyAtmosphere.show = false;
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#040b1a');
+
+    // Caoe river gate approximate location: 120.85E, 30.17N
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(120.85, 30.05, 6800),
+      orientation: { heading: Cesium.Math.toRadians(15), pitch: Cesium.Math.toRadians(-32), roll: 0 },
+      duration: 0
+    });
+
+    // Add a stylized box representing the dam
+    viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(120.852, 30.166, 50),
+      box: {
+        dimensions: new Cesium.Cartesian3(560, 120, 100),
+        material: Cesium.Color.fromCssColorString('#3a5778').withAlpha(.85),
+        outline:true,
+        outlineColor:Cesium.Color.fromCssColorString('#00d4ff')
+      }
+    });
+    // Side dykes
+    viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(120.847, 30.166, 25),
+      box: { dimensions: new Cesium.Cartesian3(300, 60, 50),
+        material: Cesium.Color.fromCssColorString('#2a3f56').withAlpha(.8),
+        outline:true, outlineColor:Cesium.Color.fromCssColorString('#0099cc')}
+    });
+    viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(120.857, 30.166, 25),
+      box: { dimensions: new Cesium.Cartesian3(300, 60, 50),
+        material: Cesium.Color.fromCssColorString('#2a3f56').withAlpha(.8),
+        outline:true, outlineColor:Cesium.Color.fromCssColorString('#0099cc')}
+    });
+    cesiumOk = true;
+  }
+} catch (e) {
+  console.warn('Cesium init failed, using fallback:', e);
+}
+
+/* If Cesium failed (offline / no network), draw a stylized 3D scene with Three.js */
+if (!cesiumOk) {
+  const container = document.getElementById('fallback3D');
+  document.getElementById('cesiumContainer').style.display='none';
+
+  const W = 1840, H = 1006;
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(W, H); renderer.setPixelRatio(2);
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x040b1a, 600, 2400);
+
+  const camera = new THREE.PerspectiveCamera(48, W/H, 1, 4000);
+  camera.position.set(720, 480, 720);
+  camera.lookAt(0, 30, 0);
+
+  // Lighting
+  scene.add(new THREE.HemisphereLight(0x88ccff, 0x10203a, 0.85));
+  const dl = new THREE.DirectionalLight(0xffeec0, 0.7);
+  dl.position.set(-300,500,200); scene.add(dl);
+
+  // Water plane (animated)
+  const waterGeo = new THREE.PlaneGeometry(2400, 1400, 80, 50);
+  const waterMat = new THREE.MeshPhongMaterial({color:0x0a3a66, transparent:true, opacity:0.78, shininess:90, specular:0x66bbff, wireframe:false});
+  const water = new THREE.Mesh(waterGeo, waterMat);
+  water.rotation.x = -Math.PI/2; water.position.y = -10;
+  scene.add(water);
+
+  // Grid lines on water (visual hint)
+  const grid = new THREE.GridHelper(2400, 60, 0x004a8a, 0x002a55);
+  grid.position.y = -8; scene.add(grid);
+
+  // Riverbed under water
+  const bed = new THREE.Mesh(new THREE.PlaneGeometry(2400, 1400),
+    new THREE.MeshBasicMaterial({color:0x021829}));
+  bed.rotation.x = -Math.PI/2; bed.position.y = -14; scene.add(bed);
+
+  // Main gate base (long box across the river)
+  const baseMat = new THREE.MeshPhongMaterial({color:0x4a6280});
+  const base = new THREE.Mesh(new THREE.BoxGeometry(720, 50, 70), baseMat);
+  base.position.y = 15; scene.add(base);
+
+  // Edges for tech look
+  function addEdges(mesh, color=0x00d4ff){
+    const eg = new THREE.EdgesGeometry(mesh.geometry);
+    const lm = new THREE.LineBasicMaterial({color:color});
+    const lines = new THREE.LineSegments(eg, lm);
+    mesh.add(lines);
+  }
+  addEdges(base);
+
+  // 28 piers + gate panels
+  const piers = new THREE.Group(); scene.add(piers);
+  const gateGroup = new THREE.Group(); scene.add(gateGroup);
+  const gateCount = 28;
+  const span = 24; // each gate width
+  const total = gateCount * span;
+  const startX = -total/2 + span/2;
+
+  for (let i=0;i<gateCount;i++){
+    const x = startX + i*span;
+
+    // Pier
+    const pier = new THREE.Mesh(new THREE.BoxGeometry(4, 90, 70),
+      new THREE.MeshPhongMaterial({color:0x6b8aa8}));
+    pier.position.set(x - span/2, 45, 0);
+    piers.add(pier); addEdges(pier, 0x55b8e8);
+
+    // Gate (radial / arc gate stylized)
+    const gate = new THREE.Mesh(new THREE.BoxGeometry(span-3, 70, 8),
+      new THREE.MeshPhongMaterial({color: i===27?0xff5577 : (i===3?0xffaa44:0x3b6f9e), shininess:60}));
+    gate.position.set(x, 30, 0);
+    gateGroup.add(gate); addEdges(gate, i===27?0xff5577 : 0x00e5ff);
+
+    // Top deck above each pier
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(8, 6, 80),
+      new THREE.MeshPhongMaterial({color:0x809ec0}));
+    cap.position.set(x - span/2, 92, 0); piers.add(cap);
+  }
+  // Closing pier on the right
+  const pierR = new THREE.Mesh(new THREE.BoxGeometry(4, 90, 70),
+    new THREE.MeshPhongMaterial({color:0x6b8aa8}));
+  pierR.position.set(startX + gateCount*span - span/2, 45, 0); piers.add(pierR); addEdges(pierR, 0x55b8e8);
+
+  // Top bridge (full deck)
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(total+10, 8, 86),
+    new THREE.MeshPhongMaterial({color:0x9ab2cf}));
+  deck.position.set(0, 96, 0); scene.add(deck); addEdges(deck);
+
+  // Control house (operation building)
+  const house = new THREE.Mesh(new THREE.BoxGeometry(80, 35, 32),
+    new THREE.MeshPhongMaterial({color:0xc0d4eb}));
+  house.position.set(-total/2 - 60, 110, 0); scene.add(house); addEdges(house);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(86, 4, 36),
+    new THREE.MeshPhongMaterial({color:0x163b66}));
+  roof.position.set(-total/2 - 60, 130, 0); scene.add(roof);
+
+  // Left dyke (堵坝)
+  const dyke = new THREE.Mesh(new THREE.BoxGeometry(380, 60, 90),
+    new THREE.MeshPhongMaterial({color:0x4a5e74}));
+  dyke.position.set(total/2 + 200, 30, 0); scene.add(dyke); addEdges(dyke, 0x0099cc);
+
+  // Right embankment (堤塘)
+  const emb = new THREE.Mesh(new THREE.BoxGeometry(380, 35, 90),
+    new THREE.MeshPhongMaterial({color:0x536b81}));
+  emb.position.set(-total/2 - 240, 18, 0); scene.add(emb); addEdges(emb, 0x0099cc);
+
+  // Banks (terrain stylized)
+  const bankN = new THREE.Mesh(new THREE.BoxGeometry(2400, 24, 360),
+    new THREE.MeshPhongMaterial({color:0x143420}));
+  bankN.position.set(0, 0, -240); scene.add(bankN);
+  const bankS = bankN.clone(); bankS.position.set(0,0,240); scene.add(bankS);
+
+  // Roads on banks
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(2400, 16),
+    new THREE.MeshBasicMaterial({color:0x2a3a4a}));
+  road.rotation.x = -Math.PI/2; road.position.set(0, 12.1, -120); scene.add(road);
+  const road2 = road.clone(); road2.position.z = 120; scene.add(road2);
+
+  // Sensor markers (glowing spheres)
+  const sensorPositions = [
+    {x:-280,y:50,z:-30,c:0x00d4ff},
+    {x:-160,y:50,z:30,c:0x00d4ff},
+    {x:-40,y:50,z:-30,c:0x00d4ff},
+    {x:80,y:50,z:30,c:0xffb547},
+    {x:200,y:50,z:-30,c:0x00d4ff},
+    {x:280,y:50,z:30,c:0xff4d6d},
+    {x:330,y:60,z:0, c:0xff4d6d},
+    {x:-330,y:55,z:0, c:0x00d4ff},
+  ];
+  sensorPositions.forEach(p=>{
+    const s = new THREE.Mesh(new THREE.SphereGeometry(3.2, 14, 14),
+      new THREE.MeshBasicMaterial({color:p.c}));
+    s.position.set(p.x, p.y, p.z); scene.add(s);
+    // glow ring
+    const ring = new THREE.Mesh(new THREE.RingGeometry(5,7,24),
+      new THREE.MeshBasicMaterial({color:p.c, side:THREE.DoubleSide, transparent:true, opacity:.5}));
+    ring.position.copy(s.position); ring.lookAt(camera.position); s.userData.ring = ring;
+    scene.add(ring); s.userData.ring = ring;
+  });
+
+  // Animate water + auto-rotate camera slowly
+  let t0 = 0;
+  function animate(){
+    t0 += 0.01;
+    // wave water vertices
+    const pos = waterGeo.attributes.position;
+    for (let i=0;i<pos.count;i++){
+      const x = pos.getX(i), y = pos.getY(i);
+      pos.setZ(i, Math.sin(x*0.012 + t0*1.4)*1.6 + Math.cos(y*0.018 + t0*1.1)*1.2);
+    }
+    pos.needsUpdate = true;
+
+    // camera orbit
+    const r = 980;
+    camera.position.x = Math.cos(t0*0.06) * r;
+    camera.position.z = Math.sin(t0*0.06) * r;
+    camera.position.y = 460 + Math.sin(t0*0.4)*8;
+    camera.lookAt(0, 50, 0);
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+/* ============================================================
+ * ECharts utility
+ * ============================================================ */
+const palette = ['#00d4ff','#ffb547','#3ee089','#ff4d6d','#a78bfa','#39f1ff'];
+const grid_compact = {left:30,right:14,top:18,bottom:22};
+const txt = {color:'#7fb3d8',fontSize:10};
+const splitLine = {lineStyle:{color:'rgba(255,255,255,.06)'}};
+
+function lineOpt(series, axis){
+  return {
+    grid: grid_compact,
+    tooltip:{trigger:'axis', backgroundColor:'rgba(0,30,60,.9)', borderColor:'rgba(0,212,255,.5)', textStyle:{color:'#fff',fontSize:11}},
+    legend:{show:false},
+    xAxis:{type:'category',data:axis,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}},axisLabel:txt},
+    yAxis:{type:'value',axisLine:{show:false},splitLine,axisLabel:txt},
+    series: series
+  };
+}
+
+/* Rain mini chart (scene) */
+function chart(id, opt){const el=document.getElementById(id);if(!el)return;const c=echarts.init(el);c.setOption(opt);window.addEventListener('resize',()=>c.resize());return c;}
+
+const hours = ['00','03','06','09','12','15','18','21'];
+const day24 = []; for(let i=0;i<24;i++) day24.push(i+'h');
+
+chart('rainChart', {
+  grid: {left:28,right:8,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:hours,axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:[{type:'value',name:'mm',nameTextStyle:txt,axisLabel:txt,splitLine},
+         {type:'value',name:'℃',position:'right',nameTextStyle:txt,axisLabel:txt,splitLine:{show:false}}],
+  series:[
+    {type:'bar',data:[0,0,0.4,1.2,3.1,2.0,0.6,0],itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#00d4ff'},{offset:1,color:'#0066b8'}])},barWidth:10,name:'降雨'},
+    {type:'line',yAxisIndex:1,data:[18,19,21,24,27,28,25,22],smooth:true,symbol:'circle',symbolSize:5,lineStyle:{color:'#ffb547'},itemStyle:{color:'#ffb547'},name:'气温'}
+  ]
+});
+
+/* Deformation chart on scene */
+chart('deformChart', lineOpt([
+  {type:'line',data:[7.6,7.7,7.7,7.8,7.9,7.8,7.8,7.9],smooth:true,name:'SW-01',symbol:'none',lineStyle:{color:'#00d4ff',width:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,212,255,.35)'},{offset:1,color:'rgba(0,212,255,0)'}])}},
+  {type:'line',data:[8.0,8.1,8.0,8.1,8.2,8.1,8.0,8.1],smooth:true,name:'SW-02',symbol:'none',lineStyle:{color:'#ffb547',width:2}},
+  {type:'line',data:[1.6,1.7,1.7,1.8,1.8,1.7,1.8,1.8],smooth:true,name:'XW-12',symbol:'none',lineStyle:{color:'#3ee089',width:2}}
+], hours));
+
+chart('seepChart', lineOpt([
+  {type:'line',data:[71,72,72,73,74,75,77,78],smooth:true,symbol:'none',lineStyle:{color:'#ff4d6d',width:2},areaStyle:{color:'rgba(255,77,109,.18)'},name:'P-04'},
+  {type:'line',data:[68,68,69,69,70,70,71,71],smooth:true,symbol:'none',lineStyle:{color:'#39f1ff',width:2},name:'P-02'}
+], hours));
+
+/* ====================== 综合监视 ====================== */
+chart('radarMon', {
+  tooltip:{},
+  radar:{indicator:[
+    {name:'工程质量',max:100},{name:'防洪标准',max:100},{name:'渗流',max:100},
+    {name:'结构',max:100},{name:'抗震',max:100},{name:'金结',max:100},{name:'机电',max:100}
+  ],
+  axisName:{color:'#9bd0ee',fontSize:11},
+  splitArea:{areaStyle:{color:['rgba(0,150,255,.04)','rgba(0,150,255,.08)']}},
+  splitLine:{lineStyle:{color:'rgba(0,212,255,.25)'}},
+  axisLine:{lineStyle:{color:'rgba(0,212,255,.25)'}}
+  },
+  series:[{type:'radar',data:[
+    {value:[95,93,88,94,90,92,90],name:'本期得分',areaStyle:{color:'rgba(0,229,255,.25)'},lineStyle:{color:'#00d4ff'},itemStyle:{color:'#00d4ff'}},
+    {value:[92,90,86,92,88,89,88],name:'上期',areaStyle:{color:'rgba(255,181,71,.10)'},lineStyle:{color:'#ffb547'},itemStyle:{color:'#ffb547'}}
+  ]}]
+});
+
+const gateRows=[
+  ['1#','弧形钢闸门',0,9.7,5.42,0,'OK','关闭','ok'],
+  ['5#','弧形钢闸门',2.4,9.7,5.40,148,'OK','运行','info'],
+  ['9#','弧形钢闸门',2.4,9.7,5.41,150,'OK','运行','info'],
+  ['14#','弧形钢闸门',3.0,9.7,5.41,196,'OK','运行','info'],
+  ['18#','弧形钢闸门',2.4,9.7,5.42,148,'OK','运行','info'],
+  ['22#','弧形钢闸门',0,9.7,5.43,0,'OK','关闭','ok'],
+  ['25#','弧形钢闸门',1.5,9.7,5.43,92,'OK','运行','info'],
+  ['28#','弧形钢闸门',1.8,9.7,5.44,112,'告警','故障告警','warn']
+];
+const gtbody = document.getElementById('gateTable');
+gateRows.forEach(r=>{
+  gtbody.innerHTML += `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td><span class="tag ${r[8]}">${r[7]}</span></td></tr>`;
+});
+
+chart('waterChart', lineOpt([
+  {type:'line',data:[5.4,5.4,5.4,5.4,5.4,5.4,5.4,5.4],smooth:true,symbol:'none',lineStyle:{color:'#00d4ff',width:2},areaStyle:{color:'rgba(0,212,255,.22)'},name:'闸上'},
+  {type:'line',data:[1.8,1.4,2.0,3.4,3.8,3.0,2.2,1.6],smooth:true,symbol:'none',lineStyle:{color:'#39f1ff',width:2},areaStyle:{color:'rgba(57,241,255,.18)'},name:'闸下潮位'}
+], hours));
+
+chart('airChart', lineOpt([
+  {type:'bar',data:[0,0,0.4,1.2,3.1,2.0,0.6,0],itemStyle:{color:'#00d4ff'},name:'降雨',barWidth:10},
+  {type:'line',data:[18,19,21,24,27,28,25,22],smooth:true,symbol:'none',lineStyle:{color:'#ffb547',width:2},name:'气温'}
+], hours));
+
+chart('deformChart2', lineOpt([
+  {type:'line',data:[7.6,7.7,7.7,7.8,7.9,7.8,7.8,7.9],smooth:true,symbol:'none',name:'SW-01',lineStyle:{color:'#00d4ff'}},
+  {type:'line',data:[8.0,8.1,8.0,8.1,8.2,8.1,8.0,8.1],smooth:true,symbol:'none',name:'SW-02',lineStyle:{color:'#ffb547'}},
+  {type:'line',data:[10.6,10.7,10.8,11.0,11.2,11.4,11.6,11.8],smooth:true,symbol:'none',name:'SW-09',lineStyle:{color:'#ff4d6d'}},
+  {type:'line',data:[1.6,1.7,1.7,1.8,1.8,1.7,1.8,1.8],smooth:true,symbol:'none',name:'XW-12',lineStyle:{color:'#3ee089'}}
+], hours));
+
+chart('seepChart2', {
+  grid:grid_compact,
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:['断面1','断面2','断面3','断面4','断面5','断面6'],axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine},
+  series:[
+    {type:'bar',data:[68,72,75,78,71,69],itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#00d4ff'},{offset:1,color:'#005a9c'}])},barWidth:14},
+    {type:'line',data:[80,80,80,80,80,80],lineStyle:{color:'#ff4d6d',type:'dashed'},symbol:'none',name:'阈值'}
+  ]
+});
+
+chart('alarmPie', {
+  tooltip:{},legend:{show:false},
+  series:[{
+    type:'pie', radius:['55%','75%'], center:['50%','50%'],
+    label:{color:'#9bd0ee', fontSize:11,formatter:'{b}\n{c}'},
+    data:[
+      {value:248,name:'正常',itemStyle:{color:'#3ee089'}},
+      {value:3,name:'异常',itemStyle:{color:'#ff4d6d'}},
+      {value:5,name:'缺数',itemStyle:{color:'#ffb547'}},
+      {value:2,name:'超变幅',itemStyle:{color:'#a78bfa'}}
+    ]
+  }]
+});
+
+chart('alarmBar', {
+  grid:{left:60,right:10,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'value',axisLabel:txt,splitLine},
+  yAxis:{type:'category',data:['变形','渗流','应力','闸门','机电','环境'],axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  series:[
+    {type:'bar',data:[1,1,0,1,2,0],itemStyle:{color:'#ff4d6d'},barWidth:10,name:'异常',stack:'a'},
+    {type:'bar',data:[60,42,28,32,22,18],itemStyle:{color:'rgba(0,212,255,.45)'},barWidth:10,name:'正常',stack:'a'}
+  ]
+});
+
+/* ====================== 性态预测 ====================== */
+const days=['今','+1d','+2d','+3d','+4d','+5d','+6d','+7d'];
+chart('predictChart', {
+  grid:{left:36,right:14,top:24,bottom:28},
+  tooltip:{trigger:'axis'},
+  legend:{show:true, top:0, textStyle:{color:'#9bd0ee', fontSize:11}, data:['实测','预测','设计','拟合阈值']},
+  xAxis:{type:'category',data:days,axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,name:'沉降 mm',nameTextStyle:txt,splitLine},
+  series:[
+    {name:'实测',type:'line',data:[7.8,null,null,null,null,null,null,null],symbol:'circle',symbolSize:7,lineStyle:{color:'#00d4ff',width:3},itemStyle:{color:'#00d4ff'}},
+    {name:'预测',type:'line',data:[7.8,8.2,8.6,9.1,9.6,10.2,10.8,11.5],smooth:true,symbol:'circle',symbolSize:6,lineStyle:{color:'#ffb547',width:3,type:'dashed'},itemStyle:{color:'#ffb547'},
+      markArea:{itemStyle:{color:'rgba(255,180,71,.08)'},data:[[{xAxis:'+3d'},{xAxis:'+7d'}]]}
+    },
+    {name:'设计',type:'line',data:[15,15,15,15,15,15,15,15],symbol:'none',lineStyle:{color:'#3ee089',type:'dashed'}},
+    {name:'拟合阈值',type:'line',data:[12,12,12,12,12,12,12,12],symbol:'none',lineStyle:{color:'#ff4d6d',type:'dashed'}}
+  ]
+});
+
+const trackX=Array.from({length:30},(_,i)=>(i+1)+'d');
+chart('trackChart',{
+  grid:{left:36,right:14,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:trackX,axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine,name:'mm',nameTextStyle:txt},
+  series:[
+    {name:'实测',type:'line',data:[6.4,6.6,6.8,6.7,6.9,7.0,7.1,7.0,7.1,7.2,7.3,7.2,7.3,7.4,7.5,7.5,7.6,7.7,7.6,7.7,7.7,7.8,7.7,7.8,7.8,7.9,7.8,7.9,7.8,7.9],symbol:'none',smooth:true,lineStyle:{color:'#00d4ff'},areaStyle:{color:'rgba(0,212,255,.15)'}},
+    {name:'拟合',type:'line',data:[6.5,6.6,6.7,6.8,6.9,7.0,7.1,7.1,7.2,7.2,7.3,7.3,7.4,7.4,7.5,7.5,7.6,7.6,7.7,7.7,7.7,7.8,7.8,7.8,7.9,7.9,7.9,7.9,7.9,7.9],symbol:'none',smooth:true,lineStyle:{color:'#ffb547',type:'dashed'}}
+  ]
+});
+
+/* ====================== 风险预警 ====================== */
+chart('warnPie',{
+  tooltip:{},
+  series:[{
+    type:'pie',radius:['50%','75%'],center:['50%','55%'],
+    label:{color:'#9bd0ee',fontSize:11,formatter:'{b}\n{c}'},
+    data:[
+      {value:1,name:'超阈值',itemStyle:{color:'#ff4d6d'}},
+      {value:1,name:'变幅',itemStyle:{color:'#ffb547'}},
+      {value:1,name:'设备',itemStyle:{color:'#a78bfa'}},
+      {value:248,name:'正常',itemStyle:{color:'#3ee089'}}
+    ]
+  }]
+});
+
+chart('warnBar',{
+  grid:{left:50,right:10,top:8,bottom:24},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:['拟合','专家','自定义','量程','变幅'],axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine},
+  series:[{type:'bar',data:[2,1,1,0,1],
+    itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#ff4d6d'},{offset:1,color:'#5a1a30'}])},
+    barWidth:18}]
+});
+
+const wHours=[]; for(let i=0;i<24;i++) wHours.push(i+':00');
+chart('warnCurve',{
+  grid:{left:36,right:14,top:30,bottom:28},
+  legend:{show:true,top:0,textStyle:{color:'#9bd0ee',fontSize:11}},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:wHours,axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,name:'脱空 mm',nameTextStyle:txt,splitLine},
+  series:[
+    {name:'实测',type:'line',data:[2.1,2.2,2.4,2.5,2.6,2.7,2.9,3.0,3.1,3.2,3.4,3.5,3.7,3.8,3.9,4.0,4.0,4.1,4.1,4.1,4.1,4.2,4.2,4.2],smooth:true,symbol:'circle',symbolSize:4,lineStyle:{color:'#00d4ff',width:3},areaStyle:{color:'rgba(0,212,255,.18)'}},
+    {name:'拟合',type:'line',data:[2.0,2.1,2.3,2.4,2.6,2.7,2.8,3.0,3.1,3.2,3.3,3.5,3.6,3.7,3.8,3.9,4.0,4.0,4.0,4.1,4.1,4.1,4.1,4.1],smooth:true,symbol:'none',lineStyle:{color:'#ffb547',type:'dashed'}},
+    {name:'设计',type:'line',data:Array(24).fill(5),symbol:'none',lineStyle:{color:'#3ee089',type:'dashed'}},
+    {name:'专家',type:'line',data:Array(24).fill(3.0),symbol:'none',lineStyle:{color:'#ff4d6d',type:'dashed'}}
+  ]
+});
+
+/* ====================== 仿真预演 ====================== */
+chart('simDeform',{
+  grid:{left:36,right:14,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:['0','120s','240s','360s','480s','600s','720s','840s','960s','1080s','1200s','1320s'],axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine,name:'mm',nameTextStyle:txt},
+  series:[
+    {type:'line',data:[0,1.2,2.6,4.0,5.5,6.8,7.8,8.5,9.0,9.4,9.6,9.7],smooth:true,symbol:'none',areaStyle:{color:'rgba(0,212,255,.2)'},lineStyle:{color:'#00d4ff'},name:'闸顶沉降'},
+    {type:'line',data:[0,0.6,1.4,2.2,3.0,3.6,4.0,4.3,4.5,4.6,4.7,4.7],smooth:true,symbol:'none',lineStyle:{color:'#ffb547'},name:'底板位移'}
+  ]
+});
+
+chart('simSeep',{
+  grid:{left:36,right:14,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:['L1','L2','L3','L4','L5','L6','L7','L8'],axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine,name:'高程 m',nameTextStyle:txt},
+  series:[
+    {type:'line',data:[5.42,4.86,4.20,3.62,3.05,2.65,2.42,2.18],smooth:true,symbol:'circle',lineStyle:{color:'#39f1ff',width:3},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(57,241,255,.4)'},{offset:1,color:'rgba(57,241,255,0)'}])},name:'浸润线'},
+    {type:'line',data:[5.42,4.20,3.0,2.0,1.4,1.0,0.8,0.5],smooth:true,symbol:'none',lineStyle:{color:'#3ee089',type:'dashed'},name:'设计'}
+  ]
+});
+
+/* ============== 仿真云图 - canvas drawing ============== */
+(function drawCloud(){
+  const cv = document.getElementById('cloudCanvas');
+  const W = cv.parentElement.clientWidth, H = cv.parentElement.clientHeight - 40;
+  cv.width = W*2; cv.height = H*2; cv.style.width=W+'px'; cv.style.height=H+'px';
+  const ctx = cv.getContext('2d'); ctx.scale(2,2);
+
+  // background
+  ctx.fillStyle = '#02101e'; ctx.fillRect(0,0,W,H);
+
+  // dam outline (cross-section view)
+  const padX = 60, padY = 50;
+  const gw = W - padX*2, gh = H - padY*2;
+
+  // gradient cloud field
+  const cellW = gw / 28, cellH = gh / 8;
+  for (let i=0;i<28;i++){
+    for (let j=0;j<8;j++){
+      // simulate displacement field: peaks near gate 28 (right) and bottom
+      const distR = (i-22)/8;
+      const distB = (j-7)/8;
+      const v = Math.exp(-(distR*distR + distB*distB)*1.2) * 12 - Math.sin(i*0.3+j*0.2)*0.6;
+      const t = (v + 2) / 14; // 0..1
+      const c = colorMap(t);
+      ctx.fillStyle = c;
+      ctx.fillRect(padX + i*cellW, padY + j*cellH, cellW+1, cellH+1);
+    }
+  }
+
+  // overlay structure outline
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 1.2;
+  ctx.strokeRect(padX, padY, gw, gh);
+  for (let i=1;i<28;i++){
+    ctx.beginPath(); ctx.moveTo(padX+i*cellW, padY); ctx.lineTo(padX+i*cellW, padY+gh);
+    ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.stroke();
+  }
+
+  // gate indicators
+  ctx.fillStyle='#fff';ctx.font='10px Consolas';
+  ctx.fillText('1#', padX-12, padY+gh+14);
+  ctx.fillText('14#', padX+gw/2-8, padY+gh+14);
+  ctx.fillText('28#', padX+gw-12, padY+gh+14);
+  ctx.fillText('闸顶 +11.50m', padX-50, padY+6);
+  ctx.fillText('闸底 -1.83m', padX-46, padY+gh-2);
+
+  // contour lines
+  const cuts = [.2,.4,.6,.8];
+  cuts.forEach(level=>{
+    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i=0;i<=28;i++){
+      const j = (1-level)*8 + Math.sin(i*0.4)*0.6 + (i>20?(i-20)/6:0);
+      const x = padX + i*cellW, y = padY + j*cellH;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+
+  // Hot spot marker
+  ctx.fillStyle='#ff4d6d'; ctx.beginPath(); ctx.arc(padX+gw*0.82, padY+gh*0.78, 6, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle='#fff';ctx.font='11px PingFang SC';
+  ctx.fillText('V-02 max=4.2mm', padX+gw*0.82+10, padY+gh*0.78+4);
+})();
+function colorMap(t){
+  // 0..1 -> blue → green → yellow → red
+  t = Math.max(0,Math.min(1,t));
+  const stops = [
+    [0.0, [50,90,180]],
+    [0.25,[60,180,200]],
+    [0.5, [100,220,150]],
+    [0.7, [240,220,80]],
+    [0.85,[250,150,60]],
+    [1.0, [240,60,90]]
+  ];
+  for (let i=0;i<stops.length-1;i++){
+    if (t<=stops[i+1][0]){
+      const f = (t-stops[i][0])/(stops[i+1][0]-stops[i][0]);
+      const a=stops[i][1], b=stops[i+1][1];
+      return `rgb(${a[0]+(b[0]-a[0])*f|0},${a[1]+(b[1]-a[1])*f|0},${a[2]+(b[2]-a[2])*f|0})`;
+    }
+  }
+  return 'rgb(240,60,90)';
+}
+
+/* ====================== 处置预案 ====================== */
+chart('planRing',{
+  tooltip:{trigger:'item'},
+  legend:{bottom:0,textStyle:{color:'#9bd0ee',fontSize:11}},
+  series:[{
+    type:'pie',radius:['45%','72%'],
+    label:{color:'#9bd0ee',fontSize:11,formatter:'{b}\n{c}'},
+    data:[
+      {value:8,name:'已结案',itemStyle:{color:'#3ee089'}},
+      {value:5,name:'处置中',itemStyle:{color:'#ffb547'}},
+      {value:3,name:'待处置',itemStyle:{color:'#ff4d6d'}},
+      {value:1,name:'升级专家',itemStyle:{color:'#a78bfa'}}
+    ]
+  }]
+});
+
+/* ====================== 综合评价 ====================== */
+chart('evalRadar',{
+  tooltip:{},
+  radar:{indicator:[
+    {name:'混凝土',max:100},{name:'钢闸门',max:100},{name:'启闭机',max:100},
+    {name:'机电',max:100},{name:'监测设施',max:100}
+  ],axisName:{color:'#9bd0ee',fontSize:11},splitArea:{areaStyle:{color:['rgba(0,150,255,.04)','rgba(0,150,255,.08)']}},splitLine:{lineStyle:{color:'rgba(0,212,255,.25)'}},axisLine:{lineStyle:{color:'rgba(0,212,255,.25)'}}},
+  series:[{type:'radar',data:[{value:[95,92,90,85,94],areaStyle:{color:'rgba(0,229,255,.25)'},lineStyle:{color:'#00d4ff'}}]}]
+});
+
+const months=['Q4-24','Q1-25','Q2-25','Q3-25','Q4-25','Q1-26'];
+chart('evalTrend',{
+  grid:{left:36,right:10,top:14,bottom:22},
+  tooltip:{trigger:'axis'},
+  xAxis:{type:'category',data:months,axisLabel:txt,axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',min:80,max:100,axisLabel:txt,splitLine},
+  series:[{type:'line',data:[88,89,91,92,90,92],smooth:true,symbol:'circle',symbolSize:7,lineStyle:{color:'#00d4ff',width:3},areaStyle:{color:'rgba(0,212,255,.2)'}}]
+});
+
+/* ====================== 数据分析 ====================== */
+const dDays=Array.from({length:31},(_,i)=>(i+1)+'日');
+chart('dataLine',{
+  grid:{left:36,right:14,top:18,bottom:22},
+  tooltip:{trigger:'axis'},
+  legend:{show:false},
+  xAxis:{type:'category',data:dDays,axisLabel:{...txt,fontSize:9},axisLine:{lineStyle:{color:'rgba(0,212,255,.3)'}}},
+  yAxis:{type:'value',axisLabel:txt,splitLine,name:'mm',nameTextStyle:txt},
+  series:[
+    {type:'line',data:Array.from({length:31},(_,i)=>6.4+0.06*i+(Math.random()-.5)*0.2),smooth:true,symbol:'none',lineStyle:{color:'#00d4ff'},areaStyle:{color:'rgba(0,212,255,.15)'}}
+  ]
+});
+
+const scatterData=[];
+for (let i=0;i<200;i++){
+  const x = 4 + Math.random()*4;
+  const y = 5 + (x-4)*1.4 + (Math.random()-.5)*0.6;
+  scatterData.push([x.toFixed(2),y.toFixed(2)]);
+}
+chart('dataScatter',{
+  grid:{left:42,right:14,top:14,bottom:30},
+  tooltip:{trigger:'item'},
+  xAxis:{type:'value',name:'闸上水位 m',nameTextStyle:txt,axisLabel:txt,splitLine},
+  yAxis:{type:'value',name:'沉降 mm',nameTextStyle:txt,axisLabel:txt,splitLine},
+  series:[{type:'scatter',data:scatterData,symbolSize:6,itemStyle:{color:'rgba(0,212,255,.6)'}}]
+});
+
+chart('dataDist',{
+  grid:{left:32,right:8,top:8,bottom:22},
+  tooltip:{},
+  xAxis:{type:'category',data:['28','27','26','25','24','23','22','21','20','19','18','17','16','15','14','13','12','11','10','9'],axisLabel:{...txt,fontSize:9}},
+  yAxis:{type:'value',axisLabel:txt,splitLine},
+  series:[{type:'bar',data:[12,11.5,10.8,10.2,9.6,9.1,8.7,8.4,8.2,8.0,7.9,7.8,7.7,7.6,7.5,7.4,7.3,7.2,7.0,6.8],
+    itemStyle:{color:function(p){
+      const v=p.value; return v>11?'#ff4d6d':v>9?'#ffb547':'#00d4ff';}},barWidth:8}]
+});
+
+chart('dataModel',{
+  grid:{left:34,right:10,top:10,bottom:22},
+  tooltip:{trigger:'axis'},
+  legend:{show:false},
+  xAxis:{type:'category',data:dDays,axisLabel:{...txt,fontSize:9}},
+  yAxis:{type:'value',axisLabel:txt,splitLine},
+  series:[
+    {type:'line',name:'水压分量',data:Array.from({length:31},(_,i)=>3+Math.sin(i/5)*0.8),smooth:true,stack:'a',symbol:'none',areaStyle:{color:'rgba(0,212,255,.4)'},lineStyle:{color:'#00d4ff'}},
+    {type:'line',name:'温度分量',data:Array.from({length:31},(_,i)=>2+Math.cos(i/4)*0.6),smooth:true,stack:'a',symbol:'none',areaStyle:{color:'rgba(255,181,71,.4)'},lineStyle:{color:'#ffb547'}},
+    {type:'line',name:'时效分量',data:Array.from({length:31},(_,i)=>1.4+i*0.04),smooth:true,stack:'a',symbol:'none',areaStyle:{color:'rgba(62,224,137,.4)'},lineStyle:{color:'#3ee089'}}
+  ]
+});
+</script>
+</body>
+</html>

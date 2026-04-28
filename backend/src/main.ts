@@ -13,6 +13,7 @@ import helmet from 'helmet';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -42,6 +43,19 @@ async function bootstrap() {
   if (uploadPath) {
     app.useStaticAssets(uploadPath);
   }
+
+  /* Swagger API 文档配置 */
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('中药数字标本馆 API')
+    .setDescription('中药数字标本馆系统 API 文档')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('admin', '管理员接口')
+    .addTag('app', '小程序接口')
+    .addTag('vip', 'VIP教师接口')
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document);
 
   /* 读取环境变量里的项目启动端口 */
   const port = configService.get('port');

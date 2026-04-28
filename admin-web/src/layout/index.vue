@@ -1,5 +1,5 @@
 <template>
-  <el-watermark :font="font" :content="content">
+  <el-watermark :font="font" :content="''">
     <div
       :class="classObj"
       class="app-wrapper"
