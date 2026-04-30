@@ -114,6 +114,48 @@ export const constantRoutes = [
       },
     ],
   },
+  {
+    path: "/specimen",
+    component: Layout,
+    redirect: "/specimen/list",
+    permissions: ["system:user:edit"],
+    children: [
+      {
+        path: "list",
+        component: () => import("@/views/specimen/index"),
+        name: "SpecimenList",
+        meta: { title: "标本管理", icon: "dashboard" },
+      },
+    ],
+  },
+  {
+    path: "/review-center",
+    component: Layout,
+    redirect: "/review-center/list",
+    permissions: ["system:user:edit"],
+    children: [
+      {
+        path: "list",
+        component: () => import("@/views/reviewCenter/index"),
+        name: "ReviewCenterList",
+        meta: { title: "审核中心", icon: "dashboard" },
+      },
+    ],
+  },
+  {
+    path: "/statistics",
+    component: Layout,
+    redirect: "/statistics/overview",
+    permissions: ["system:user:edit"],
+    children: [
+      {
+        path: "overview",
+        component: () => import("@/views/statistics/index"),
+        name: "StatisticsOverview",
+        meta: { title: "系统统计", icon: "dashboard" },
+      },
+    ],
+  },
 ];
 
 // 动态路由，基于用户权限动态去加载
