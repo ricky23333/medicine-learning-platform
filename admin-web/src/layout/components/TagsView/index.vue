@@ -243,44 +243,49 @@ function handleScroll() {
 
 <style lang='scss' scoped>
 .tags-view-container {
-  height: 34px;
+  height: 38px;
   width: 100%;
   background: #fff;
-  border-bottom: 1px solid #d8dce5;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 0 3px 0 rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid #eee;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   .tags-view-wrapper {
     .tags-view-item {
       display: inline-block;
       position: relative;
       cursor: pointer;
-      height: 26px;
-      line-height: 26px;
-      border: 1px solid #d8dce5;
-      color: #495060;
+      height: 28px;
+      line-height: 28px;
+      border: 1px solid #e8e8e8;
+      color: #666;
       background: #fff;
-      padding: 0 8px;
+      padding: 0 12px;
       font-size: 12px;
-      margin-left: 5px;
-      margin-top: 4px;
+      margin-left: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
       &:first-of-type {
-        margin-left: 15px;
+        margin-left: 16px;
       }
       &:last-of-type {
-        margin-right: 15px;
+        margin-right: 16px;
+      }
+      &:hover {
+        background: #f5f5f5;
+        color: #333;
       }
       &.active {
-        background-color: #42b983;
+        background-color: #2d6a4f;
         color: #fff;
-        border-color: #42b983;
+        border-color: #2d6a4f;
         &::before {
           content: "";
           background: #fff;
           display: inline-block;
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
           position: relative;
-          margin-right: 5px;
+          margin-right: 6px;
         }
       }
     }
@@ -292,17 +297,18 @@ function handleScroll() {
     position: absolute;
     list-style-type: none;
     padding: 5px 0;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 12px;
     font-weight: 400;
     color: #333;
-    box-shadow: 2px 2px 3px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     li {
       margin: 0;
-      padding: 7px 16px;
+      padding: 8px 16px;
       cursor: pointer;
       &:hover {
-        background: #eee;
+        background: #f5f5f5;
+        color: #2d6a4f;
       }
     }
   }

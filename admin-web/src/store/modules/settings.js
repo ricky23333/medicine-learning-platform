@@ -17,7 +17,7 @@ const useSettingsStore = defineStore(
   {
     state: () => ({
       title: '',
-      theme: '#409EFF',
+      theme: '#2d6a4f',
       sideTheme: sideTheme,
       showSettings: showSettings,
       topNav: undefined,
@@ -32,7 +32,7 @@ const useSettingsStore = defineStore(
         return new Promise((resolve, reject) => {
           getWeb().then(({ data }) => {
             const storageSetting = data || {}
-            this.theme = storageSetting.theme || '#409EFF'
+            this.theme = storageSetting.theme || '#2d6a4f'
             this.sideTheme = storageSetting.sideTheme || sideTheme
             this.showSettings = showSettings
             this.topNav = storageSetting.topNav === undefined ? topNav : storageSetting.topNav

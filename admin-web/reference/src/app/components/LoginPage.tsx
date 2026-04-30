@@ -76,7 +76,7 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-white mb-4" style={{ fontSize: '28px', fontWeight: 600, letterSpacing: '4px' }}>
-            中药数字标本馆
+            TCM数字标本学习助手
           </h1>
           <p className="text-green-300 mb-8" style={{ fontSize: '15px', lineHeight: '1.8' }}>
             数字化中药标本资源管理平台<br />

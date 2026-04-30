@@ -32,12 +32,17 @@
       <div class="avatar-container">
         <el-dropdown
           @command="handleCommand"
-          class="right-menu-item hover-effect"
           trigger="click"
         >
           <div class="avatar-wrapper">
-            <img :src="userStore.avatar" class="user-avatar" />
-            <el-icon><caret-bottom /></el-icon>
+            <div class="user-avatar-wrapper">
+              <div class="user-avatar-inner">
+                {{ userStore.nickName?.charAt(0) || '管理员' }}
+              </div>
+            </div>
+            <span class="user-name">{{ userStore.nickName }}</span>
+            <span class="user-role">超级管理员</span>
+            <el-icon class="user-arrow"><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
@@ -117,19 +122,20 @@ function setLayout () {
 
 <style lang="scss" scoped>
 .navbar {
-  height: 50px;
+  height: 56px;
   overflow: hidden;
   position: relative;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 
   .hamburger-container {
-    line-height: 46px;
+    line-height: 56px;
     height: 100%;
     float: left;
     cursor: pointer;
     transition: background 0.3s;
     -webkit-tap-highlight-color: transparent;
+    padding: 0 16px;
 
     &:hover {
       background: rgba(0, 0, 0, 0.025);
@@ -153,51 +159,93 @@ function setLayout () {
   .right-menu {
     float: right;
     height: 100%;
-    line-height: 50px;
+    line-height: 56px;
     display: flex;
+    align-items: center;
+    padding-right: 20px;
 
     &:focus {
       outline: none;
     }
 
     .right-menu-item {
-      display: inline-block;
-      padding: 0 8px;
-      height: 100%;
-      font-size: 18px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      height: 40px;
+      font-size: 14px;
       color: #5a5e66;
       vertical-align: text-bottom;
+      border-radius: 8px;
+      margin: 0 4px;
 
       &.hover-effect {
         cursor: pointer;
         transition: background 0.3s;
 
         &:hover {
-          background: rgba(0, 0, 0, 0.025);
+          background: #f5f5f5;
         }
       }
     }
 
     .avatar-container {
-      margin-right: 40px;
+      margin-right: 0;
+      display: flex;
 
       .avatar-wrapper {
-        margin-top: 5px;
         position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 14px;
+        background: #f4f4f5;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
 
-        .user-avatar {
-          cursor: pointer;
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+        &:hover {
+          background: #e8e8e8;
         }
 
-        i {
-          cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
+        .user-avatar-wrapper {
+          display: flex;
+          align-items: center;
+        }
+
+        .user-avatar-inner {
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: #2d6a4f;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 12px;
+          font-weight: 500;
+        }
+
+        .user-name {
+          font-size: 13px;
+          color: #333;
+          max-width: 80px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .user-role {
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .user-arrow {
+          font-size: 12px;
+          color: #888;
         }
       }
     }

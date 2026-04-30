@@ -8,10 +8,11 @@
       <div class="left-content">
         <div class="logo-wrapper">
           <div class="logo">
-            <span class="logo-icon">🌿</span>
+            <img class="logo-icon" src="@/assets/logo/logo.png" />
+            <!-- <span class="logo-icon">🌿</span> -->
           </div>
         </div>
-        <h1 class="title">中药数字标本馆</h1>
+        <h1 class="title">TCM数字标本学习助手</h1>
         <p class="subtitle">
           数字化中药标本资源管理平台<br />
           服务高校中医药学科教学与科研
@@ -42,7 +43,7 @@
             <span class="logo-icon">🌿</span>
           </div>
           <div>
-            <h1 class="mobile-title">中药数字标本馆</h1>
+            <h1 class="mobile-title">TCM数字标本学习助手</h1>
             <p class="mobile-subtitle">管理端登录</p>
           </div>
         </div>
@@ -463,17 +464,18 @@ onMounted(() => {
   }
 
   .logo {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(82, 183, 136, 0.2);
-    border: 2px solid rgba(82, 183, 136, 0.4);
+    background: rgba(206, 255, 231, 0.799);
+    // border: 2px solid rgba(82, 183, 136, 0.4);
 
     .logo-icon {
-      font-size: 48px;
+      width: 118%;
+      height: 118%;
     }
   }
 

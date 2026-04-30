@@ -1,25 +1,25 @@
-// base color
+// base color - 深绿色主题
 $blue: #324157;
 $light-blue: #3A71A8;
 $red: #C03639;
 $pink: #E65D6E;
-$green: #30B08F;
+$green: #2d6a4f;
 $tiffany: #4AB7BD;
 $yellow: #FEC171;
-$panGreen: #30B08F;
+$panGreen: #2d6a4f;
 
-// 默认菜单主题风格
-$base-menu-color: #bfcbd9;
-$base-menu-color-active: #f4f4f5;
-$base-menu-background: #304156;
+// 默认菜单主题风格 - 参考项目绿色主题
+$base-menu-color: rgba(255, 255, 255, 0.6);
+$base-menu-color-active: #95d5b2;
+$base-menu-background: linear-gradient(180deg, #0d2818 0%, #1b3a2d 100%);
 $base-logo-title-color: #ffffff;
 
 $base-menu-light-color: rgba(0, 0, 0, 0.7);
 $base-menu-light-background: #ffffff;
 $base-logo-light-title-color: #001529;
 
-$base-sub-menu-background: #1f2d3d;
-$base-sub-menu-hover: #001528;
+$base-sub-menu-background: #0d2818;
+$base-sub-menu-hover: rgba(82, 183, 136, 0.1);
 
 // 自定义暗色菜单风格
 /**
@@ -36,7 +36,7 @@ $base-sub-menu-background:#000c17;
 $base-sub-menu-hover:#001528;
 */
 
-$--color-primary: #409EFF;
+$--color-primary: #2d6a4f;
 $--color-success: #67C23A;
 $--color-warning: #E6A23C;
 $--color-danger: #F56C6C;
