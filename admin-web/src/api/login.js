@@ -28,10 +28,10 @@ export function login(username, password, code, uuid) {
   })
 }
 
-// 注册方法
+// 注册方法 - 调用小程序端注册接口
 export function register(data) {
   return request({
-    url: '/register',
+    url: '/app/user/register',
     headers: {
       isToken: false
     },

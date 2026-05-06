@@ -31,7 +31,7 @@ export class LoginService {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly loginInforService: LoginInforService,
-  ) {}
+  ) { }
 
   /* 创建验证码图片 */
   async createImageCaptcha() {
@@ -108,7 +108,7 @@ export class LoginService {
     try {
       const payload = this.jwtService.verify(token) as Payload;
       await this.redis.del(`${USER_TOKEN_KEY}:${payload.userId}`);
-    } catch (error) {}
+    } catch (error) { }
   }
 
   /* 获取用户信息 */
@@ -133,6 +133,11 @@ export class LoginService {
           },
         },
         posts: {
+          where: {
+            status: '0',
+          },
+        },
+        appUsers: {
           where: {
             status: '0',
           },

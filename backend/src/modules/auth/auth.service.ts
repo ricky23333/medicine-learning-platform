@@ -52,6 +52,14 @@ export class AuthService {
     if (!user) throw new ApiException('用户名或密码错误');
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throw new ApiException('用户名或密码错误');
+    if (user.userName !== 'admin') {
+      const userExtraInfo = await this.prisma.appUser.findUnique({
+        where: {
+          userId: user.userId
+        },
+      });
+      if (!userExtraInfo || Boolean(userExtraInfo.regStatus) !== true) throw new ApiException('用户注册暂未审核通过，请联系管理员！');
+    }
     return user;
   }
 

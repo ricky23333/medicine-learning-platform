@@ -10,7 +10,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AppUserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /* 用户注册申请 */
   async register(registerDto: any) {
@@ -140,7 +140,7 @@ export class AppUserService {
       this.prisma.appUser.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { createTime: 'desc' },
         include: {
           user: {
@@ -175,15 +175,17 @@ export class AppUserService {
 
   /* 审核注册 - 拒绝 */
   async rejectRegister(userId: number, approveBy: string) {
-    await this.prisma.appUser.update({
-      where: { userId },
-      data: {
-        regStatus: '2',
-        regApproveTime: new Date(),
-        regApproveBy: approveBy,
-      },
+    await this.prisma.$transaction(async (prisma) => {
+      // 先删除 AppUser（因为 AppUser.userId 是外键引用 SysUser.userId）
+      await prisma.appUser.delete({
+        where: { userId },
+      });
+
+      // 再删除 SysUser
+      await prisma.sysUser.delete({
+        where: { userId },
+      });
     });
-    // 可选：删除用户或标记为禁用
   }
 
   /* 获取VIP申请列表 */

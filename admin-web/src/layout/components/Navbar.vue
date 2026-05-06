@@ -30,18 +30,15 @@
         <notice id="notice" class="right-menu-item hover-effect" />
       </template>
       <div class="avatar-container">
-        <el-dropdown
-          @command="handleCommand"
-          trigger="click"
-        >
+        <el-dropdown @command="handleCommand" trigger="click">
           <div class="avatar-wrapper">
             <div class="user-avatar-wrapper">
               <div class="user-avatar-inner">
-                {{ userStore.nickName?.charAt(0) || '管理员' }}
+                {{ userStore.nickName?.charAt(0) || "无名氏" }}
               </div>
             </div>
             <span class="user-name">{{ userStore.nickName }}</span>
-            <span class="user-role">超级管理员</span>
+            <span v-if="isAdmin" class="user-role">超级管理员</span>
             <el-icon class="user-arrow"><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
@@ -55,6 +52,9 @@
               >
                 <span>布局设置</span>
               </el-dropdown-item>
+              <el-dropdown-item>
+                <span>申请VIP教师</span>
+              </el-dropdown-item>
               <el-dropdown-item divided command="logout">
                 <span>退出登录</span>
               </el-dropdown-item>
@@ -67,56 +67,62 @@
 </template>
 
 <script setup>
-import { ElMessageBox } from 'element-plus'
-import Breadcrumb from '@/components/Breadcrumb'
-import TopNav from '@/components/TopNav'
-import Hamburger from '@/components/Hamburger'
-import Screenfull from '@/components/Screenfull'
-import SizeSelect from '@/components/SizeSelect'
-import HeaderSearch from '@/components/HeaderSearch'
-import Notice from '@/components/Notice'
-import useAppStore from '@/store/modules/app'
-import useUserStore from '@/store/modules/user'
-import useSettingsStore from '@/store/modules/settings'
+import { ElMessageBox } from "element-plus";
+import Breadcrumb from "@/components/Breadcrumb";
+import TopNav from "@/components/TopNav";
+import Hamburger from "@/components/Hamburger";
+import Screenfull from "@/components/Screenfull";
+import SizeSelect from "@/components/SizeSelect";
+import HeaderSearch from "@/components/HeaderSearch";
+import Notice from "@/components/Notice";
+import useAppStore from "@/store/modules/app";
+import useUserStore from "@/store/modules/user";
+import useSettingsStore from "@/store/modules/settings";
 
-const appStore = useAppStore()
-const userStore = useUserStore()
-const settingsStore = useSettingsStore()
+const appStore = useAppStore();
+const userStore = useUserStore();
+const isAdmin = computed(() => {
+  return userStore.roles?.includes("admin");
+});
+const showRequestVIP = computed(() => {
+  return userStore.roles?.includes("ROLE_VIP");
+});
+const settingsStore = useSettingsStore();
 
-function toggleSideBar () {
-  appStore.toggleSideBar()
+function toggleSideBar() {
+  appStore.toggleSideBar();
 }
 
-function handleCommand (command) {
+function handleCommand(command) {
   switch (command) {
-    case 'setLayout':
-      setLayout()
-      break
-    case 'logout':
-      logout()
-      break
+    case "setLayout":
+      setLayout();
+      break;
+    case "logout":
+      logout();
+      break;
     default:
-      break
+      break;
   }
 }
 
-function logout () {
-  ElMessageBox.confirm('确定注销并退出系统吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
+function logout() {
+  ElMessageBox.confirm("确定注销并退出系统吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
   })
     .then(() => {
       userStore.logOut().then(() => {
         location.reload();
-      })
+      });
     })
-    .catch(() => {})
+    .catch(() => {});
 }
 
-const emits = defineEmits(['setLayout'])
-function setLayout () {
-  emits('setLayout')
+const emits = defineEmits(["setLayout"]);
+function setLayout() {
+  emits("setLayout");
 }
 </script>
 

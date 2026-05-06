@@ -9,7 +9,6 @@
         <div class="logo-wrapper">
           <div class="logo">
             <img class="logo-icon" src="@/assets/logo/logo.png" />
-            <!-- <span class="logo-icon">🌿</span> -->
           </div>
         </div>
         <h1 class="title">TCM数字标本学习助手</h1>
@@ -67,10 +66,7 @@
             <div
               class="tab-item"
               :class="{ active: mode === 'register' }"
-              @click="
-                mode = 'register';
-                getCode();
-              "
+              @click="mode = 'register'; getCode();"
             >
               注册账号
             </div>
@@ -146,35 +142,109 @@
           class="login-form"
           @keyup.enter="handleRegister"
         >
-          <el-form-item prop="username">
+          <!-- 用户类型选择 -->
+          <div class="user-type-selector">
+            <div
+              class="type-btn"
+              :class="{ active: registerForm.userType === 'teacher' }"
+              @click="registerForm.userType = 'teacher'; resetForm()"
+            >
+              <el-icon><UserFilled /></el-icon>
+              <span>教师</span>
+            </div>
+            <div
+              class="type-btn"
+              :class="{ active: registerForm.userType === 'student' }"
+              @click="registerForm.userType = 'student'; resetForm()"
+            >
+              <el-icon><Reading /></el-icon>
+              <span>学生</span>
+            </div>
+          </div>
+
+          <!-- 公共字段：手机号（账号）、验证码 -->
+          <el-form-item prop="phone">
             <el-input
-              v-model="registerForm.username"
+              v-model="registerForm.phone"
               type="text"
               size="large"
-              placeholder="请输入账号"
-              prefix-icon="User"
+              placeholder="请输入手机号"
+              prefix-icon="Phone"
             />
           </el-form-item>
-          <el-form-item prop="password">
-            <el-input
-              v-model="registerForm.password"
-              type="password"
-              size="large"
-              placeholder="请输入密码"
-              prefix-icon="Lock"
-              show-password
-            />
-          </el-form-item>
-          <el-form-item prop="confirmPassword">
-            <el-input
-              v-model="registerForm.confirmPassword"
-              type="password"
-              size="large"
-              placeholder="请再次输入密码"
-              prefix-icon="Lock"
-              show-password
-            />
-          </el-form-item>
+
+          <!-- 教师特有字段 -->
+          <template v-if="registerForm.userType === 'teacher'">
+            <el-form-item prop="realName">
+              <el-input
+                v-model="registerForm.realName"
+                type="text"
+                size="large"
+                placeholder="请输入姓名"
+                prefix-icon="User"
+              />
+            </el-form-item>
+            <el-form-item prop="contact">
+              <el-input
+                v-model="registerForm.contact"
+                type="text"
+                size="large"
+                placeholder="请输入联系方式"
+                prefix-icon="Message"
+              />
+            </el-form-item>
+            <el-form-item prop="institution">
+              <el-input
+                v-model="registerForm.institution"
+                type="text"
+                size="large"
+                placeholder="请输入单位"
+                prefix-icon="OfficeBuilding"
+              />
+            </el-form-item>
+          </template>
+
+          <!-- 学生特有字段 -->
+          <template v-if="registerForm.userType === 'student'">
+            <el-form-item prop="realName">
+              <el-input
+                v-model="registerForm.realName"
+                type="text"
+                size="large"
+                placeholder="请输入姓名"
+                prefix-icon="User"
+              />
+            </el-form-item>
+            <el-form-item prop="majorGrade">
+              <el-input
+                v-model="registerForm.majorGrade"
+                type="text"
+                size="large"
+                placeholder="请输入专业年级（如：中药学2021级）"
+                prefix-icon="Reading"
+              />
+            </el-form-item>
+            <el-form-item prop="studentNo">
+              <el-input
+                v-model="registerForm.studentNo"
+                type="text"
+                size="large"
+                placeholder="请输入学号"
+                prefix-icon="Tickets"
+              />
+            </el-form-item>
+            <el-form-item prop="institution">
+              <el-input
+                v-model="registerForm.institution"
+                type="text"
+                size="large"
+                placeholder="请输入单位"
+                prefix-icon="OfficeBuilding"
+              />
+            </el-form-item>
+          </template>
+
+          <!-- 验证码 -->
           <el-form-item prop="code" v-if="captchaEnabled">
             <el-input
               v-model="registerForm.code"
@@ -232,7 +302,17 @@ import { getCodeImg, login, register } from "@/api/login";
 import Cookies from "js-cookie";
 import { decrypt } from "@/utils/jsencrypt";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Lock, User, CircleCloseFilled } from "@element-plus/icons-vue";
+import {
+  Lock,
+  User,
+  CircleCloseFilled,
+  Phone,
+  UserFilled,
+  Reading,
+  Message,
+  OfficeBuilding,
+  Tickets
+} from "@element-plus/icons-vue";
 import useUserStore from "@/store/modules/user";
 
 const userStore = useUserStore();
@@ -258,43 +338,48 @@ const loginRules = {
   code: [{ required: true, trigger: "change", message: "请输入验证码" }],
 };
 
-// Register form
-const registerForm = ref({
-  username: "",
-  password: "",
-  confirmPassword: "",
-  code: "",
-  uuid: "",
-});
-const equalToPassword = (_rule: any, value: string, callback: any) => {
-  if (registerForm.value.password !== value) {
-    callback(new Error("两次输入的密码不一致"));
+// 中国大陆手机号正则验证
+const phoneValidator = (_rule: any, value: string, callback: any) => {
+  const phoneReg = /^1[3-9]\d{9}$/;
+  if (!value) {
+    callback(new Error("请输入手机号"));
+  } else if (!phoneReg.test(value)) {
+    callback(new Error("请输入正确的11位手机号"));
   } else {
     callback();
   }
 };
+
+// Register form
+const registerForm = ref({
+  userType: "teacher",
+  phone: "",
+  realName: "",
+  contact: "",
+  majorGrade: "",
+  studentNo: "",
+  institution: "",
+  code: "",
+  uuid: "",
+});
+
 const registerRules = {
-  username: [
-    { required: true, trigger: "blur", message: "请输入您的账号" },
-    {
-      min: 2,
-      max: 20,
-      message: "用户账号长度必须介于 2 和 20 之间",
-      trigger: "blur",
-    },
+  phone: [{ required: true, validator: phoneValidator, trigger: "blur" }],
+  realName: [
+    { required: true, trigger: "blur", message: "请输入姓名" },
+    { min: 2, max: 20, message: "姓名长度必须介于 2 和 20 之间", trigger: "blur" },
   ],
-  password: [
-    { required: true, trigger: "blur", message: "请输入您的密码" },
-    {
-      min: 5,
-      max: 20,
-      message: "用户密码长度必须介于 5 和 20 之间",
-      trigger: "blur",
-    },
+  contact: [
+    { required: true, trigger: "blur", message: "请输入联系方式" },
   ],
-  confirmPassword: [
-    { required: true, trigger: "blur", message: "请再次输入您的密码" },
-    { required: true, validator: equalToPassword, trigger: "blur" },
+  institution: [
+    { required: true, trigger: "blur", message: "请输入单位" },
+  ],
+  majorGrade: [
+    { required: true, trigger: "blur", message: "请输入专业年级" },
+  ],
+  studentNo: [
+    { required: true, trigger: "blur", message: "请输入学号" },
   ],
   code: [{ required: true, trigger: "change", message: "请输入验证码" }],
 };
@@ -346,7 +431,6 @@ async function handleLogin() {
         Cookies.remove("password");
         Cookies.remove("rememberMe");
       }
-      // 调用action的登录方法
       userStore
         .login(loginForm.value)
         .then(() => {
@@ -361,13 +445,22 @@ async function handleLogin() {
         })
         .catch(() => {
           loading.value = false;
-          // 重新获取验证码
           if (captchaEnabled.value) {
             getCode();
           }
         });
     }
   });
+}
+
+// 重置表单
+function resetForm() {
+  registerForm.value.realName = "";
+  registerForm.value.contact = "";
+  registerForm.value.majorGrade = "";
+  registerForm.value.studentNo = "";
+  registerForm.value.institution = "";
+  registerRef.value?.clearValidate();
 }
 
 async function handleRegister() {
@@ -377,11 +470,29 @@ async function handleRegister() {
     if (valid) {
       loading.value = true;
       try {
-        await register(registerForm.value);
+        // 构造注册数据
+        const registerData: any = {
+          userType: registerForm.value.userType,
+          phone: registerForm.value.phone,
+          realName: registerForm.value.realName,
+          institution: registerForm.value.institution,
+          code: registerForm.value.code,
+          uuid: registerForm.value.uuid,
+        };
+
+        // 根据用户类型添加特有字段
+        if (registerForm.value.userType === "teacher") {
+          registerData.contact = registerForm.value.contact;
+        } else {
+          registerData.majorGrade = registerForm.value.majorGrade;
+          registerData.studentNo = registerForm.value.studentNo;
+        }
+
+        await register(registerData);
         ElMessageBox.alert(
-          `<font color='red'>恭喜你，您的账号 ${registerForm.value.username} 注册成功！</font>`,
+          `<font color='red'>恭喜你，您的账号 ${registerForm.value.phone} 注册成功！</font><br/>默认密码：888888`,
           "系统提示",
-          { dangerouslyUseHTMLString: true, type: "success" },
+          { dangerouslyUseHTMLString: true, type: "success" }
         )
           .then(() => {
             mode.value = "login";
@@ -471,7 +582,6 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     background: rgba(206, 255, 231, 0.799);
-    // border: 2px solid rgba(82, 183, 136, 0.4);
 
     .logo-icon {
       width: 118%;
@@ -658,6 +768,47 @@ onMounted(() => {
     :deep(img) {
       width: 100%;
       height: 100%;
+    }
+  }
+}
+
+/* 用户类型选择器 */
+.user-type-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  .type-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #f4f4f5;
+    color: #717182;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+
+    &:hover {
+      background: #e8e8e8;
+    }
+
+    &.active {
+      background: #e8f5e9;
+      border-color: #2d6a4f;
+      color: #2d6a4f;
+    }
+
+    .el-icon {
+      font-size: 18px;
+    }
+
+    span {
+      font-size: 14px;
+      font-weight: 500;
     }
   }
 }

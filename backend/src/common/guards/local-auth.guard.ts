@@ -28,6 +28,7 @@ export class LocalAuthGuard extends AuthGuard('local') {
 
   /* 主动处理错误 */
   handleRequest(err, user, info) {
+    console.log('login error', err, user);
     if (err || !user) {
       const request = this.context.switchToHttp().getRequest();
       this.loginInforService.addLoginInfor(request, err.response, '1');

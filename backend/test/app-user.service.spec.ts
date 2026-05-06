@@ -11,15 +11,18 @@ describe('AppUserService', () => {
   let prismaService: PrismaService;
 
   const mockPrismaService = {
+    $transaction: jest.fn(async (callback) => callback(mockPrismaService)),
     sysUser: {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
     appUser: {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
       groupBy: jest.fn(),
@@ -180,6 +183,21 @@ describe('AppUserService', () => {
       expect(mockPrismaService.appUser.update).toHaveBeenCalledWith({
         where: { userId: 1 },
         data: expect.objectContaining({ regStatus: '1' }),
+      });
+    });
+  });
+
+  describe('rejectRegister', () => {
+    it('应该成功拒绝注册并删除用户', async () => {
+      mockPrismaService.appUser.delete.mockResolvedValue({ userId: 1 });
+      mockPrismaService.sysUser.delete.mockResolvedValue({ userId: 1 });
+
+      await service.rejectRegister(1, 'admin');
+      expect(mockPrismaService.appUser.delete).toHaveBeenCalledWith({
+        where: { userId: 1 },
+      });
+      expect(mockPrismaService.sysUser.delete).toHaveBeenCalledWith({
+        where: { userId: 1 },
       });
     });
   });
