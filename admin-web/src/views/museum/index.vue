@@ -1,19 +1,19 @@
 <!--
  * @Author: rickyluo
  * @Date: 2024-04-28
- * @Description: 标本馆管理
+ * @Description: 标本目录管理
 -->
 <template>
   <div class="app-container">
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1 class="page-title">标本馆管理</h1>
-        <p class="page-desc">管理标本馆及其二级分类</p>
+        <h1 class="page-title">标本目录管理</h1>
+        <p class="page-desc">管理标本目录及其二级分类</p>
       </div>
       <el-button type="primary" @click="openAddMuseum">
         <el-icon><Plus /></el-icon>
-        新增标本馆
+        新增标本目录
       </el-button>
     </div>
 
@@ -85,7 +85,7 @@
     </div>
 
     <!-- 新增/编辑馆弹窗 -->
-    <el-dialog v-model="museumDialogVisible" :title="editMuseum ? '编辑标本馆' : '新增标本馆'" width="500px" :close-on-click-modal="false">
+    <el-dialog v-model="museumDialogVisible" :title="editMuseum ? '编辑标本目录' : '新增标本目录'" width="500px" :close-on-click-modal="false">
       <el-form ref="museumFormRef" :model="museumForm" :rules="museumRules" label-width="80px">
         <el-form-item label="图标">
           <div class="icon-picker">
@@ -100,11 +100,11 @@
             </div>
           </div>
         </el-form-item>
-        <el-form-item label="馆名称" prop="name">
-          <el-input v-model="museumForm.name" placeholder="如：中药材（饮片）馆" />
+        <el-form-item label="目录名称" prop="name">
+          <el-input v-model="museumForm.name" placeholder="如：中药材（饮片）" />
         </el-form-item>
         <el-form-item label="描述" prop="description">
-          <el-input v-model="museumForm.description" type="textarea" :rows="3" placeholder="标本馆简介..." />
+          <el-input v-model="museumForm.description" type="textarea" :rows="3" placeholder="标本目录简介..." />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -135,7 +135,7 @@
         <div class="delete-icon">
           <el-icon :size="24"><Delete /></el-icon>
         </div>
-        <p class="delete-title">确定要删除{{ deleteTarget.type === 'museum' ? '标本馆' : '分类' }}「{{ deleteTarget.name }}」吗？</p>
+        <p class="delete-title">确定要删除{{ deleteTarget.type === 'museum' ? '标本目录' : '分类' }}「{{ deleteTarget.name }}」吗？</p>
         <p class="delete-warning">此操作将同时删除所有关联标本，不可恢复！</p>
       </div>
       <template #footer>

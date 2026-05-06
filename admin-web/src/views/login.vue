@@ -20,7 +20,7 @@
         <div class="stats-grid">
           <div class="stat-item">
             <div class="stat-num">2个</div>
-            <div class="stat-label">标本馆</div>
+            <div class="stat-label">标本目录</div>
           </div>
           <div class="stat-item">
             <div class="stat-num">18+</div>

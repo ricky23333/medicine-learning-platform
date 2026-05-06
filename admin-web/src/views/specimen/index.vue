@@ -28,7 +28,7 @@
       >
         <template #prefix><el-icon><Search /></el-icon></template>
       </el-input>
-      <el-select v-model="queryParams.museumId" placeholder="选择标本馆" clearable style="width: 200px" @change="onMuseumChange">
+      <el-select v-model="queryParams.museumId" placeholder="选择标本目录" clearable style="width: 200px" @change="onMuseumChange">
         <el-option v-for="m in museumOptions" :key="m.id" :label="m.name" :value="m.id" />
       </el-select>
       <el-select v-model="queryParams.categoryId" placeholder="选择分类" clearable style="width: 200px" :disabled="!queryParams.museumId">
@@ -130,7 +130,7 @@
         <div class="detail-info">
           <div class="section-label">基本信息</div>
           <div class="info-row">
-            <span class="info-label">所属标本馆</span>
+            <span class="info-label">所属标本目录</span>
             <span class="info-value">{{ currentSpecimen?.museum?.name || '-' }}</span>
           </div>
           <div class="info-row">
@@ -165,8 +165,8 @@
     <!-- ========== 新增/编辑标本弹窗 ========== -->
     <el-dialog v-model="formVisible" :title="editSpecimen ? '编辑标本' : '新增标本'" width="500px" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="所属标本馆" prop="museumId">
-          <el-select v-model="form.museumId" placeholder="选择标本馆" style="width: 100%" @change="onFormMuseumChange">
+        <el-form-item label="所属标本目录" prop="museumId">
+          <el-select v-model="form.museumId" placeholder="选择目录" style="width: 100%" @change="onFormMuseumChange">
             <el-option v-for="m in museumOptions" :key="m.id" :label="m.name" :value="m.id" />
           </el-select>
         </el-form-item>
@@ -247,7 +247,7 @@ const form = reactive({
   remark: ''
 })
 const rules = {
-  museumId: [{ required: true, message: '请选择所属标本馆', trigger: 'change' }],
+  museumId: [{ required: true, message: '请选择所属标本目录', trigger: 'change' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   specimenName: [{ required: true, message: '请输入标本名称', trigger: 'blur' }]
 }
@@ -273,7 +273,7 @@ async function getList() {
   }
 }
 
-// 获取标本馆列表
+// 获取标本目录列表
 async function loadMuseums() {
   try {
     const res: any = await getMuseumAll()
@@ -281,7 +281,7 @@ async function loadMuseums() {
       museumOptions.value = res.data
     }
   } catch (error) {
-    console.error('加载标本馆失败', error)
+    console.error('加载标本目录失败', error)
   }
 }
 
@@ -313,7 +313,7 @@ function resetQuery() {
   getList()
 }
 
-// 标本馆选择变化
+// 标本目录选择变化
 function onMuseumChange(museumId: number | undefined) {
   queryParams.categoryId = undefined
   if (museumId) {
@@ -323,7 +323,7 @@ function onMuseumChange(museumId: number | undefined) {
   }
 }
 
-// 表单中标本馆变化
+// 表单中标本目录变化
 function onFormMuseumChange(museumId: number | undefined) {
   form.categoryId = undefined
   if (museumId) {

@@ -272,4 +272,134 @@ export class AppUserService {
     ]);
     return { rows, total };
   }
+
+  /* 批量导入用户 */
+  async batchImport(importUsers: any[], isUpdateSupport: boolean) {
+    const results = { success: 0, fail: 0, errors: [] as string[] };
+
+    for (const item of importUsers) {
+      try {
+        const hashedPassword = bcrypt.hashSync(
+          item.password || '888888',
+          bcrypt.genSaltSync(),
+        );
+
+        // 检查用户是否已存在
+        const existing = await this.prisma.sysUser.findFirst({
+          where: { userName: item.userName },
+        });
+
+        if (existing) {
+          if (!isUpdateSupport) {
+            results.fail++;
+            results.errors.push(`手机号 ${item.userName} 已存在，跳过`);
+            continue;
+          }
+          // 更新已存在用户
+          await this.prisma.sysUser.update({
+            where: { userName: item.userName },
+            data: {
+              nickName: item.realName,
+              password: hashedPassword,
+              phonenumber: item.userName,
+              status: '0',
+            },
+          });
+
+          await this.prisma.appUser.update({
+            where: { userId: existing.userId },
+            data: {
+              userType: item.userType,
+              realName: item.realName,
+              phone: item.userName,
+              institution: item.institution,
+              majorGrade: item.userType === 'student' ? item.majorGrade : null,
+              studentNo: item.userType === 'student' ? item.studentNo : null,
+              contact: item.userType === 'teacher' ? item.contact : null,
+            },
+          });
+        } else {
+          // 创建新用户
+          const user = await this.prisma.sysUser.create({
+            data: {
+              userName: item.userName,
+              nickName: item.realName,
+              password: hashedPassword,
+              phonenumber: item.userName,
+              status: '0',
+              delFlag: '0',
+            },
+          });
+
+          await this.prisma.appUser.create({
+            data: {
+              userId: user.userId,
+              userType: item.userType,
+              realName: item.realName,
+              phone: item.userName,
+              institution: item.institution,
+              majorGrade: item.userType === 'student' ? item.majorGrade : null,
+              studentNo: item.userType === 'student' ? item.studentNo : null,
+              contact: item.userType === 'teacher' ? item.contact : null,
+              regStatus: '0',
+              regApplyTime: new Date(),
+            },
+          });
+        }
+        results.success++;
+      } catch (error) {
+        results.fail++;
+        results.errors.push(`手机号 ${item.userName} 失败: ${error.message}`);
+      }
+    }
+
+    return results;
+  }
+
+  /* 获取所有高校统计 */
+  async getUniversityStats() {
+    const stats = await this.prisma.appUser.groupBy({
+      by: ['institution'],
+      where: {
+        institution: { not: '' },
+      },
+      _count: { userId: true },
+    });
+
+    return stats.map((s) => ({
+      institution: s.institution,
+      userCount: s._count.userId,
+    }));
+  }
+
+  /* 获取特定高校的详细统计 */
+  async getUniversityDetailStats(institution: string) {
+    // 查询该学校的所有用户
+    const users = await this.prisma.appUser.findMany({
+      where: { institution },
+      select: { majorGrade: true, userType: true },
+    });
+
+    const totalUsers = users.length;
+
+    // 按专业年级分组统计（仅学生）
+    const gradeDistributionMap = new Map<string, number>();
+    let studentCount = 0;
+
+    users.forEach((u) => {
+      if (u.userType === 'student') {
+        studentCount++;
+        const grade = u.majorGrade || '未填写';
+        gradeDistributionMap.set(grade, (gradeDistributionMap.get(grade) || 0) + 1);
+      }
+    });
+
+    const majorCount = new Set(users.map((u) => u.majorGrade).filter(Boolean)).size;
+
+    const gradeDistribution = Array.from(gradeDistributionMap.entries()).map(
+      ([majorGrade, studentCount]) => ({ majorGrade, studentCount }),
+    );
+
+    return { totalUsers, majorCount, studentCount, gradeDistribution };
+  }
 }

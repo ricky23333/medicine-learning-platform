@@ -80,11 +80,11 @@
         </div>
       </div>
 
-      <!-- 标本馆概览 -->
+      <!-- 标本目录概览 -->
       <div class="info-card">
         <h3 class="info-card-title">
           <el-icon :size="16" style="color: #2d6a4f"><Collection /></el-icon>
-          标本馆概览
+          标本目录概览
         </h3>
         <div class="museum-list">
           <div v-for="museum in museumStats" :key="museum.id" class="museum-item">
@@ -162,7 +162,7 @@ const pendingCounts = reactive({
   imageAudit: 0
 })
 
-// 标本馆统计
+// 标本目录统计
 const museumStats = ref<any[]>([])
 
 // 用户统计
@@ -221,7 +221,7 @@ async function loadVisitChart() {
   }
 }
 
-// 加载标本馆和分类数据
+// 加载标本目录和分类数据
 async function loadMuseumAndCategory() {
   try {
     const museumRes: any = await getMuseumAll()
@@ -266,7 +266,7 @@ async function loadMuseumAndCategory() {
       updateCategoryChart()
     }
   } catch (error) {
-    console.error('加载标本馆数据失败', error)
+    console.error('加载标本目录数据失败', error)
   }
 }
 
@@ -657,7 +657,7 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* 标本馆 */
+/* 标本目录 */
 .museum-list {
   display: flex;
   flex-direction: column;

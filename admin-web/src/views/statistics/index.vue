@@ -55,9 +55,9 @@
       </div>
     </div>
 
-    <!-- 各标本馆访问统计 -->
+    <!-- 各标本目录访问统计 -->
     <div class="chart-card">
-      <div class="chart-title">各标本馆访问统计</div>
+      <div class="chart-title">各标本目录访问统计</div>
       <div class="museum-stats">
         <div v-for="m in museumStats" :key="m.name" class="museum-item">
           <div class="museum-header">
@@ -568,7 +568,7 @@ onUnmounted(() => {
   }
 }
 
-/* 标本馆统计 */
+/* 标本目录统计 */
 .museum-stats {
   display: flex;
   flex-direction: column;

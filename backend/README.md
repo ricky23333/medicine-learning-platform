@@ -62,12 +62,13 @@ $ npm run test:cov
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
 
-## Stay in touch
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-## License
+## 服务器部署
 
-Nest is [MIT licensed](LICENSE).
+1.数据库初始化
+运行 npm run db:m 重置数据模型
+运行项目根目录下medical-prisma.sql插入初始数据
+
+
+

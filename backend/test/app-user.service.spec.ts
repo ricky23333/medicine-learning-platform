@@ -22,6 +22,7 @@ describe('AppUserService', () => {
       update: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
+      groupBy: jest.fn(),
     },
   };
 
@@ -215,6 +216,113 @@ describe('AppUserService', () => {
         where: { userId: 1 },
         data: expect.objectContaining({ vipStatus: '3' }),
       });
+    });
+  });
+
+  describe('batchImport', () => {
+    it('应该成功批量导入新用户', async () => {
+      const importUsers = [
+        {
+          userName: '13800138001',
+          password: '123456',
+          realName: '张三',
+          institution: '北京大学',
+          userType: 'student',
+          majorGrade: '大一',
+          studentNo: '2024001',
+        },
+      ];
+      mockPrismaService.sysUser.findFirst.mockResolvedValue(null);
+      mockPrismaService.sysUser.create.mockResolvedValue({ userId: 1, userName: '13800138001' });
+      mockPrismaService.appUser.create.mockResolvedValue({ id: 1 });
+
+      const result = await service.batchImport(importUsers, false);
+      expect(result.success).toBe(1);
+      expect(result.fail).toBe(0);
+    });
+
+    it('用户已存在时应该跳过（isUpdateSupport=false）', async () => {
+      const importUsers = [
+        { userName: '13800138001', realName: '张三', institution: '北京大学', userType: 'student' },
+      ];
+      mockPrismaService.sysUser.findFirst.mockResolvedValue({ userId: 1, userName: '13800138001' });
+
+      const result = await service.batchImport(importUsers, false);
+      expect(result.success).toBe(0);
+      expect(result.fail).toBe(1);
+      expect(result.errors[0]).toContain('已存在');
+    });
+
+    it('用户已存在时应该更新（isUpdateSupport=true）', async () => {
+      const importUsers = [
+        { userName: '13800138001', realName: '李四', institution: '清华大学', userType: 'student' },
+      ];
+      mockPrismaService.sysUser.findFirst.mockResolvedValue({ userId: 1, userName: '13800138001' });
+      mockPrismaService.sysUser.update.mockResolvedValue({});
+      mockPrismaService.appUser.update.mockResolvedValue({});
+
+      const result = await service.batchImport(importUsers, true);
+      expect(result.success).toBe(1);
+      expect(mockPrismaService.sysUser.update).toHaveBeenCalled();
+      expect(mockPrismaService.appUser.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('getUniversityStats', () => {
+    it('应该返回所有高校统计', async () => {
+      const mockStats = [
+        { institution: '北京大学', _count: { userId: 100 } },
+        { institution: '清华大学', _count: { userId: 80 } },
+      ];
+      mockPrismaService.appUser.groupBy.mockResolvedValue(mockStats);
+
+      const result = await service.getUniversityStats();
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ institution: '北京大学', userCount: 100 });
+      expect(result[1]).toEqual({ institution: '清华大学', userCount: 80 });
+    });
+
+    it('应该正确统计每所高校人数', async () => {
+      const mockStats = [
+        { institution: '北京大学', _count: { userId: 50 } },
+        { institution: '北京大学', _count: { userId: 50 } }, // 模拟两次查询
+      ];
+      mockPrismaService.appUser.groupBy.mockResolvedValue(mockStats);
+
+      const result = await service.getUniversityStats();
+      expect(result[0].userCount).toBe(50);
+    });
+  });
+
+  describe('getUniversityDetailStats', () => {
+    it('应该返回总人数、专业数、年级分布', async () => {
+      const mockUsers = [
+        { userType: 'student', majorGrade: '大一' },
+        { userType: 'student', majorGrade: '大一' },
+        { userType: 'student', majorGrade: '大二' },
+        { userType: 'teacher', majorGrade: null },
+      ];
+      mockPrismaService.appUser.findMany.mockResolvedValue(mockUsers);
+
+      const result = await service.getUniversityDetailStats('北京大学');
+      expect(result.totalUsers).toBe(4);
+      expect(result.majorCount).toBe(2);
+      expect(result.studentCount).toBe(3);
+      expect(result.gradeDistribution).toHaveLength(2);
+    });
+
+    it('应该正确按年级分组', async () => {
+      const mockUsers = [
+        { userType: 'student', majorGrade: '大一' },
+        { userType: 'student', majorGrade: '大一' },
+        { userType: 'student', majorGrade: '大二' },
+      ];
+      mockPrismaService.appUser.findMany.mockResolvedValue(mockUsers);
+
+      const result = await service.getUniversityDetailStats('北京大学');
+      const gradeMap = new Map(result.gradeDistribution.map((g) => [g.majorGrade, g.studentCount]));
+      expect(gradeMap.get('大一')).toBe(2);
+      expect(gradeMap.get('大二')).toBe(1);
     });
   });
 });

@@ -1,6 +1,8 @@
 # compiled output
 /dist
 /node_modules
+/.claude/*
+backend/mysql/data
 
 # Logs
 logs

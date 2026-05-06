@@ -3,7 +3,7 @@
  * @Date: 2024-04-26
  * @Description: 小程序用户接口
  */
-import { Body, Controller, Get, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Query, Param, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AppUserService } from './app-user.service';
 import { PaginationPipe } from 'src/common/pipes/pagination.pipe';
@@ -12,6 +12,15 @@ import { AjaxResult } from 'src/common/class/ajax-result.class';
 import { Public } from 'src/common/decorators/public.decorator';
 import { RequiresPermissions } from 'src/common/decorators/requires-permissions.decorator';
 import { Log, BusinessTypeEnum } from 'src/common/decorators/log.decorator';
+import { Keep } from 'src/common/decorators/keep.decorator';
+import { RepeatSubmit } from 'src/common/decorators/repeat-submit.decorator';
+import { ExcelService } from 'src/modules/common/excel/excel.service';
+import { StreamableFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ParseFilePipeBuilder } from '@nestjs/common';
+import { ApiException } from 'src/common/exceptions/api.exception';
+import { ImportAppUserDto } from './dto/req-app-user.dto';
+import { ExportUniversityStatsDto, ExportUniversityDetailStatsDto } from './dto/res-app-user.dto';
 
 @ApiTags('app')
 @Controller('app/user')
@@ -67,7 +76,92 @@ export class AppUserController {
 @ApiBearerAuth()
 @Controller('admin/appUser')
 export class AdminAppUserController {
-  constructor(private readonly appUserService: AppUserService) {}
+  constructor(
+    private readonly appUserService: AppUserService,
+    private readonly excelService: ExcelService,
+  ) {}
+
+  /* 下载用户导入模板 */
+  @Post('importTemplate')
+  @RequiresPermissions('admin:appUser:import')
+  @ApiOperation({ summary: '下载用户导入模板' })
+  @ApiResponse({ status: 200, description: '模板下载成功' })
+  async importTemplate() {
+    const file = await this.excelService.importTemplate(ImportAppUserDto);
+    return new StreamableFile(file);
+  }
+
+  /* 批量导入用户 */
+  @Post('importData')
+  @RepeatSubmit()
+  @RequiresPermissions('admin:appUser:import')
+  @Log({ title: '批量导入用户', businessType: BusinessTypeEnum.import })
+  @UseInterceptors(FileInterceptor('file'))
+  async importData(
+    @Query('isUpdateSupport') isUpdateSupport: string,
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addMaxSizeValidator({ maxSize: 1024 * 1024 * 5 })
+        .addFileTypeValidator({
+          fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        .build({
+          exceptionFactory: () => new ApiException('文件格式错误！文件最大为5M，且必须是xlsx格式'),
+        }),
+    ) file: Express.Multer.File,
+  ) {
+    const data = await this.excelService.import(ImportAppUserDto, file);
+    const result = await this.appUserService.batchImport(data, isUpdateSupport === 'true');
+    return AjaxResult.success(result);
+  }
+
+  /* 获取所有高校统计 */
+  @Get('universityStats')
+  @RequiresPermissions('admin:appUser:query')
+  @ApiOperation({ summary: '获取所有高校统计' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getUniversityStats() {
+    const stats = await this.appUserService.getUniversityStats();
+    return AjaxResult.success(stats);
+  }
+
+  /* 获取特定高校统计 */
+  @Get('universityStats/:institution')
+  @RequiresPermissions('admin:appUser:query')
+  @ApiOperation({ summary: '获取特定高校统计' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getUniversityDetailStats(@Param('institution') institution: string) {
+    const stats = await this.appUserService.getUniversityDetailStats(decodeURIComponent(institution));
+    return AjaxResult.success(stats);
+  }
+
+  /* 导出所有高校统计 */
+  @Post('exportUniversities')
+  @RepeatSubmit()
+  @RequiresPermissions('admin:appUser:export')
+  @Log({ title: '导出高校统计', businessType: BusinessTypeEnum.export })
+  @Keep()
+  @ApiOperation({ summary: '导出所有高校统计' })
+  @ApiResponse({ status: 200, description: '导出成功' })
+  async exportUniversities() {
+    const stats = await this.appUserService.getUniversityStats();
+    const file = await this.excelService.export(ExportUniversityStatsDto, stats);
+    return new StreamableFile(file);
+  }
+
+  /* 导出特定高校详细统计 */
+  @Post('exportUniversityDetail')
+  @RepeatSubmit()
+  @RequiresPermissions('admin:appUser:export')
+  @Log({ title: '导出高校详情统计', businessType: BusinessTypeEnum.export })
+  @Keep()
+  @ApiOperation({ summary: '导出特定高校详细统计' })
+  @ApiResponse({ status: 200, description: '导出成功' })
+  async exportUniversityDetail(@Query('institution') institution: string) {
+    const stats = await this.appUserService.getUniversityDetailStats(decodeURIComponent(institution));
+    const file = await this.excelService.export(ExportUniversityDetailStatsDto, stats.gradeDistribution);
+    return new StreamableFile(file);
+  }
 
   /* 获取待审核注册列表 */
   @Get('registerAudit')
