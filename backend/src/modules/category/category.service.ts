@@ -9,16 +9,23 @@ import { ApiException } from 'src/common/exceptions/api.exception';
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /* 新增分类 */
   async add(createCategoryDto: any) {
-    const { categoryCode, museumId } = createCategoryDto;
+    const { name, museumId, description } = createCategoryDto;
     const exist = await this.prisma.category.findFirst({
-      where: { categoryCode, museumId },
+      where: { museumId, categoryCode: name },
     });
-    if (exist) throw new ApiException('该馆下分类编码已存在');
-    return await this.prisma.category.create({ data: createCategoryDto });
+    if (exist) throw new ApiException('该目录下分类编码已存在');
+    return await this.prisma.category.create({
+      data: {
+        museumId,
+        categoryName: name,
+        categoryCode: name,
+        description,
+      }
+    });
   }
 
   /* 分页查询分类列表 */
@@ -51,14 +58,18 @@ export class CategoryService {
 
   /* 更新分类 */
   async update(updateCategoryDto: any) {
-    const { categoryId, categoryCode, museumId } = updateCategoryDto;
+    const { description, id, name } = updateCategoryDto;
     const exist = await this.prisma.category.findFirst({
-      where: { categoryId: { not: categoryId }, categoryCode, museumId },
+      where: { categoryId: { not: id }, categoryCode: name },
     });
-    if (exist) throw new ApiException('该馆下分类编码已存在');
+    if (exist) throw new ApiException('该目录下分类编码已存在');
     return await this.prisma.category.update({
-      where: { categoryId },
-      data: updateCategoryDto,
+      where: { categoryId: id },
+      data: {
+        categoryName: name,
+        categoryCode: name,
+        description,
+      },
     });
   }
 

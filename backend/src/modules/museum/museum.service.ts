@@ -87,8 +87,40 @@ export class MuseumService {
 
   /* 删除馆 */
   async delete(museumIdArr: number[]) {
-    await this.prisma.museum.deleteMany({
-      where: { museumId: { in: museumIdArr } },
+    await this.prisma.$transaction(async (prisma) => {
+      // 1. 获取所有要删除的馆的标本
+      const specimens = await prisma.specimen.findMany({
+        where: { museumId: { in: museumIdArr } },
+        select: { specimenId: true },
+      });
+      const specimenIds = specimens.map((s) => s.specimenId);
+
+      // 2. 删除考试题目（关联标本）
+      if (specimenIds.length > 0) {
+        await prisma.examQuestion.deleteMany({
+          where: { specimenId: { in: specimenIds } },
+        });
+      }
+
+      // 3. 删除考试（关联馆）
+      await prisma.exam.deleteMany({
+        where: { museumId: { in: museumIdArr } },
+      });
+
+      // 4. 删除标本（关联馆）
+      await prisma.specimen.deleteMany({
+        where: { museumId: { in: museumIdArr } },
+      });
+
+      // 5. 删除分类（关联馆）
+      await prisma.category.deleteMany({
+        where: { museumId: { in: museumIdArr } },
+      });
+
+      // 6. 删除馆
+      await prisma.museum.deleteMany({
+        where: { museumId: { in: museumIdArr } },
+      });
     });
   }
 }

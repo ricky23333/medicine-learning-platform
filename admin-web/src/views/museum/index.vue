@@ -19,14 +19,18 @@
 
     <!-- 馆列表 -->
     <div class="museum-list">
-      <div v-for="museum in museumList" :key="museum.id" class="museum-card">
+      <div
+        v-for="museum in museumList"
+        :key="museum.museumId"
+        class="museum-card"
+      >
         <!-- 馆头部 -->
         <div
           class="museum-header"
-          :class="{ expanded: expandedMuseum === museum.id }"
-          @click="toggleMuseum(museum.id)"
+          :class="{ expanded: expandedMuseum === museum.museumId }"
+          @click="toggleMuseum(museum.museumId)"
         >
-          <div class="museum-icon">{{ museum.icon || "🏛️" }}</div>
+          <div class="museum-icon">{{ museum.icon || "🌿" }}</div>
           <div class="museum-info">
             <div class="museum-name-row">
               <span class="museum-name">{{ museum.museumName }}</span>
@@ -34,7 +38,7 @@
                 >{{ museum.categories?.length || 0 }}个分类</el-tag
               >
               <el-tag size="small" type="info"
-                >{{ getSpecimenCount(museum.id) }}个标本</el-tag
+                >{{ getSpecimenCount(museum.museumId) }}个标本</el-tag
               >
             </div>
             <p class="museum-desc">{{ museum.description || "暂无描述" }}</p>
@@ -48,7 +52,7 @@
             </el-button>
             <el-icon
               class="expand-icon"
-              :class="{ rotated: expandedMuseum === museum.id }"
+              :class="{ rotated: expandedMuseum === museum.museumId }"
             >
               <ArrowRight />
             </el-icon>
@@ -56,14 +60,14 @@
         </div>
 
         <!-- 分类列表 -->
-        <div v-if="expandedMuseum === museum.id" class="category-section">
+        <div v-if="expandedMuseum === museum.museumId" class="category-section">
           <div class="category-header">
             <span class="category-label">二级分类</span>
             <el-button
               size="small"
               type="success"
               plain
-              @click="openAddCategory(museum.id)"
+              @click="openAddCategory(museum.museumId)"
             >
               <el-icon><Plus /></el-icon>
               添加分类
@@ -81,16 +85,16 @@
           <div v-else class="category-grid">
             <div
               v-for="cat in museum.categories"
-              :key="cat.id"
+              :key="cat.categoryId"
               class="category-item"
             >
               <div class="category-icon">
                 <el-icon><FolderOpened /></el-icon>
               </div>
               <div class="category-info">
-                <div class="category-name">{{ cat.name }}</div>
+                <div class="category-name">{{ cat.categoryName }}</div>
                 <div class="category-meta">
-                  {{ getCategorySpecimenCount(cat.id) }}个标本 ·
+                  {{ getCategorySpecimenCount(cat.categoryId) }}个标本 ·
                   {{ cat.description || "无描述" }}
                 </div>
               </div>
@@ -98,7 +102,7 @@
                 <el-button
                   text
                   size="small"
-                  @click="openEditCategory(museum.id, cat)"
+                  @click="openEditCategory(museum.museumId, cat)"
                 >
                   <el-icon><Edit /></el-icon>
                 </el-button>
@@ -106,7 +110,7 @@
                   text
                   size="small"
                   type="danger"
-                  @click="confirmDeleteCategory(museum.id, cat)"
+                  @click="confirmDeleteCategory(museum.museumId, cat)"
                 >
                   <el-icon><Delete /></el-icon>
                 </el-button>
@@ -208,7 +212,9 @@
             deleteTarget.type === "museum" ? "标本目录" : "分类"
           }}「{{ deleteTarget.name }}」吗？
         </p>
-        <p class="delete-warning">此操作将同时删除所有关联标本，不可恢复！</p>
+        <p class="delete-warning">
+          此操作将同时删除所有关联标本，考试记录等数据，不可恢复，请谨慎操作！
+        </p>
       </div>
       <template #footer>
         <el-button @click="deleteDialogVisible = false">取消</el-button>
@@ -303,7 +309,7 @@ async function loadMuseums() {
       museumList.value = res.data;
       // 默认展开第一个馆
       if (museumList.value.length > 0 && !expandedMuseum.value) {
-        expandedMuseum.value = museumList.value[0].id;
+        expandedMuseum.value = museumList.value[0].museumId;
       }
     }
   } catch (error) {
@@ -376,8 +382,8 @@ async function saveMuseum() {
 // 确认删除馆
 function confirmDeleteMuseum(museum: any) {
   deleteTarget.type = "museum";
-  deleteTarget.id = museum.id;
-  deleteTarget.name = museum.name;
+  deleteTarget.id = museum.museumId;
+  deleteTarget.name = museum.museumName;
   deleteDialogVisible.value = true;
 }
 
@@ -394,7 +400,7 @@ function openAddCategory(museumId: string) {
 function openEditCategory(museumId: string, cat: any) {
   currentMuseumId.value = museumId;
   editCategory.value = cat;
-  categoryForm.name = cat.name;
+  categoryForm.name = cat.categoryName;
   categoryForm.description = cat.description || "";
   categoryDialogVisible.value = true;
 }
@@ -403,11 +409,10 @@ function openEditCategory(museumId: string, cat: any) {
 async function saveCategory() {
   const valid = await categoryFormRef.value.validate().catch(() => false);
   if (!valid) return;
-
   try {
     if (editCategory.value) {
       await updateCategory({
-        id: editCategory.value.id,
+        id: editCategory.value.categoryId,
         name: categoryForm.name,
         description: categoryForm.description,
       });
@@ -430,9 +435,9 @@ async function saveCategory() {
 // 确认删除分类
 function confirmDeleteCategory(museumId: string, cat: any) {
   deleteTarget.type = "category";
-  deleteTarget.id = cat.id;
+  deleteTarget.id = cat.categoryId;
   deleteTarget.museumId = museumId;
-  deleteTarget.name = cat.name;
+  deleteTarget.name = cat.categoryName;
   deleteDialogVisible.value = true;
 }
 
@@ -669,7 +674,11 @@ onMounted(() => {
 
 .category-actions {
   display: flex;
-  gap: 4px;
+  gap: 0;
+  button {
+    font-size: 18px;
+    margin-left: 0;
+  }
 }
 
 /* 图标选择器 */
