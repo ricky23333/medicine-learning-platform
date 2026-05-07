@@ -5,9 +5,9 @@
  * @LastEditTime: 2024-05-17 15:48:58
  * @FilePath: \meimei-new-前端\src\api\login.js
  * @Description: 登录过程中加载的东西
- * 
+ *
  */
-import request from '@/utils/request'
+import request from "@/utils/request";
 
 // 登录方法
 export function login(username, password, code, uuid) {
@@ -15,80 +15,89 @@ export function login(username, password, code, uuid) {
     username,
     password,
     code,
-    uuid
-  }
+    uuid,
+  };
   return request({
-    url: '/login',
+    url: "/login",
     headers: {
       isToken: false,
-      repeatSubmit: false
+      repeatSubmit: false,
     },
-    method: 'post',
-    data: data
-  })
+    method: "post",
+    data: data,
+  });
 }
 
 // 注册方法 - 调用小程序端注册接口
 export function register(data) {
   return request({
-    url: '/app/user/register',
+    url: "/app/user/register",
     headers: {
-      isToken: false
+      isToken: false,
     },
-    method: 'post',
-    data: data
-  })
+    method: "post",
+    data: data,
+  });
 }
 
 // 获取用户详细信息
 export function getInfo() {
   return request({
-    url: '/getInfo',
-    method: 'get'
-  })
+    url: "/getInfo",
+    method: "get",
+  });
 }
 
 // 获取用户的界面配置信息
 export function getWeb() {
   return request({
-    url: '/system/web',
-    method: 'get'
-  })
+    url: "/system/web",
+    method: "get",
+  });
 }
 
 // 添加用户的界面配置信息
 export function addWeb(data) {
   return request({
-    url: '/system/web',
-    method: 'post',
-    data
-  })
+    url: "/system/web",
+    method: "post",
+    data,
+  });
 }
 
 // 删除用户的界面配置信息
 export function deleteWeb() {
   return request({
-    url: '/system/web',
-    method: 'delete'
-  })
+    url: "/system/web",
+    method: "delete",
+  });
 }
 
 // 退出方法
 export function logout() {
   return request({
-    url: '/logout',
-    method: 'post'
-  })
+    url: "/logout",
+    method: "post",
+  });
 }
 
 // 获取验证码
 export function getCodeImg() {
   return request({
-    url: '/captchaImage',
+    url: "/captchaImage",
     headers: {
-      isToken: false
+      isToken: false,
     },
-    method: 'get',
-    timeout: 20000
-  })
+    method: "get",
+    timeout: 20000,
+  });
+}
+
+// 申请VIP
+export function applyVip() {
+  return request({
+    url: "/app/user/applyVip",
+    method: "post",
+    timeout: 20000,
+  });
 }

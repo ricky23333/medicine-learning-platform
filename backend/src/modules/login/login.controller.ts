@@ -52,13 +52,14 @@ export class LoginController {
   /* 获取用户信息 */
   @Get('getInfo')
   async getInfo(@User() user: UserInfo) {
-    const { permissions, roles } = user;
+    const { permissions, roles, appUser } = user;
     const roleKeys = roles.map((item) => item.roleKey);
     delete user.permissions;
     return {
       user,
       permissions,
       roles: roleKeys,
+      appUser
     };
   }
 

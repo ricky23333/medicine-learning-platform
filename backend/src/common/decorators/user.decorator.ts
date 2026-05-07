@@ -18,6 +18,7 @@ export enum UserEnum {
   'deptId' = 'deptId',
   'permissions' = 'permissions',
   'roles' = 'roles',
+  'appUser' = 'appUser',
   'dataScope' = 'dataScope',
 }
 

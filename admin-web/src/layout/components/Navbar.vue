@@ -39,6 +39,7 @@
             </div>
             <span class="user-name">{{ userStore.nickName }}</span>
             <span v-if="isAdmin" class="user-role">超级管理员</span>
+            <span v-if="isVIP" class="user-role">VIP教师</span>
             <el-icon class="user-arrow"><caret-bottom /></el-icon>
           </div>
           <template #dropdown>
@@ -52,7 +53,7 @@
               >
                 <span>布局设置</span>
               </el-dropdown-item>
-              <el-dropdown-item>
+              <el-dropdown-item v-if="showRequestVIP" @click="handleRequestVIP">
                 <span>申请VIP教师</span>
               </el-dropdown-item>
               <el-dropdown-item divided command="logout">
@@ -78,14 +79,26 @@ import Notice from "@/components/Notice";
 import useAppStore from "@/store/modules/app";
 import useUserStore from "@/store/modules/user";
 import useSettingsStore from "@/store/modules/settings";
+import { ElMessage } from "element-plus";
 
 const appStore = useAppStore();
 const userStore = useUserStore();
 const isAdmin = computed(() => {
   return userStore.roles?.includes("admin");
 });
+const isVIP = computed(() => {
+  return (
+    userStore?.appUser &&
+    userStore.appUser.userType === "teacher" &&
+    userStore.appUser.vipStatus === "2"
+  );
+});
 const showRequestVIP = computed(() => {
-  return userStore.roles?.includes("ROLE_VIP");
+  return (
+    userStore?.appUser &&
+    userStore.appUser.userType === "teacher" &&
+    userStore.appUser.vipStatus === "0"
+  );
 });
 const settingsStore = useSettingsStore();
 
@@ -104,6 +117,22 @@ function handleCommand(command) {
     default:
       break;
   }
+}
+
+function handleRequestVIP() {
+  ElMessageBox.confirm("确定申请VIP教师吗？", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => {
+      userStore.requestVIP().then((res) => {
+        if (res.code === 200) {
+          ElMessage.success(res.message);
+        }
+      });
+    })
+    .catch(() => {});
 }
 
 function logout() {

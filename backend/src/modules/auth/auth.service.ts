@@ -74,7 +74,17 @@ export class AuthService {
       throw new ApiException('用户信息或全权限范围已被修改', 401);
     const userString = await this.redis.get(`${USER_INFO_KEY}:${userId}`);
     if (userString) {
-      return JSON.parse(userString);
+      const user = JSON.parse(userString);
+      // 如果用户信息中没有appUser，则关联查询
+      if (!user.appUser) {
+        const appUser = await this.prisma.appUser.findUnique({
+          where: { userId },
+        });
+        user.appUser = appUser;
+        // 更新Redis中的用户信息
+        await this.redis.set(`${USER_INFO_KEY}:${userId}`, JSON.stringify(user));
+      }
+      return user;
     }
   }
 }

@@ -137,11 +137,7 @@ export class LoginService {
             status: '0',
           },
         },
-        appUsers: {
-          where: {
-            status: '0',
-          },
-        },
+        appUser: true,
       },
     });
     if (!user) throw new ApiException('用户不存在', 401);

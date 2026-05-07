@@ -204,7 +204,7 @@ export class AppUserService {
       this.prisma.appUser.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { vipApplyTime: 'desc' },
         include: {
           user: {
@@ -238,7 +238,7 @@ export class AppUserService {
     await this.prisma.appUser.update({
       where: { userId },
       data: {
-        vipStatus: '3',
+        vipStatus: '0',
         vipApproveTime: new Date(),
         vipApproveBy: approveBy,
       },

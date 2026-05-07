@@ -9,16 +9,22 @@ import { ApiException } from 'src/common/exceptions/api.exception';
 
 @Injectable()
 export class MuseumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /* 新增馆 */
-  async add(createMuseumDto: any) {
-    const { museumCode } = createMuseumDto;
+  async add(createMuseumDto: { name: string, description?: string }) {
+    const { name } = createMuseumDto;
     const exist = await this.prisma.museum.findUnique({
-      where: { museumCode },
+      where: { museumCode: name },
     });
-    if (exist) throw new ApiException('馆编码已存在');
-    return await this.prisma.museum.create({ data: createMuseumDto });
+    if (exist) throw new ApiException('该名称目录已存在！');
+    return await this.prisma.museum.create({
+      data: {
+        museumCode: name,
+        museumName: name,
+        description: createMuseumDto.description,
+      }
+    });
   }
 
   /* 分页查询馆列表 */
@@ -64,14 +70,18 @@ export class MuseumService {
 
   /* 更新馆 */
   async update(updateMuseumDto: any) {
-    const { museumId, museumCode } = updateMuseumDto;
+    const { id, name } = updateMuseumDto;
     const exist = await this.prisma.museum.findFirst({
-      where: { museumId: { not: museumId }, museumCode },
+      where: { museumId: { not: id }, museumCode: name },
     });
-    if (exist) throw new ApiException('馆编码已存在');
+    if (exist) throw new ApiException('目录重复');
     return await this.prisma.museum.update({
-      where: { museumId },
-      data: updateMuseumDto,
+      where: { museumId: id },
+      data: {
+        museumCode: name,
+        museumName: name,
+        description: updateMuseumDto.description,
+      },
     });
   }
 

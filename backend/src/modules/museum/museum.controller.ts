@@ -26,7 +26,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 @ApiBearerAuth()
 @Controller('admin/museum')
 export class MuseumController {
-  constructor(private readonly museumService: MuseumService) {}
+  constructor(private readonly museumService: MuseumService) { }
 
   /* 新增馆 */
   @Post()
@@ -35,6 +35,7 @@ export class MuseumController {
   @ApiOperation({ summary: '新增馆' })
   @ApiResponse({ status: 200, description: '新增成功' })
   async add(@Body() createMuseumDto: any) {
+    console.log(1111, createMuseumDto);
     await this.museumService.add(createMuseumDto);
   }
 
@@ -92,7 +93,7 @@ export class MuseumController {
 @ApiTags('app')
 @Controller('app/museum')
 export class AppMuseumController {
-  constructor(private readonly museumService: MuseumService) {}
+  constructor(private readonly museumService: MuseumService) { }
 
   /* 获取馆列表（带分类） */
   @Get('list')
