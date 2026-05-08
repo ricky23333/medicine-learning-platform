@@ -1,0 +1,19 @@
+# 构建产物
+dist
+build
+
+# 依赖
+node_modules
+
+# 其他不需要格式化的文件
+*.min.js
+*.min.css
+*.d.ts
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+public
+
+# 自动生成的文件
+auto-imports.d.ts
+components.d.ts 

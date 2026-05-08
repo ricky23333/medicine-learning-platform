@@ -35,7 +35,6 @@ export class MuseumController {
   @ApiOperation({ summary: '新增馆' })
   @ApiResponse({ status: 200, description: '新增成功' })
   async add(@Body() createMuseumDto: any) {
-    console.log(1111, createMuseumDto);
     await this.museumService.add(createMuseumDto);
   }
 

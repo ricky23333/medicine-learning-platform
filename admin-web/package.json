@@ -12,7 +12,13 @@
   "scripts": {
     "dev": "vite --mode development",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:prod": "vite build --mode production",
+    "build:dev": "vite build --mode development",
+    "lint:eslint": "eslint --fix --ext .js,.ts,.vue ./src",
+    "preview": "vite preview",
+    "prettier": "prettier --write .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,vue,less,scss,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,vue,less,scss,css,json}\""
   },
   "dependencies": {
     "@element-plus/icons-vue": "2.0.10",
@@ -43,6 +49,7 @@
     "@vitejs/plugin-vue": "4.5.0",
     "@vitejs/plugin-vue-jsx": "^3.0.2",
     "@vue/compiler-sfc": "3.3.9",
+    "prettier": "2.8.4",
     "sass": "1.56.1",
     "typescript": "^5.0.2",
     "unplugin-auto-import": "0.17.1",

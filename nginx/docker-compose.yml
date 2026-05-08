@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: my-nginx
+    restart: always
+    ports:
+      - "80:80"
+      # - "443:443" # 如果需要HTTPS可以放开
+    volumes:
+      # 1. 映射 Nginx 主配置文件 (只读映射即可)
+      - ./conf/nginx.conf:/etc/nginx/nginx.conf
+      # 2. 映射日志目录 (需要读写权限，不要加 :ro)
+      - ./logs:/var/log/nginx
+      # 3. (补充推荐) 映射网站静态文件目录
+      - ./html:/usr/share/nginx/html:ro
