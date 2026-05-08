@@ -27,6 +27,7 @@
     "@vueuse/core": "9.5.0",
     "axios": "0.27.2",
     "concurrent-tasks": "^1.0.7",
+    "cos-nodejs-sdk-v5": "^2.15.4",
     "dayjs": "^1.11.10",
     "echarts": "5.4.0",
     "element-plus": "^2.6.1",

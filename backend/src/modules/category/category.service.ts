@@ -32,7 +32,7 @@ export class CategoryService {
   async list(query: any) {
     const { museumId, categoryName, status, skip = 0, take = 10 } = query;
     const where: any = {};
-    if (museumId) where.museumId = museumId;
+    if (museumId) where.museumId = Number(museumId);
     if (categoryName) where.categoryName = { contains: categoryName };
     if (status) where.status = status;
     const [rows, total] = await Promise.all([

@@ -9,7 +9,7 @@ import { ApiException } from 'src/common/exceptions/api.exception';
 
 @Injectable()
 export class VipService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /* VIP创建标本（状态默认为待审核） */
   async createSpecimen(userId: number, createDto: any) {
@@ -134,7 +134,7 @@ export class VipService {
       this.prisma.specimen.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { createTime: 'desc' },
         include: {
           museum: true,

@@ -9,7 +9,7 @@ import { ApiException } from 'src/common/exceptions/api.exception';
 
 @Injectable()
 export class SpecimenService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /* 新增标本 */
   async add(createSpecimenDto: any) {
@@ -34,7 +34,7 @@ export class SpecimenService {
       this.prisma.specimen.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { createTime: 'desc' },
         include: {
           museum: true,
@@ -58,7 +58,7 @@ export class SpecimenService {
       this.prisma.specimen.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { createTime: 'desc' },
         include: {
           images: {
