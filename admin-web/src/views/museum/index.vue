@@ -18,7 +18,7 @@
     </div>
 
     <!-- 馆列表 -->
-    <div class="museum-list">
+    <div class="museum-list" v-if="museumList && museumList.length !== 0">
       <div
         v-for="museum in museumList"
         :key="museum.museumId"
@@ -119,6 +119,11 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <div class="empty-icon">🔬</div>
+      <p class="empty-text">暂无数据</p>
     </div>
 
     <!-- 新增/编辑馆弹窗 -->
@@ -745,5 +750,23 @@ onMounted(() => {
 .delete-warning span {
   color: #ef4444;
   font-size: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 0;
+  background: #fff;
+  border-radius: 16px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #aaa;
+  margin: 0;
 }
 </style>
