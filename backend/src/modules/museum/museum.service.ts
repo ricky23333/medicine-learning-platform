@@ -54,10 +54,24 @@ export class MuseumService {
         categories: {
           where: { status: '0' },
           orderBy: { sort: 'asc' },
+          include: {
+            _count: {
+              select: { specimens: true },
+            },
+          },
         },
       },
     });
-    return museums;
+
+    // 转换 _count 为 specCount 字段
+    return museums.map((museum) => ({
+      ...museum,
+      categories: museum.categories.map((category) => ({
+        ...category,
+        specCount: category._count.specimens,
+        _count: undefined,
+      })),
+    }));
   }
 
   /* 通过ID查询馆 */
