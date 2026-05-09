@@ -257,7 +257,7 @@ export class AppUserService {
       this.prisma.appUser.findMany({
         where,
         skip,
-        take,
+        take: Number(take),
         orderBy: { createTime: 'desc' },
         include: {
           user: {

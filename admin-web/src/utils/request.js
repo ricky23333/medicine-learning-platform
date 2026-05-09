@@ -39,7 +39,7 @@ service.interceptors.request.use(config => {
   if (!isRepeatSubmit && (config.method === 'post' || config.method === 'put')) {
     const requestObj = {
       url: config.url,
-      data: typeof config.data === 'object' ? JSON.stringify(config.data) : config.data,
+      data: typeof config.data === 'object' && !(config.data instanceof FormData) ? JSON.stringify(config.data) : config.data,
       time: new Date().getTime()
     }
     const requestSize = Object.keys(JSON.stringify(requestObj)).length; // 请求数据大小

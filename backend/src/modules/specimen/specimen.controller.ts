@@ -13,7 +13,11 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { SpecimenService } from './specimen.service';
 import { PaginationPipe } from 'src/common/pipes/pagination.pipe';
@@ -84,20 +88,30 @@ export class SpecimenController {
   @Post('image')
   @Log({ title: '标本图片', businessType: BusinessTypeEnum.insert })
   @RequiresPermissions('admin:specimen:image:add')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: multer.memoryStorage(),
+  }))
   @ApiOperation({ summary: '上传标本图片' })
   @ApiResponse({ status: 200, description: '上传成功' })
-  async addImage(@Body() createImageDto: any) {
-    await this.specimenService.addImage(createImageDto);
+  async addImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createImageDto: any,
+  ) {
+    await this.specimenService.addImage(file, createImageDto);
   }
 
   /* 删除标本图片 */
   @Delete('image/:imageId')
   @Log({ title: '标本图片', businessType: BusinessTypeEnum.delete })
-  @RequiresPermissions('admin:specimen:image:remove')
+  // @RequiresPermissions('admin:specimen:image:remove')
   @ApiOperation({ summary: '删除标本图片' })
   @ApiResponse({ status: 200, description: '删除成功' })
-  async deleteImage(@Param('imageId') imageId: number) {
-    await this.specimenService.deleteImage(imageId, null);
+  async deleteImage(
+    @Param('imageId') imageId: number,
+    @User(UserEnum.userId) userId?: number,
+    @User(UserEnum.roles) roles?: string[],
+  ) {
+    await this.specimenService.deleteImage(imageId, userId, roles);
   }
 
   /* 审核图片 */

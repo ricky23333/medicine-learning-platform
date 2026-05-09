@@ -91,6 +91,7 @@
           <div class="specimen-name">{{ item.specimenName }}</div>
           <div class="specimen-latin" v-if="item.latinName">{{ item.latinName }}</div>
           <div class="specimen-tags">
+            <span class="tag-museum">{{ item.museum?.museumName || '-' }}</span>
             <span class="tag-category">{{ item.category?.categoryName || '-' }}</span>
           </div>
         </div>
@@ -130,7 +131,7 @@
                 class="image-thumb"
               />
               <div class="image-info">
-                <div class="image-uploader">上传者：{{ img.createBy || '-' }}</div>
+                <div class="image-uploader">上传者：{{ img.creatorNickName || '-' }}</div>
                 <div class="image-date">{{ img.createTime }}</div>
                 <div class="image-status">
                   <el-tag v-if="img.auditStatus === '1'" type="success" size="small">已审核</el-tag>
@@ -142,8 +143,8 @@
                   >
                 </div>
               </div>
-              <div class="image-actions" v-if="isAdmin">
-                <template v-if="img.auditStatus === '0'">
+              <div class="image-actions" v-if="canDeleteImage(img)">
+                <template v-if="img.auditStatus === '0' && isAdmin">
                   <el-button size="small" type="success" @click="auditImage(img, '1')"
                     >通过</el-button
                   >
@@ -175,7 +176,7 @@
         <div class="detail-info">
           <div class="section-label">基本信息</div>
           <div class="info-row">
-            <span class="info-label">所属标本目录</span>
+            <span class="info-label">所属目录</span>
             <span class="info-value">{{ currentSpecimen?.museum?.museumName || '-' }}</span>
           </div>
           <div class="info-row">
@@ -220,7 +221,7 @@
       :close-on-click-modal="false"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="所属标本目录" prop="museumId">
+        <el-form-item label="所属目录" prop="museumId">
           <el-select
             v-model="form.museumId"
             placeholder="选择目录"
@@ -287,7 +288,7 @@
     addSpecimen,
     updateSpecimen,
     delSpecimen,
-    addSpecimenImage,
+    uploadSpecimenImage,
     delSpecimenImage,
     auditSpecimenImage
   } from '@/api/specimen'
@@ -296,11 +297,16 @@
   import useUserStore from '@/store/modules/user'
 
   const userStore = useUserStore()
-  const isAdmin = computed(
-    () =>
-      userStore.roles?.includes('ROLE_ADMIN') ||
-      userStore.permissions?.includes('admin:specimen:edit')
-  )
+  const isAdmin = computed(() => {
+    return userStore.roles?.includes('admin')
+  })
+
+  // 判断当前用户是否可以删除某张图片（管理员或创建者本人）
+  function canDeleteImage(img: any) {
+    if (isAdmin.value) return true
+    if (!img.createBy || !userStore.userId) return false
+    return String(userStore.userId) === String(img.createBy)
+  }
 
   // ========== 数据 ==========
   const loading = ref(false)
@@ -516,14 +522,24 @@
     const target = event.target as HTMLInputElement
     const file = target.files?.[0]
     if (!file || !currentSpecimen.value) return
+
+    // 限制文件大小为25MB
+    const maxSize = 25 * 1024 * 1024
+    if (file.size > maxSize) {
+      ElMessage.error('文件大小不能超过25MB')
+      target.value = '' // 清空input
+      return
+    }
+
     try {
-      // 简单实现：直接提交图片URL（实际项目中应先上传到服务器获取URL）
-      const imageUrl = URL.createObjectURL(file) // 演示用，实际应调用上传接口
-      await addSpecimenImage({
-        specimenId: currentSpecimen.value.specimenId,
-        imageUrl,
-        auditStatus: isAdmin.value ? '1' : '0'
-      })
+      // 使用 FormData 上传文件
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('specimenId', String(currentSpecimen.value.specimenId))
+      formData.append('isCover', String(false))
+      formData.append('createBy', userStore.userId || '')
+
+      await uploadSpecimenImage(formData)
       ElMessage.success('上传成功')
       // 刷新详情
       openDetail(currentSpecimen.value)
@@ -739,6 +755,15 @@
     gap: 4px;
   }
 
+  .tag-museum {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: #c7f0c7;
+    color: #2d6a4f;
+    font-size: 11px;
+  }
+
   .tag-category {
     display: inline-block;
     padding: 2px 8px;
@@ -832,6 +857,13 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    justify-content: flex-end;
+    align-items: flex-end;
+    align-content: flex-end;
+
+    button {
+      width: 60px;
+    }
   }
 
   .upload-btn {

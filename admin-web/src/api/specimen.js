@@ -45,12 +45,12 @@ export function delSpecimen(specimenIds) {
 }
 
 // ========== 标本图片管理 ==========
-// 上传标本图片
-export function addSpecimenImage(data) {
+// 上传标本图片 (multipart/form-data)
+export function uploadSpecimenImage(formData) {
   return request({
     url: '/admin/specimen/image',
     method: 'post',
-    data: data
+    data: formData
   })
 }
 
