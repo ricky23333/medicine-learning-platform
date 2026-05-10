@@ -295,6 +295,11 @@
             移动端（微信小程序）供学生和教师使用<br />
             如需注册账号，请联系所在院校管理员
           </p>
+          <div class="filing-info">
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026052156号</a>
+            <span class="separator">|</span>
+            <router-link to="/disclaimer" target="_blank">免责声明</router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -967,7 +972,27 @@
       color: #aaa;
       text-align: center;
       line-height: 1.6;
-      margin: 0;
+      margin: 0 0 12px 0;
+    }
+
+    .filing-info {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+
+      a {
+        color: #2d6a4f;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+
+      .separator {
+        margin: 0 8px;
+        color: #ccc;
+      }
     }
   }
 </style>

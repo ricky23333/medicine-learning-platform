@@ -1,0 +1,238 @@
+<template>
+  <div class="disclaimer-container">
+    <div class="disclaimer-card">
+      <h1 class="disclaimer-title">免责声明</h1>
+      <p class="disclaimer-date">最近更新日期：2026年05月10日</p>
+
+      <div class="disclaimer-content">
+        <p class="disclaimer-intro">
+          请在使用本网站及关联微信小程序（以下简称"本平台"）之前仔细阅读本免责声明。使用本平台即表示您同意接受本声明的约束。
+        </p>
+
+        <div class="disclaimer-section">
+          <h2>一、非商业用途声明</h2>
+          <p>
+            本平台仅为中医药学科教学与科研目的而设立，并非用于盈利目的。本平台展示的所有图片、文字资料等均仅供学习交流使用，不可被其他人员分享或用于任何商业目的。
+          </p>
+          <p>
+            本平台使用的图片均来自公开领域或已获得合法授权，我们承诺不侵犯任何第三方的知识产权。如您发现本平台内容涉及您的版权，请及时与我们联系，我们将在核实后立即处理。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>二、医学免责声明</h2>
+          <p>
+            <strong>重要提示：</strong>本平台所载的中医药知识、历史文献、研究资料等内容仅供参考学习，不构成任何医学诊断、治疗或建议。
+          </p>
+          <p>
+            不可利用本平台的知识进行医学诊断或自我治疗，因而所产生的任何医疗问题，本平台概不负责。如您或他人因参考本平台内容而遭受任何损失或伤害，我们不承担任何责任。
+          </p>
+          <p>
+            如需医疗帮助，请务必咨询具有执业资格的医疗机构或专业医师。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>三、内容准确性声明</h2>
+          <p>
+            本平台尽力确保所提供信息的准确性和完整性，但不对内容的时效性、准确性、可靠性做任何保证。平台内容可能随时间推移而发生变化，恕不另行通知。
+          </p>
+          <p>
+            本平台保留随时修改、删除或更新任何内容的权利，恕不另行通知。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>四、法律责任限制</h2>
+          <p>
+            对于因使用或无法使用本平台而产生的任何直接、间接、偶然、特殊或因果性的损失或损害，包括但不限于：
+          </p>
+          <ul>
+            <li>任何因使用本平台内容而导致的损失</li>
+            <li>任何因依赖本平台信息而做出的决定或行动</li>
+            <li>任何因系统故障、网络中断、技术问题而产生的损失</li>
+            <li>任何因第三方行为而产生的损失</li>
+          </ul>
+          <p>
+            本平台均不承担任何责任。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>五、链接与第三方内容</h2>
+          <p>
+            本平台可能包含指向第三方网站的链接，这些链接仅为方便用户而提供。我们不对第三方网站的内容、隐私政策或行为负责。
+          </p>
+          <p>
+            本平台不对任何第三方内容的准确性、完整性或合法性做任何保证。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>六、用户行为规范</h2>
+          <p>
+            用户在使用本平台时，应遵守以下规范：
+          </p>
+          <ul>
+            <li>不得将本平台内容用于任何违法活动</li>
+            <li>不得对本平台进行任何未经授权的修改、复制、分发或传播</li>
+            <li>不得利用本平台从事任何损害国家利益、社会公共利益或他人合法权益的行为</li>
+            <li>不得试图通过本平台获取未经授权的访问或数据</li>
+          </ul>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>七、知识产权</h2>
+          <p>
+            本平台上所有内容（包括但不限于文字、图片、图标、设计、架构等）的知识产权归本平台或相关权利人所有，受中华人民共和国著作权法及相关国际公约保护。
+          </p>
+          <p>
+            未经本平台书面授权，任何人不得擅自使用、修改、复制、分发或传播上述知识产权内容。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>八、隐私保护</h2>
+          <p>
+            本平台尊重并保护用户的个人隐私。具体隐私保护政策请参阅本平台的《隐私政策》页面。
+          </p>
+        </div>
+
+        <div class="disclaimer-section">
+          <h2>九、免责声明的修改</h2>
+          <p>
+            本平台保留随时修改本免责声明的权利。修改后的声明将在本页面公布，建议用户定期查阅以了解最新信息。
+          </p>
+          <p>
+            如您继续使用本平台，则视为您接受修改后的免责声明。
+          </p>
+        </div>
+
+        <!-- <div class="disclaimer-section">
+          <h2>十、联系我们</h2>
+          <p>
+            如您对本免责声明有任何疑问或建议，请通过以下方式联系我们：
+          </p>
+          <p class="contact-info">
+            联系邮箱：support@example.edu.cn<br />
+            联系地址：广东省广州市某高校
+          </p>
+        </div> -->
+      </div>
+
+      <div class="disclaimer-footer">
+        <router-link to="/login" class="back-link">返回登录页面</router-link>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+  // No script needed for this page
+</script>
+
+<style scoped>
+.disclaimer-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0d2818 0%, #1b3a2d 40%, #2d6a4f 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.disclaimer-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.disclaimer-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1b3a2d;
+  text-align: center;
+  margin: 0 0 8px 0;
+}
+
+.disclaimer-date {
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+  margin: 0 0 32px 0;
+}
+
+.disclaimer-content {
+  text-align: left;
+}
+
+.disclaimer-intro {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.disclaimer-section {
+  margin-bottom: 24px;
+}
+
+.disclaimer-section h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d6a4f;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8f5e9;
+}
+
+.disclaimer-section p {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+  margin: 0 0 12px 0;
+}
+
+.disclaimer-section ul {
+  margin: 0 0 12px 0;
+  padding-left: 24px;
+}
+
+.disclaimer-section li {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.contact-info {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-style: normal;
+}
+
+.disclaimer-footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #eee;
+}
+
+.back-link {
+  color: #2d6a4f;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+</style>
