@@ -163,14 +163,27 @@ describe('AppUserService', () => {
   });
 
   describe('getRegisterAuditList', () => {
-    it('应该返回待审核注册列表', async () => {
-      const mockRows = [{ id: 1, regStatus: '0', user: { userId: 1 } }];
+    it('应该返回待审核注册列表（包含deptName）', async () => {
+      const mockRows = [
+        {
+          id: 1,
+          regStatus: '0',
+          user: {
+            userId: 1,
+            userName: '13800138000',
+            status: '0',
+            dept: { deptId: 1, deptName: '计算机学院' },
+          },
+        },
+      ];
       mockPrismaService.appUser.findMany.mockResolvedValue(mockRows);
       mockPrismaService.appUser.count.mockResolvedValue(1);
 
       const result = await service.getRegisterAuditList({ skip: 0, take: 10 });
       expect(result.rows).toEqual(mockRows);
       expect(result.total).toBe(1);
+      // 验证 deptName 字段存在
+      expect(result.rows[0].user.dept.deptName).toBe('计算机学院');
     });
   });
 

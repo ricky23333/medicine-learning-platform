@@ -18,6 +18,16 @@ export function listDept(query) {
   })
 }
 
+// 查询公共部门列表
+export function publicListDept(query) {
+  return request({
+    url: '/system/dept/public/list',
+    method: 'get',
+    params: query
+  })
+}
+
+
 // 查询部门列表（排除节点）
 export function listDeptExcludeChild(deptId) {
   return request({

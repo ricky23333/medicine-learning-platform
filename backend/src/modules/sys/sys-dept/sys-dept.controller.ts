@@ -31,10 +31,19 @@ import {
 } from './dto/req-sys-dept.dto';
 import { User, UserEnum } from 'src/common/decorators/user.decorator';
 import { DataScope } from 'src/common/type/data-scope.type';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('system/dept')
 export class SysDeptController {
   constructor(private readonly sysDeptService: SysDeptService) {}
+
+  /* 公开接口：获取所有组织（id, parentId, deptName） */
+  @Get('public/list')
+  @Public()
+  async publicList() {
+    return await this.sysDeptService.publicList();
+  }
+
   /* 新增 */
   @Post()
   @RepeatSubmit()

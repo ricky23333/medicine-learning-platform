@@ -8,6 +8,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { StatsService } from './stats.service';
 import { RequiresPermissions } from 'src/common/decorators/requires-permissions.decorator';
 import { AjaxResult } from 'src/common/class/ajax-result.class';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -32,6 +33,23 @@ export class StatsController {
   @ApiResponse({ status: 200, description: '查询成功' })
   async getVisitChart(@Query('days') days?: number) {
     const result = await this.statsService.getVisitChart(days || 7);
+    return AjaxResult.success(result);
+  }
+}
+
+/* 公开统计接口 */
+@ApiTags('public')
+@Controller('public/stats')
+export class PublicStatsController {
+  constructor(private readonly statsService: StatsService) {}
+
+  /* 获取馆、标本、用户总数 */
+  @Get('summary')
+  @Public()
+  @ApiOperation({ summary: '获取馆、标本、用户总数' })
+  @ApiResponse({ status: 200, description: '查询成功' })
+  async getPublicSummary() {
+    const result = await this.statsService.getPublicSummary();
     return AjaxResult.success(result);
   }
 }

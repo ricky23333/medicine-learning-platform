@@ -58,7 +58,14 @@
               </div>
               <div class="info-grid">
                 <div class="info-item">📱 {{ item.phone }}</div>
-                <div class="info-item">🏫 {{ item.institution || '-' }}</div>
+                <div class="info-item">
+                  🏫
+                  {{
+                    item.user && item.user.dept && item.user.dept.deptName
+                      ? item.user.dept.deptName
+                      : '-'
+                  }}
+                </div>
                 <div v-if="item.majorGrade" class="info-item">📚 {{ item.majorGrade }}</div>
                 <div v-if="item.studentNo" class="info-item">🎓 {{ item.studentNo }}</div>
                 <div v-if="item.contact" class="info-item">📬 {{ item.contact }}</div>

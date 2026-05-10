@@ -58,7 +58,10 @@ export class AuthService {
           userId: user.userId
         },
       });
-      if (!userExtraInfo || Boolean(userExtraInfo.regStatus) !== true) throw new ApiException('用户注册暂未审核通过，请联系管理员！');
+
+      if (userExtraInfo?.regStatus !== '1') {
+        throw new ApiException('用户注册暂未审核通过，请联系管理员！')
+      };
     }
     return user;
   }

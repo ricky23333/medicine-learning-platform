@@ -4,11 +4,11 @@
  * @Description: 统计模块
  */
 import { Module } from '@nestjs/common';
-import { StatsController } from './stats.controller';
+import { StatsController, PublicStatsController } from './stats.controller';
 import { StatsService } from './stats.service';
 
 @Module({
-  controllers: [StatsController],
+  controllers: [StatsController, PublicStatsController],
   providers: [StatsService],
 })
 export class StatsModule {}

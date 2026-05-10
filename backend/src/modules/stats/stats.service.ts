@@ -10,6 +10,16 @@ import { PrismaService } from 'nestjs-prisma';
 export class StatsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /* 获取公开统计（馆、标本、用户总数） */
+  async getPublicSummary() {
+    const [totalMuseums, totalSpecimens, totalUsers] = await Promise.all([
+      this.prisma.museum.count({ where: { status: '0' } }),
+      this.prisma.specimen.count({ where: { status: '0' } }),
+      this.prisma.appUser.count({ where: { regStatus: '1' } }),
+    ]);
+    return { totalMuseums, totalSpecimens, totalUsers };
+  }
+
   /* 获取系统概况 */
   async getOverview() {
     const [

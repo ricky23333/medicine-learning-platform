@@ -14,7 +14,7 @@ export class AppUserService {
 
   /* 用户注册申请 */
   async register(registerDto: any) {
-    const { phone, userType, realName, institution, majorGrade, studentNo, contact } = registerDto;
+    const { phone, userType, realName, deptId, majorGrade, studentNo, contact } = registerDto;
 
     // 检查手机号是否已注册
     const existingUser = await this.prisma.sysUser.findFirst({
@@ -36,6 +36,7 @@ export class AppUserService {
         phonenumber: phone,
         status: '0',
         delFlag: '0',
+        deptId,
       },
     });
 
@@ -46,7 +47,7 @@ export class AppUserService {
         userType: userType || 'student',
         realName,
         phone,
-        institution,
+        institution: user.deptId.toString(),
         majorGrade: userType === 'student' ? majorGrade : null,
         studentNo: userType === 'student' ? studentNo : null,
         contact: userType === 'teacher' ? contact : null,
@@ -148,6 +149,12 @@ export class AppUserService {
               userId: true,
               userName: true,
               status: true,
+              dept: {
+                select: {
+                  deptId: true,
+                  deptName: true,
+                },
+              },
             },
           },
         },
@@ -328,6 +335,7 @@ export class AppUserService {
               nickName: item.realName,
               password: hashedPassword,
               phonenumber: item.userName,
+              deptId: item.deptId,
               status: '0',
               delFlag: '0',
             },
@@ -339,7 +347,7 @@ export class AppUserService {
               userType: item.userType,
               realName: item.realName,
               phone: item.userName,
-              institution: item.institution,
+              institution: item.deptId.toString(),
               majorGrade: item.userType === 'student' ? item.majorGrade : null,
               studentNo: item.userType === 'student' ? item.studentNo : null,
               contact: item.userType === 'teacher' ? item.contact : null,

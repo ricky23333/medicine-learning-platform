@@ -17,3 +17,12 @@ export function getStatsVisitChart(days) {
     params: { days }
   })
 }
+
+
+// 获取公共系统基础信息概览
+export function getPublicStats() {
+  return request({
+    url: '/public/stats/summary',
+    method: 'get',
+  })
+}

@@ -153,4 +153,32 @@ ul li .el-tree .el-tree-node__content {
   background-color: mix(#fff, $--color-primary, 90%);
   color: $--color-primary;
 }
+
+// 输入框统一样式（匹配登录页面输入框）
+:deep(.el-input__wrapper) {
+  padding: 4px 11px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  box-shadow: none;
+  border: 1.5px solid #e0e0e0;
+  transition: all 0.2s;
+
+  &:focus-within {
+    border-color: #2d6a4f;
+  }
+}
+
+:deep(.el-select__wrapper) {
+  padding: 4px 11px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  box-shadow: none;
+  border: 1.5px solid #e0e0e0;
+  min-height: 36px;
+
+  &:focus-within {
+    border-color: #2d6a4f;
+    box-shadow: none;
+  }
+}
 </style>

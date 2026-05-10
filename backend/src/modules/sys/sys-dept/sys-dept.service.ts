@@ -20,6 +20,20 @@ import { DataScope } from 'src/common/type/data-scope.type';
 @Injectable()
 export class SysDeptService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /* 公开接口：获取所有组织（id, parentId, deptName） */
+  async publicList() {
+    return await this.prisma.sysDept.findMany({
+      where: { delFlag: '0' },
+      select: {
+        deptId: true,
+        parentId: true,
+        deptName: true,
+      },
+      orderBy: { orderNum: 'asc' },
+    });
+  }
+
   /* 列表查询 */
   async list(getSysDeptListDto: GetSysDeptListDto, dataScope: DataScope) {
     const { deptName, status } = getSysDeptListDto;
