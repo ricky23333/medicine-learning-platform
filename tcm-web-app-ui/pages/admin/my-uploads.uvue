@@ -1,0 +1,578 @@
+<template>
+  <view class="my-uploads-page">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">我的上传</text>
+      <text class="upload-count">共 {{ totalCount }} 个上传</text>
+      <view class="upload-btn" @click="showUploadModal = true">
+        <text>＋ 上传图片</text>
+      </view>
+    </view>
+
+    <!-- 统计卡片 -->
+    <view class="stats-row">
+      <view class="stat-card pending">
+        <text class="stat-value">{{ pendingCount }}</text>
+        <text class="stat-label">待审核</text>
+      </view>
+      <view class="stat-card approved">
+        <text class="stat-value">{{ approvedCount }}</text>
+        <text class="stat-label">已通过</text>
+      </view>
+      <view class="stat-card rejected">
+        <text class="stat-value">{{ rejectedCount }}</text>
+        <text class="stat-label">已拒绝</text>
+      </view>
+    </view>
+
+    <!-- 提示 -->
+    <view class="notice">
+      <text class="notice-icon">💡</text>
+      <text class="notice-text">上传的图片需要经过审核才能正式展示，请耐心等待</text>
+    </view>
+
+    <!-- 图片网格 -->
+    <view class="images-grid">
+      <view
+        v-for="item in myUploads"
+        :key="item.id"
+        class="image-card"
+      >
+        <view class="image-wrapper">
+          <image :src="item.url" mode="aspectFill" class="image" />
+          <view class="watermark">中药数字标本馆</view>
+          <view :class="['status-badge', item.status]">
+            {{ getStatusText(item.status) }}
+          </view>
+        </view>
+        <view class="image-info">
+          <text class="specimen-name">{{ item.specimenName }}</text>
+          <text class="upload-date">{{ formatDate(item.uploadedAt) }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view v-if="myUploads.length === 0" class="empty-state">
+      <text class="empty-icon">📤</text>
+      <text class="empty-text">暂无上传记录</text>
+      <text class="empty-hint">点击上方按钮开始上传</text>
+    </view>
+
+    <!-- 上传弹窗 -->
+    <view v-if="showUploadModal" class="modal-overlay" @click="closeUploadModal">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">上传图片</text>
+          <text class="modal-close" @click="closeUploadModal">✕</text>
+        </view>
+
+        <view class="modal-body">
+          <!-- 模式切换 -->
+          <view class="mode-tabs">
+            <view
+              :class="['mode-tab', { active: uploadMode === 'existing' }]"
+              @click="uploadMode = 'existing'"
+            >
+              添加到现有标本
+            </view>
+            <view
+              :class="['mode-tab', { active: uploadMode === 'new' }]"
+              @click="uploadMode = 'new'"
+            >
+              创建新标本
+            </view>
+          </view>
+
+          <!-- 标本选择 -->
+          <view v-if="uploadMode === 'existing'" class="form-item">
+            <text class="form-label">选择标本</text>
+            <picker
+              :value="selectedSpecimenIndex"
+              :range="specimenOptions"
+              range-key="name"
+              @change="onSpecimenChange"
+            >
+              <view class="picker-value">
+                {{ selectedSpecimenName || '请选择标本' }}
+              </view>
+            </picker>
+          </view>
+
+          <!-- 新标本信息 -->
+          <view v-if="uploadMode === 'new'" class="new-specimen-form">
+            <view class="form-item">
+              <text class="form-label">标本馆</text>
+              <picker
+                :value="newMuseumIndex"
+                :range="museumOptions"
+                range-key="name"
+                @change="onNewMuseumChange"
+              >
+                <view class="picker-value">{{ newMuseumDisplayName || '请选择' }}</view>
+              </picker>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">分类</text>
+              <picker
+                :value="newCategoryIndex"
+                :range="categoryOptions"
+                range-key="name"
+                @change="onNewCategoryChange"
+              >
+                <view class="picker-value">{{ newCategoryDisplayName || '请选择' }}</view>
+              </picker>
+            </view>
+
+            <view class="form-item">
+              <text class="form-label">标本名称</text>
+              <input v-model="newSpecimenName" class="form-input" placeholder="请输入名称" />
+            </view>
+          </view>
+
+          <!-- 模拟上传按钮 -->
+          <view class="upload-placeholder" @click="simulateUpload">
+            <text class="upload-icon">📷</text>
+            <text class="upload-text">点击模拟上传图片</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
+
+const appStore = useAppStore()
+const userStore = useUserStore()
+
+// 弹窗状态
+const showUploadModal = ref(false)
+const uploadMode = ref('existing')
+
+// 选择状态
+const selectedSpecimenIndex = ref(0)
+const newMuseumIndex = ref(0)
+const newCategoryIndex = ref(0)
+
+// 新建标本表单
+const newSpecimenName = ref('')
+
+// 我的上传（模拟数据）
+const myUploads = computed(() => {
+  const userId = userStore.currentUser?.id
+  if (!userId) return []
+
+  const uploads: {
+    id: number
+    url: string
+    specimenName: string
+    status: 'pending' | 'approved' | 'rejected'
+    uploadedAt: string
+  }[] = []
+
+  appStore.specimens.forEach(specimen => {
+    specimen.images.forEach(image => {
+      if (image.uploadedBy === userId) {
+        uploads.push({
+          id: image.id,
+          url: image.url,
+          specimenName: specimen.name,
+          status: image.status,
+          uploadedAt: image.uploadedAt
+        })
+      }
+    })
+  })
+
+  return uploads
+})
+
+// 统计
+const pendingCount = computed(() => myUploads.value.filter(u => u.status === 'pending').length)
+const approvedCount = computed(() => myUploads.value.filter(u => u.status === 'approved').length)
+const rejectedCount = computed(() => myUploads.value.filter(u => u.status === 'rejected').length)
+const totalCount = computed(() => myUploads.value.length)
+
+// 标本选项
+const specimenOptions = computed(() =>
+  appStore.specimens.map(s => ({ id: s.id, name: s.name }))
+)
+
+const selectedSpecimenName = computed(() =>
+  specimenOptions.value[selectedSpecimenIndex.value]?.name || ''
+)
+
+// 标本馆选项
+const museumOptions = computed(() =>
+  appStore.museums.map(m => ({ id: m.id, name: m.name }))
+)
+
+const newMuseumDisplayName = computed(() =>
+  museumOptions.value[newMuseumIndex.value]?.name || ''
+)
+
+// 分类选项
+const categoryOptions = computed(() => {
+  const museum = appStore.museums[newMuseumIndex.value]
+  return museum?.categories || []
+})
+
+const newCategoryDisplayName = computed(() =>
+  categoryOptions.value[newCategoryIndex.value]?.name || ''
+)
+
+// 获取状态文字
+function getStatusText(status: string): string {
+  const map: Record<string, string> = {
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝'
+  }
+  return map[status] || status
+}
+
+// 格式化日期
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+// 选择标本
+function onSpecimenChange(e: any) {
+  selectedSpecimenIndex.value = e.detail.value
+}
+
+// 选择标本馆
+function onNewMuseumChange(e: any) {
+  newMuseumIndex.value = e.detail.value
+  newCategoryIndex.value = 0
+}
+
+// 选择分类
+function onNewCategoryChange(e: any) {
+  newCategoryIndex.value = e.detail.value
+}
+
+// 关闭弹窗
+function closeUploadModal() {
+  showUploadModal.value = false
+  uploadMode.value = 'existing'
+  newSpecimenName.value = ''
+}
+
+// 模拟上传
+function simulateUpload() {
+  uni.showToast({ title: '上传功能开发中', icon: 'none' })
+}
+</script>
+
+<style lang="scss">
+.my-uploads-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+.upload-count {
+  flex: 1;
+  font-size: 13px;
+  color: $tcm-text-grey;
+}
+
+.upload-btn {
+  background: $tcm-primary;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+/* 统计卡片 */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+
+  &.pending { background: $tcm-status-pending-bg; }
+  &.approved { background: $tcm-status-approved-bg; }
+  &.rejected { background: $tcm-status-rejected-bg; }
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  display: block;
+}
+
+.stat-label {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.pending .stat-value { color: $tcm-status-pending-text; }
+.approved .stat-value { color: $tcm-status-approved-text; }
+.rejected .stat-value { color: $tcm-status-rejected-text; }
+
+/* 提示 */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #e8f5e9;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.notice-icon {
+  font-size: 16px;
+}
+
+.notice-text {
+  font-size: 13px;
+  color: $tcm-primary;
+}
+
+/* 图片网格 */
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.image-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.image-wrapper {
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+}
+
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-30deg);
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.status-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #fff;
+
+  &.pending { background: $tcm-warning; }
+  &.approved { background: $tcm-primary; }
+  &.rejected { background: $tcm-error; }
+}
+
+.image-info {
+  padding: 10px;
+}
+
+.specimen-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: $tcm-text-dark;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.upload-date {
+  font-size: 10px;
+  color: $tcm-text-light;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: $tcm-text-grey;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: $tcm-text-light;
+  margin-top: 8px;
+}
+
+/* 弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+.modal-close {
+  font-size: 20px;
+  color: $tcm-text-light;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+/* 模式切换 */
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  background: #f0f0f0;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &.active {
+    background: $tcm-primary;
+    color: #fff;
+  }
+}
+
+/* 表单 */
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 13px;
+  color: $tcm-text-grey;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  height: 40px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.picker-value {
+  height: 40px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+/* 上传占位 */
+.upload-placeholder {
+  margin-top: 20px;
+  padding: 40px;
+  border: 2px dashed #d0d0d0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+
+  &:active {
+    border-color: $tcm-primary;
+    background: #f8faf8;
+  }
+}
+
+.upload-icon {
+  font-size: 32px;
+}
+
+.upload-text {
+  font-size: 13px;
+  color: $tcm-text-grey;
+}
+</style>

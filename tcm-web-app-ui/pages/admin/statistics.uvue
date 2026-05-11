@@ -1,0 +1,556 @@
+<template>
+  <view class="statistics-page">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">系统统计</text>
+      <view class="period-selector">
+        <view
+          v-for="period in periodOptions"
+          :key="period.value"
+          :class="['period-btn', { active: selectedPeriod === period.value }]"
+          @click="selectedPeriod = period.value"
+        >
+          <text>{{ period.label }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 今日数据 -->
+    <view class="today-stats">
+      <view class="stat-card highlight">
+        <text class="stat-icon">📊</text>
+        <view class="stat-info">
+          <text class="stat-value">{{ todayVisits }}</text>
+          <text class="stat-label">今日访问</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <text class="stat-icon">👥</text>
+        <view class="stat-info">
+          <text class="stat-value">{{ totalVisits }}</text>
+          <text class="stat-label">总访问量</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <text class="stat-icon">🔥</text>
+        <view class="stat-info">
+          <text class="stat-value">{{ activeUsers }}</text>
+          <text class="stat-label">活跃用户</text>
+        </view>
+      </view>
+      <view class="stat-card">
+        <text class="stat-icon">📝</text>
+        <view class="stat-info">
+          <text class="stat-value">{{ totalExams }}</text>
+          <text class="stat-label">总考试数</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 访问趋势图 -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-title">访问趋势</text>
+      </view>
+      <view class="area-chart">
+        <view class="chart-bars">
+          <view
+            v-for="(item, index) in chartData"
+            :key="index"
+            class="bar-wrapper"
+          >
+            <view class="bar-container">
+              <view
+                class="bar visits"
+                :style="{ height: (item.visits / maxVisits * 100) + '%' }"
+              ></view>
+              <view
+                class="bar users"
+                :style="{ height: (item.users / maxUsers * 80) + '%' }"
+              ></view>
+            </view>
+            <text class="bar-label">{{ formatDateShort(item.date) }}</text>
+          </view>
+        </view>
+        <view class="chart-legend">
+          <view class="legend-item">
+            <view class="legend-dot visits"></view>
+            <text>访问量</text>
+          </view>
+          <view class="legend-item">
+            <view class="legend-dot users"></view>
+            <text>用户数</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 图表行 -->
+    <view class="charts-row">
+      <!-- 考试分数分布 -->
+      <view class="chart-card">
+        <view class="chart-header">
+          <text class="chart-title">考试分数分布</text>
+        </view>
+        <view class="bar-chart">
+          <view
+            v-for="(item, index) in scoreDistribution"
+            :key="index"
+            class="bar-item"
+          >
+            <view class="bar-bg">
+              <view
+                class="bar-fill"
+                :style="{ width: (item.count / maxScoreCount * 100) + '%' }"
+              ></view>
+            </view>
+            <text class="bar-range">{{ item.range }}</text>
+            <text class="bar-count">{{ item.count }}人</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分类统计 -->
+      <view class="chart-card">
+        <view class="chart-header">
+          <text class="chart-title">标本分类统计</text>
+        </view>
+        <view class="category-bars">
+          <view
+            v-for="(item, index) in categoryStats"
+            :key="index"
+            class="category-item"
+          >
+            <text class="category-name">{{ item.name }}</text>
+            <view class="category-bar-bg">
+              <view
+                class="category-bar-fill"
+                :style="{
+                  width: (item.count / maxCategoryCount * 100) + '%',
+                  background: item.color
+                }"
+              ></view>
+            </view>
+            <text class="category-count">{{ item.count }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 标本馆访问统计 -->
+    <view class="chart-card">
+      <view class="chart-header">
+        <text class="chart-title">标本馆访问统计</text>
+      </view>
+      <view class="museum-stats">
+        <view
+          v-for="museum in museums"
+          :key="museum.id"
+          class="museum-item"
+        >
+          <view class="museum-header">
+            <text class="museum-icon">{{ museum.icon }}</text>
+            <text class="museum-name">{{ museum.name }}</text>
+            <text class="museum-visits">{{ getMuseumVisits(museum.id) }} 访问</text>
+          </view>
+          <view class="museum-progress">
+            <view
+              class="progress-fill"
+              :style="{ width: (getMuseumVisits(museum.id) / maxMuseumVisits * 100) + '%' }"
+            ></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { useAppStore } from '@/stores/app'
+
+const appStore = useAppStore()
+
+// 选择的周期
+const selectedPeriod = ref(14)
+const periodOptions = [
+  { label: '7天', value: 7 },
+  { label: '14天', value: 14 },
+  { label: '30天', value: 30 }
+]
+
+// 统计数据
+const todayStats = computed(() => appStore.systemStats)
+const visitData = computed(() => appStore.visitData)
+
+// 图表数据
+const chartData = computed(() => visitData.value.slice(-selectedPeriod.value))
+
+const maxVisits = computed(() => {
+  return Math.max(...chartData.value.map(v => v.visits), 1)
+})
+
+const maxUsers = computed(() => {
+  return Math.max(...chartData.value.map(v => v.users), 1)
+})
+
+// 今日数据
+const todayVisits = computed(() => {
+  const today = visitData.value[visitData.value.length - 1]
+  return today?.visits || 0
+})
+
+const totalVisits = computed(() => appStore.systemStats.totalVisits)
+const activeUsers = computed(() => Math.round(appStore.systemStats.totalUsers * 0.6))
+const totalExams = computed(() => appStore.systemStats.totalExams)
+
+// 考试分数分布（模拟数据）
+const scoreDistribution = computed(() => [
+  { range: '0-20', count: 5 },
+  { range: '21-40', count: 12 },
+  { range: '41-60', count: 28 },
+  { range: '61-80', count: 45 },
+  { range: '81-100', count: 35 }
+])
+
+const maxScoreCount = computed(() => {
+  return Math.max(...scoreDistribution.value.map(s => s.count), 1)
+})
+
+// 分类统计
+const categoryStats = computed(() => appStore.getCategoryStats())
+
+const maxCategoryCount = computed(() => {
+  return Math.max(...categoryStats.value.map(c => c.count), 1)
+})
+
+// 标本馆
+const museums = computed(() => appStore.museums)
+
+// 标本馆访问（模拟数据）
+const museumVisits = { 1: 456, 2: 389 }
+
+function getMuseumVisits(museumId: number): number {
+  return museumVisits[museumId] || 0
+}
+
+const maxMuseumVisits = computed(() => {
+  return Math.max(...Object.values(museumVisits), 1)
+})
+
+// 格式化日期
+function formatDateShort(dateStr: string): string {
+  const date = new Date(dateStr)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+</script>
+
+<style lang="scss">
+.statistics-page {
+  padding: 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+.period-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.period-btn {
+  padding: 8px 16px;
+  background: #fff;
+  border-radius: 16px;
+  font-size: 13px;
+
+  &.active {
+    background: $tcm-primary;
+    color: #fff;
+  }
+}
+
+/* 今日数据 */
+.today-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  &.highlight {
+    background: linear-gradient(135deg, $tcm-primary, $tcm-secondary);
+    color: #fff;
+
+    .stat-label {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+}
+
+.stat-icon {
+  font-size: 24px;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: $tcm-text-grey;
+  margin-top: 2px;
+}
+
+/* 图表卡片 */
+.chart-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.chart-header {
+  margin-bottom: 16px;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+/* 面积图 */
+.area-chart {
+  padding-top: 10px;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 120px;
+  padding-bottom: 20px;
+}
+
+.bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.bar-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100px;
+  width: 16px;
+}
+
+.bar {
+  width: 8px;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.3s ease;
+
+  &.visits {
+    background: $tcm-primary;
+  }
+
+  &.users {
+    background: $tcm-light;
+  }
+}
+
+.bar-label {
+  font-size: 10px;
+  color: $tcm-text-light;
+  margin-top: 4px;
+}
+
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding-top: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: $tcm-text-grey;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+
+  &.visits { background: $tcm-primary; }
+  &.users { background: $tcm-light; }
+}
+
+/* 柱状图 */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-bg {
+  flex: 1;
+  height: 20px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, $tcm-primary, $tcm-light);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.bar-range {
+  font-size: 11px;
+  color: $tcm-text-grey;
+  min-width: 40px;
+}
+
+.bar-count {
+  font-size: 11px;
+  color: $tcm-text-dark;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* 分类统计 */
+.category-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-name {
+  font-size: 12px;
+  color: $tcm-text-medium;
+  min-width: 60px;
+}
+
+.category-bar-bg {
+  flex: 1;
+  height: 12px;
+  background: #f0f0f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.category-count {
+  font-size: 11px;
+  color: $tcm-text-dark;
+  min-width: 24px;
+  text-align: right;
+}
+
+/* 标本馆统计 */
+.museum-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.museum-item {
+  padding: 12px;
+  background: #f8faf8;
+  border-radius: 10px;
+}
+
+.museum-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.museum-icon {
+  font-size: 20px;
+}
+
+.museum-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: $tcm-text-dark;
+}
+
+.museum-visits {
+  font-size: 12px;
+  color: $tcm-text-grey;
+}
+
+.museum-progress {
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, $tcm-primary, $tcm-light);
+  border-radius: 3px;
+}
+</style>

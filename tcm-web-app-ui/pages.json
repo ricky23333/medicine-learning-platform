@@ -1,0 +1,81 @@
+{
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/index",
+      "style": {
+        "navigationBarTitleText": "管理后台",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/dashboard",
+      "style": {
+        "navigationBarTitleText": "系统概况",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/museums",
+      "style": {
+        "navigationBarTitleText": "标本馆管理",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/specimens",
+      "style": {
+        "navigationBarTitleText": "标本信息",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/accounts",
+      "style": {
+        "navigationBarTitleText": "账号管理",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/reviews",
+      "style": {
+        "navigationBarTitleText": "审核中心",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/statistics",
+      "style": {
+        "navigationBarTitleText": "系统统计",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/my-uploads",
+      "style": {
+        "navigationBarTitleText": "我的上传",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/mobile/index",
+      "style": {
+        "navigationBarTitleText": "移动端",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "中药数字标本馆",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "uniIdRouter": {}
+}

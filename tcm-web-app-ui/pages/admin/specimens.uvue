@@ -1,0 +1,896 @@
+<template>
+  <view class="specimens-page">
+    <!-- 页面标题 -->
+    <view class="page-header">
+      <text class="page-title">标本信息</text>
+      <text class="specimen-count">{{ specimens.length }} 个标本</text>
+      <view v-if="isAdmin" class="add-btn" @click="showAddModal = true">
+        <text>＋ 新增标本</text>
+      </view>
+    </view>
+
+    <!-- 筛选栏 -->
+    <view class="filter-bar">
+      <input
+        v-model="searchKeyword"
+        class="search-input"
+        placeholder="搜索标本名称"
+      />
+      <view class="filter-dropdown" @click="showMuseumFilter = !showMuseumFilter">
+        <text>{{ selectedMuseumName }}</text>
+        <text class="dropdown-arrow">{{ showMuseumFilter ? '▲' : '▼' }}</text>
+      </view>
+      <view v-if="showMuseumFilter" class="dropdown-menu">
+        <view
+          v-for="museum in museums"
+          :key="museum.id"
+          class="dropdown-item"
+          @click="selectMuseum(museum.id)"
+        >
+          <text>{{ museum.name }}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 标本网格 -->
+    <view class="specimens-grid">
+      <view
+        v-for="specimen in filteredSpecimens"
+        :key="specimen.id"
+        class="specimen-card"
+        @click="openDetail(specimen)"
+      >
+        <view class="specimen-image">
+          <image
+            v-if="specimen.images.length > 0"
+            :src="specimen.images[0].url"
+            mode="aspectFill"
+            class="image"
+          />
+          <view v-else class="image-placeholder">📷</view>
+
+          <!-- 状态标签 -->
+          <view class="image-badges">
+            <view v-if="getPendingCount(specimen) > 0" class="badge pending-badge">
+              {{ getPendingCount(specimen) }} 待审
+            </view>
+            <view class="badge count-badge">
+              {{ specimen.images.length }} 图
+            </view>
+          </view>
+        </view>
+
+        <view class="specimen-info">
+          <text class="specimen-name">{{ specimen.name }}</text>
+          <text v-if="specimen.latinName" class="specimen-latin">{{ specimen.latinName }}</text>
+          <view class="specimen-tags">
+            <text class="tag museum-tag">{{ getMuseumName(specimen.museumId) }}</text>
+            <text class="tag category-tag">{{ getCategoryName(specimen.categoryId) }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view v-if="filteredSpecimens.length === 0" class="empty-state">
+      <text class="empty-icon">🔬</text>
+      <text class="empty-text">暂无标本</text>
+    </view>
+
+    <!-- 标本详情弹窗 -->
+    <view v-if="currentSpecimen" class="modal-overlay" @click="closeDetail">
+      <view class="detail-modal" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">{{ currentSpecimen.name }}</text>
+          <text class="modal-close" @click="closeDetail">✕</text>
+        </view>
+
+        <view class="modal-body">
+          <!-- 图片区域 -->
+          <view class="images-section">
+            <view class="main-image">
+              <image
+                v-if="currentSpecimen.images.length > 0"
+                :src="currentSpecimen.images[0].url"
+                mode="aspectFit"
+                class="main-img"
+              />
+              <view v-else class="image-placeholder large">📷</view>
+            </view>
+
+            <!-- 图片列表 -->
+            <view class="images-list">
+              <view
+                v-for="image in currentSpecimen.images"
+                :key="image.id"
+                class="image-item"
+              >
+                <image :src="image.url" mode="aspectFill" class="thumb-img" />
+                <view :class="['status-badge', image.status + '-status']">
+                  {{ getStatusText(image.status) }}
+                </view>
+
+                <view v-if="isAdmin && image.status === 'pending'" class="image-actions">
+                  <text class="action-btn approve" @click="approveImage(image.id)">✓</text>
+                  <text class="action-btn reject" @click="rejectImage(image.id)">✗</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 标本信息 -->
+          <view class="specimen-detail">
+            <view class="detail-row">
+              <text class="detail-label">标本馆</text>
+              <text class="detail-value">{{ getMuseumName(currentSpecimen.museumId) }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">分类</text>
+              <text class="detail-value">{{ getCategoryName(currentSpecimen.categoryId) }}</text>
+            </view>
+            <view v-if="currentSpecimen.latinName" class="detail-row">
+              <text class="detail-label">拉丁名</text>
+              <text class="detail-value latin">{{ currentSpecimen.latinName }}</text>
+            </view>
+            <view v-if="currentSpecimen.properties" class="detail-row">
+              <text class="detail-label">性味</text>
+              <text class="detail-value">{{ currentSpecimen.properties }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">备注</text>
+              <text class="detail-value">{{ currentSpecimen.notes }}</text>
+            </view>
+          </view>
+        </view>
+
+        <view v-if="isVIPTeacher" class="modal-footer">
+          <button class="btn-primary" @click="showUploadModal">上传图片</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 新增标本弹窗 -->
+    <view v-if="showAddModal" class="modal-overlay" @click="closeAddModal">
+      <view class="modal-content" @click.stop>
+        <view class="modal-header">
+          <text class="modal-title">新增标本</text>
+          <text class="modal-close" @click="closeAddModal">✕</text>
+        </view>
+
+        <view class="modal-body">
+          <view class="form-item">
+            <text class="form-label">标本馆</text>
+            <picker
+              :value="addForm.museumIndex"
+              :range="museumOptions"
+              range-key="name"
+              @change="onMuseumChange"
+            >
+              <view class="picker-value">{{ addForm.museumName || '请选择' }}</view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">分类</text>
+            <picker
+              :value="addForm.categoryIndex"
+              :range="categoryOptions"
+              range-key="name"
+              @change="onCategoryChange"
+            >
+              <view class="picker-value">{{ addForm.categoryName || '请选择' }}</view>
+            </picker>
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">标本名称</text>
+            <input v-model="addForm.name" class="form-input" placeholder="请输入名称" />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">拉丁名</text>
+            <input v-model="addForm.latinName" class="form-input" placeholder="请输入拉丁名" />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">性味</text>
+            <input v-model="addForm.properties" class="form-input" placeholder="如：性温，味甘" />
+          </view>
+
+          <view class="form-item">
+            <text class="form-label">备注</text>
+            <textarea v-model="addForm.notes" class="form-textarea" placeholder="请输入备注"></textarea>
+          </view>
+        </view>
+
+        <view class="modal-footer">
+          <button class="btn-cancel" @click="closeAddModal">取消</button>
+          <button class="btn-confirm" @click="saveSpecimen">保存</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, reactive, computed } from 'vue'
+import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
+import type { Specimen, Museum, Category } from '@/utils/mock'
+
+const appStore = useAppStore()
+const userStore = useUserStore()
+
+const isAdmin = computed(() => userStore.isAdmin)
+const isVIPTeacher = computed(() => userStore.isVIPTeacher)
+
+// 筛选状态
+const searchKeyword = ref('')
+const selectedMuseumId = ref<number | null>(null)
+const showMuseumFilter = ref(false)
+
+// 弹窗状态
+const showAddModal = ref(false)
+const currentSpecimen = ref<Specimen | null>(null)
+
+// 新增表单
+const addForm = reactive({
+  museumId: 0,
+  museumName: '',
+  museumIndex: 0,
+  categoryId: 0,
+  categoryName: '',
+  categoryIndex: 0,
+  name: '',
+  latinName: '',
+  properties: '',
+  notes: ''
+})
+
+// 计算属性
+const museums = computed(() => appStore.museums)
+const specimens = computed(() => appStore.specimens)
+
+const selectedMuseumName = computed(() => {
+  if (selectedMuseumId.value === null) return '全部标本馆'
+  const museum = museums.value.find(m => m.id === selectedMuseumId.value)
+  return museum?.name || '全部标本馆'
+})
+
+// 标本馆选项
+const museumOptions = computed(() => museums.value.map(m => ({ id: m.id, name: m.name })))
+
+// 分类选项
+const categoryOptions = computed(() => {
+  if (selectedMuseumId.value === null) return []
+  const museum = museums.value.find(m => m.id === selectedMuseumId.value)
+  return museum?.categories || []
+})
+
+// 筛选后的标本
+const filteredSpecimens = computed(() => {
+  let result = specimens.value
+
+  if (selectedMuseumId.value !== null) {
+    result = result.filter(s => s.museumId === selectedMuseumId.value)
+  }
+
+  if (searchKeyword.value.trim()) {
+    const keyword = searchKeyword.value.trim().toLowerCase()
+    result = result.filter(s =>
+      s.name.toLowerCase().includes(keyword) ||
+      (s.latinName && s.latinName.toLowerCase().includes(keyword))
+    )
+  }
+
+  return result
+})
+
+// 获取待审核数量
+function getPendingCount(specimen: Specimen): number {
+  return specimen.images.filter(i => i.status === 'pending').length
+}
+
+// 获取状态文字
+function getStatusText(status: string): string {
+  const map: Record<string, string> = {
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝'
+  }
+  return map[status] || status
+}
+
+// 获取标本馆名称
+function getMuseumName(museumId: number): string {
+  const museum = museums.value.find(m => m.id === museumId)
+  return museum?.name || ''
+}
+
+// 获取分类名称
+function getCategoryName(categoryId: number): string {
+  for (const museum of museums.value) {
+    const category = museum.categories.find(c => c.id === categoryId)
+    if (category) return category.name
+  }
+  return ''
+}
+
+// 选择标本馆
+function selectMuseum(museumId: number) {
+  selectedMuseumId.value = museumId
+  showMuseumFilter.value = false
+}
+
+// 打开详情
+function openDetail(specimen: Specimen) {
+  currentSpecimen.value = specimen
+}
+
+// 关闭详情
+function closeDetail() {
+  currentSpecimen.value = null
+}
+
+// 审核图片
+function approveImage(imageId: number) {
+  if (!currentSpecimen.value) return
+  appStore.approveImage(currentSpecimen.value.id, imageId)
+  uni.showToast({ title: '已通过', icon: 'success' })
+}
+
+function rejectImage(imageId: number) {
+  if (!currentSpecimen.value) return
+  appStore.rejectImage(currentSpecimen.value.id, imageId)
+  uni.showToast({ title: '已拒绝', icon: 'success' })
+}
+
+// 新增标本
+function onMuseumChange(e: any) {
+  const index = e.detail.value
+  const museum = museumOptions.value[index]
+  if (museum) {
+    addForm.museumId = museum.id
+    addForm.museumName = museum.name
+    addForm.museumIndex = index
+    addForm.categoryId = 0
+    addForm.categoryName = ''
+    addForm.categoryIndex = 0
+  }
+}
+
+function onCategoryChange(e: any) {
+  const index = e.detail.value
+  const category = categoryOptions.value[index]
+  if (category) {
+    addForm.categoryId = category.id
+    addForm.categoryName = category.name
+    addForm.categoryIndex = index
+  }
+}
+
+function closeAddModal() {
+  showAddModal.value = false
+  addForm.museumId = 0
+  addForm.museumName = ''
+  addForm.categoryId = 0
+  addForm.categoryName = ''
+  addForm.name = ''
+  addForm.latinName = ''
+  addForm.properties = ''
+  addForm.notes = ''
+}
+
+function saveSpecimen() {
+  if (!addForm.museumId) {
+    uni.showToast({ title: '请选择标本馆', icon: 'none' })
+    return
+  }
+  if (!addForm.categoryId) {
+    uni.showToast({ title: '请选择分类', icon: 'none' })
+    return
+  }
+  if (!addForm.name.trim()) {
+    uni.showToast({ title: '请输入名称', icon: 'none' })
+    return
+  }
+
+  appStore.addSpecimen({
+    museumId: addForm.museumId,
+    categoryId: addForm.categoryId,
+    name: addForm.name,
+    latinName: addForm.latinName,
+    properties: addForm.properties,
+    notes: addForm.notes,
+    images: [],
+    createdBy: userStore.currentUser?.id || 0
+  })
+
+  uni.showToast({ title: '添加成功', icon: 'success' })
+  closeAddModal()
+}
+
+function showUploadModal() {
+  uni.showToast({ title: '上传功能开发中', icon: 'none' })
+}
+</script>
+
+<style lang="scss">
+.specimens-page {
+  padding: 0;
+}
+
+/* 页面标题 */
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+.specimen-count {
+  flex: 1;
+  font-size: 13px;
+  color: $tcm-text-grey;
+}
+
+.add-btn {
+  background: $tcm-primary;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+
+  &:active {
+    opacity: 0.9;
+  }
+}
+
+/* 筛选栏 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.search-input {
+  flex: 1;
+  height: 40px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.filter-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.dropdown-arrow {
+  font-size: 10px;
+  color: $tcm-text-light;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 150px;
+}
+
+.dropdown-item {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background: #f8faf8;
+  }
+}
+
+/* 标本网格 */
+.specimens-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.specimen-card {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.specimen-image {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #f5f5f5;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+}
+
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #ccc;
+
+  &.large {
+    font-size: 48px;
+  }
+}
+
+.image-badges {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #fff;
+}
+
+.pending-badge {
+  background: $tcm-warning;
+}
+
+.count-badge {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.specimen-info {
+  padding: 12px;
+}
+
+.specimen-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: $tcm-text-dark;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.specimen-latin {
+  font-size: 11px;
+  color: $tcm-text-light;
+  font-style: italic;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.specimen-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.museum-tag {
+  background: #e8f5e9;
+  color: $tcm-primary;
+}
+
+.category-tag {
+  background: #f0f0f0;
+  color: $tcm-text-grey;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.empty-text {
+  font-size: 16px;
+  color: $tcm-text-grey;
+}
+
+/* 详情弹窗 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.detail-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: $tcm-text-dark;
+}
+
+.modal-close {
+  font-size: 20px;
+  color: $tcm-text-light;
+  cursor: pointer;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* 图片区域 */
+.images-section {
+  margin-bottom: 20px;
+}
+
+.main-image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #f5f5f5;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.main-img {
+  width: 100%;
+  height: 100%;
+}
+
+.images-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.image-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.thumb-img {
+  width: 100%;
+  height: 100%;
+}
+
+.status-badge {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.pending-status {
+  background: $tcm-warning;
+}
+
+.approved-status {
+  background: $tcm-primary;
+}
+
+.rejected-status {
+  background: $tcm-error;
+}
+
+.image-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+
+  &.approve {
+    background: $tcm-primary;
+    color: #fff;
+  }
+
+  &.reject {
+    background: $tcm-error;
+    color: #fff;
+  }
+}
+
+/* 标本详情 */
+.specimen-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.detail-label {
+  width: 70px;
+  font-size: 13px;
+  color: $tcm-text-grey;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  flex: 1;
+  font-size: 13px;
+  color: $tcm-text-dark;
+
+  &.latin {
+    font-style: italic;
+  }
+}
+
+/* 表单 */
+.form-item {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 13px;
+  color: $tcm-text-grey;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  height: 40px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.form-textarea {
+  width: 100%;
+  min-height: 60px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.picker-value {
+  height: 40px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+/* 按钮 */
+.btn-cancel {
+  flex: 1;
+  height: 44px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.btn-confirm {
+  flex: 1;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: $tcm-primary;
+  font-size: 14px;
+  color: #fff;
+}
+
+.btn-primary {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: $tcm-primary;
+  font-size: 14px;
+  color: #fff;
+}
+</style>
