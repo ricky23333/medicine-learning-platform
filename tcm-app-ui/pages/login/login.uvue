@@ -36,8 +36,8 @@
 					</view>
 
 					<!-- 权限说明 -->
-					<view class="permission-note">
-						<text class="permission-icon">📷</text>
+					<view class="permission-note">					
+					    <image class="permission-icon" src="/static/icons/camera.png" mode="aspectFit" />
 						<text class="permission-text">我们将申请获取您的头像和昵称权限</text>
 					</view>
 				</view>
@@ -212,6 +212,7 @@
 		flex-wrap: wrap;
 		gap: 8px;
 		margin: 16px 0;
+	
 	}
 
 	.link-item {
@@ -228,10 +229,13 @@
 		padding: 12px;
 		border-radius: 12px;
 		margin-top: 8px;
+		flex-direction: row;
 	}
 
 	.permission-icon {
 		font-size: 16px;
+		width: 16px;
+		height: 16px;
 	}
 
 	.permission-text {
