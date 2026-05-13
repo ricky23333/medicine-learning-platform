@@ -9,8 +9,8 @@
           <text v-for="c in 3" :key="c" class="watermark-text" :style="{ top: `${(r-1) * 30 + 5}%`, left: `${(c-1) * 38 - 5}%` }">中药数字标本馆</text>
         </view>
       </view>
-      <view class="zoom-hint">
-        <text class="zoom-icon">🔍</text>
+      <view class="zoom-hint">  
+        <image class="zoom-icon" src="/static/icons/zoom.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -31,16 +31,16 @@
     <view v-if="showPreview" class="preview-overlay" @click="closePreview">
       <view class="preview-toolbar">
         <view class="toolbar-btn" @click.stop="zoomIn">
-          <text class="toolbar-icon">➕</text>
+   <image class="toolbar-icon" src="/static/icons/plus.png" mode="aspectFit" />
         </view>
         <view class="toolbar-btn" @click.stop="zoomOut">
-          <text class="toolbar-icon">➖</text>
+    <image class="toolbar-icon" src="/static/icons/reduce.png" mode="aspectFit" />
         </view>
         <view class="toolbar-btn" @click.stop="resetZoom">
-          <text class="toolbar-icon">🔄</text>
+    <image class="toolbar-icon" src="/static/icons/refresh.png" mode="aspectFit" />
         </view>
         <view class="toolbar-btn" @click.stop="closePreview">
-          <text class="toolbar-icon">❌</text>
+               			<image class="toolbar-icon" src="/static/icons/close.png" mode="aspectFit" />
         </view>
       </view>
       <view class="preview-image-container" :style="{ transform: `scale(${scale})` }" @click.stop>
@@ -155,6 +155,8 @@ function resetZoom() {
 
 .zoom-icon {
   font-size: 12px;
+  width: 12px;
+  height: 12px;
 }
 
 .thumbnail-list {
@@ -214,6 +216,8 @@ function resetZoom() {
 
 .toolbar-icon {
   font-size: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .preview-image-container {

@@ -5,10 +5,13 @@
       <view class="avatar">
         <text class="avatar-text">{{ user?.name?.[0] || '?' }}</text>
       </view>
-      <text class="user-name">{{ user?.name || '游客' }}</text>
+      <text class="user-name">{{ user?.name || '无名氏' }}</text>
       <view class="role-tags">
-        <text class="role-tag">{{ roleText }}</text>
-        <text v-if="user?.role === 'vip_teacher'" class="vip-tag">👑VIP</text>
+        <text class="role-tag">{{ roleText||'游客' }}</text>
+        <view  class="vip-tag">
+          <image class="vip-icon" src="/static/icons/vip.png" mode="aspectFit" />
+       <text>VIP</text>     
+        </view>
       </view>
     </view>
 
@@ -36,13 +39,13 @@
       </view>
 
       <!-- VIP权限区域（仅教师可见） -->
-      <view v-if="user?.role === 'teacher'" class="vip-section">
+      <view class="vip-section">
         <view class="vip-header">
-          <text class="vip-icon">👑</text>
+                 <image class="vip-icon" src="/static/icons/vip.png" mode="aspectFit" />
           <text class="vip-title">VIP教师权限</text>
           <text class="vip-status">{{ vipStatusText }}</text>
         </view>
-        <text class="vip-desc">申请VIP权限后，可上传标本图片，丰富馆藏资源。</text>
+        <text class="vip-desc">申请VIP权限后，可在后台管理系统上传标本图片，丰富馆藏资源。</text>
 
         <template v-if="user?.vipStatus === 'none'">
           <textarea
@@ -61,12 +64,12 @@
       <!-- 操作列表 -->
       <view class="action-list">
         <view class="action-item" @click="goHistory">
-          <text class="action-icon">📊</text>
+               <image class="action-icon" src="/static/icons/history.png" mode="aspectFit" />
           <text class="action-label">我的考试记录</text>
           <text class="action-arrow">›</text>
         </view>
         <view class="action-item" @click="goChangePassword">
-          <text class="action-icon">🔒</text>
+          <image class="action-icon" src="/static/icons/password.png" mode="aspectFit" />
           <text class="action-label">修改密码</text>
           <text class="action-arrow">›</text>
         </view>
@@ -74,7 +77,7 @@
 
       <!-- 退出登录 -->
       <view class="logout-btn" @click="handleLogout">
-        <text class="logout-icon">🚪</text>
+        <image class="action-icon" src="/static/icons/exit.png" mode="aspectFit" />
         <text class="logout-text">退出登录</text>
       </view>
     </view>
@@ -150,6 +153,10 @@ function handleLogout() {
   background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
   padding: 32px 16px 40px;
   text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .avatar {
@@ -189,6 +196,7 @@ function handleLogout() {
   font-size: 12px;
   padding: 4px 12px;
   border-radius: 12px;
+    text-align: center;
 }
 
 .vip-tag {
@@ -199,12 +207,13 @@ function handleLogout() {
   border-radius: 12px;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 2px;
+  flex-direction: row;
 }
 
 .content {
   padding: 16px;
-  margin-top: -20px;
 }
 
 .info-card {
@@ -221,6 +230,7 @@ function handleLogout() {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid #f5f5f5;
+  flex-direction: row;
 }
 
 .info-item:last-child {
@@ -251,10 +261,9 @@ function handleLogout() {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-}
-
-.vip-icon {
-  font-size: 16px;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
 }
 
 .vip-title {
@@ -320,6 +329,7 @@ function handleLogout() {
   gap: 12px;
   padding: 14px 16px;
   border-bottom: 1px solid #f5f5f5;
+  flex-direction: row;
 }
 
 .action-item:last-child {
@@ -328,6 +338,8 @@ function handleLogout() {
 
 .action-icon {
   font-size: 18px;
+  width: 18px;
+  height: 18px;
 }
 
 .action-label {
@@ -349,6 +361,7 @@ function handleLogout() {
   background: #ffebee;
   height: 48px;
   border-radius: 16px;
+  flex-direction: row;
 }
 
 .logout-icon {
@@ -358,5 +371,10 @@ function handleLogout() {
 .logout-text {
   font-size: 14px;
   color: #ef4444;
+}
+
+.vip-icon {
+  width: 24px;
+  height: 24px;
 }
 </style>

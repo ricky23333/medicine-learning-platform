@@ -1,138 +1,147 @@
 {
-	"pages": [
-		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "中药数字标本馆",
-				"navigationBarBackgroundColor": "#1b3a2d",
-				"navigationBarTextStyle": "white"
-			}
-		},
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/login/service-agreement",
-			"style": {
-				"navigationBarTitleText": "服务协议",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/login/privacy-policy",
-			"style": {
-				"navigationBarTitleText": "隐私政策",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/login/disclaimer",
-			"style": {
-				"navigationBarTitleText": "免责声明",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/register/register",
-			"style": {
-				"navigationBarTitleText": "注册申请",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/password/change-password",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/home/home",
-			"style": {
-				"navigationBarTitleText": "首页",
-				"navigationBarBackgroundColor": "#1b3a2d",
-				"navigationBarTextStyle": "white"
-			}
-		},
-		{
-			"path": "pages/museums/museums",
-			"style": {
-				"navigationBarTitleText": "标本馆",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/museums/categories",
-			"style": {
-				"navigationBarTitleText": "分类",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/museums/specimens",
-			"style": {
-				"navigationBarTitleText": "标本列表",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/museums/specimen-detail",
-			"style": {
-				"navigationBarTitleText": "标本详情",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/exam/exam-select",
-			"style": {
-				"navigationBarTitleText": "选择题库",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/exam/exam",
-			"style": {
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/exam/exam-result",
-			"style": {
-				"navigationBarTitleText": "考试成绩",
-				"navigationBarBackgroundColor": "#1b3a2d",
-				"navigationBarTextStyle": "white"
-			}
-		},
-		{
-			"path": "pages/exam/history",
-			"style": {
-				"navigationBarTitleText": "考试记录",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/exam/history-detail",
-			"style": {
-				"navigationBarTitleText": "考试详情",
-				"navigationBarBackgroundColor": "#ffffff"
-			}
-		},
-		{
-			"path": "pages/profile/profile",
-			"style": {
-				"navigationBarTitleText": "个人中心",
-				"navigationBarBackgroundColor": "#1b3a2d",
-				"navigationBarTextStyle": "white"
-			}
-		}
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "中药数字标本馆",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
-	},
-	"uniIdRouter": {}
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "中药数字标本馆",
+        "navigationBarBackgroundColor": "#1b3a2d",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/service-agreement",
+      "style": {
+        "navigationBarTitleText": "服务协议",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/login/privacy-policy",
+      "style": {
+        "navigationBarTitleText": "隐私政策",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/login/disclaimer",
+      "style": {
+        "navigationBarTitleText": "免责声明",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/register/register",
+      "style": {
+        "navigationBarTitleText": "注册申请",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/password/change-password",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/home/home",
+      "style": {
+        "navigationBarTitleText": "首页",
+        "navigationBarBackgroundColor": "#1b3a2d",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/museums/museums",
+      "style": {
+        "navigationBarTitleText": "标本馆",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/museums/categories",
+      "style": {
+        "navigationBarTitleText": "分类",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/museums/specimens",
+      "style": {
+        "navigationBarTitleText": "标本列表",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/museums/specimen-detail",
+      "style": {
+        "navigationBarTitleText": "标本详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/exam/exam-select",
+      "style": {
+        "navigationBarTitleText": "选择题库",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/exam/exam",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/exam/exam-result",
+      "style": {
+        "navigationBarTitleText": "考试成绩",
+        "navigationBarBackgroundColor": "#1b3a2d",
+        "navigationBarTextStyle": "white",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/exam/history",
+      "style": {
+        "navigationBarTitleText": "考试记录",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/exam/history-detail",
+      "style": {
+        "navigationBarTitleText": "考试详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationBarBackgroundColor": "#1b3a2d",
+        "navigationBarTextStyle": "white",
+        "navigationStyle": "custom"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "中药数字标本馆",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "uniIdRouter": {}
 }

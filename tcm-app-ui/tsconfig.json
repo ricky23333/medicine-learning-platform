@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "strict": false, // 关闭严格模式
+    "skipLibCheck": true, // 跳过 node_modules 类型检查
+    "noImplicitAny": false // 降低严格度（可选）
+  }
+}

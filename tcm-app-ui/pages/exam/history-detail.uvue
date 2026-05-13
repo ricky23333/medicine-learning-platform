@@ -49,11 +49,27 @@ import { ref, computed } from 'vue'
 import { useAppContext } from '@/context/AppContext.uts'
 import BottomTabBar from '@/components/BottomTabBar/index.uvue'
 
+const mockRecord = ref({
+  id: 'mock-1',
+  museumId: 'museum-1',
+  museumName: '中药标本馆',
+  userId: 'user-1',
+  score: 85,
+  totalQuestions: 100,
+  submittedAt: '2026-05-10T14:30:00',
+  questions: [
+    { id: 'q1', correctAnswer: '人参', userAnswer: '人参', isCorrect: true },
+    { id: 'q2', correctAnswer: '黄芪', userAnswer: '当归', isCorrect: false },
+    { id: 'q3', correctAnswer: '甘草', userAnswer: '甘草', isCorrect: true },
+  ],
+})
+
 const context = useAppContext()
 
 const recordId = ref('')
 
 const record = computed(() => {
+  if (mockRecord.value) return mockRecord.value
   return context.getExamRecordById(recordId.value)
 })
 
@@ -86,6 +102,7 @@ function formatTime(time: string): string {
   padding: 12px 16px;
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
+  flex-direction: row;
 }
 
 .nav-back {
@@ -112,6 +129,7 @@ function formatTime(time: string): string {
   padding: 16px;
   margin-bottom: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  flex-direction: row;
 }
 
 .museum-name {
@@ -159,6 +177,7 @@ function formatTime(time: string): string {
   align-items: center;
   gap: 4px;
   margin-bottom: 4px;
+  flex-direction: row;
 }
 
 .answer-label {

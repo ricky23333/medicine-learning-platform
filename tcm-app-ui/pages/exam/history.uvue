@@ -38,13 +38,21 @@
 </template>
 
 <script setup lang="uts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useAppContext } from '@/context/AppContext.uts'
 import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+
+const mockRecords = ref([
+  { id: 'mock-1', museumId: 'museum-1', museumName: '中药标本馆', userId: 'user-1', score: 85, totalQuestions: 100, submittedAt: '2026-05-10T14:30:00' },
+  { id: 'mock-2', museumId: 'museum-2', museumName: '方剂标本馆', userId: 'user-1', score: 72, totalQuestions: 100, submittedAt: '2026-05-08T09:15:00' },
+  { id: 'mock-3', museumId: 'museum-1', museumName: '中药标本馆', userId: 'user-1', score: 93, totalQuestions: 100, submittedAt: '2026-05-05T16:45:00' },
+])
 
 const context = useAppContext()
 
 const myRecords = computed(() => {
+  if (mockRecords.value.length > 0) return mockRecords.value
   if (!context.currentUser) return []
   return context.getMyExamRecords(context.currentUser.id)
 })
@@ -82,6 +90,7 @@ function goDetail(record: { id: string }) {
   padding: 12px 16px;
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
+  flex-direction: row;
 }
 
 .nav-back {
@@ -110,10 +119,12 @@ function goDetail(record: { id: string }) {
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  flex-direction: row;
 }
 
 .record-info {
   flex: 1;
+    flex-direction: column;
 }
 
 .museum-name {

@@ -1,80 +1,90 @@
 <template>
-  <view class="tab-bar">
-    <view
-      v-for="tab in tabs"
-      :key="tab.id"
-      class="tab-item"
-      :class="{ active: activeTab === tab.id }"
-      @click="onTabClick(tab.id)"
-    >
-      <text class="tab-icon">{{ tab.icon }}</text>
-      <text class="tab-label">{{ tab.label }}</text>
-    </view>
-  </view>
+	<view class="tab-bar">
+		<view v-for="tab in tabs" :key="tab.id" class="tab-item" :class="{ active: activeTab === tab.id }"
+			@click="onTabClick(tab.id)">
+			<image class="tab-icon" :src="getIcon(tab.id,tab.icon)" mode="aspectFit" />
+			<text class="tab-label" :class="{ 'label-active': activeTab === tab.id }">{{ tab.label }}</text>
+		</view>
+	</view>
 </template>
 
 <script setup lang="uts">
-interface Tab {
-  id: string
-  icon: string
-  label: string
-  path: string
-}
+	// TODO: 手动修改图标路径，指向实际美术资源
+	// 格式示例: '/static/icons/home.png'
+	const iconBasePath = '/static/icons'
 
-interface Props {
-  activeTab: string
-  tabs?: Tab[]
-}
+	interface Tab {
+		id : string
+		icon : string
+		label : string
+		path : string
+	}
 
-const props = withDefaults(defineProps<Props>(), {
-  tabs: () => [
-    { id: 'home', icon: '🏠', label: '首页', path: '/pages/home/home' },
-    { id: 'browse', icon: '🔍', label: '浏览', path: '/pages/museums/museums' },
-    { id: 'exam', icon: '📝', label: '考试', path: '/pages/exam/exam-select' },
-    { id: 'history', icon: '📊', label: '记录', path: '/pages/exam/history' },
-    { id: 'profile', icon: '👤', label: '我的', path: '/pages/profile/profile' },
-  ],
-})
+	interface Props {
+		activeTab : string
+		tabs ?: Tab[]
+	}
 
-const emit = defineEmits<{ change: [tabId: string] }>()
+	const props = withDefaults(defineProps<Props>(), {
+		tabs: () => [
+			{ id: 'home', icon: 'home', label: '首页', path: '/pages/home/home' },
+			{ id: 'browse', icon: 'search', label: '浏览', path: '/pages/museums/museums' },
+			{ id: 'exam', icon: 'exam', label: '考试', path: '/pages/exam/exam-select' },
+			{ id: 'history', icon: 'history', label: '记录', path: '/pages/exam/history' },
+			{ id: 'profile', icon: 'user', label: '我的', path: '/pages/profile/profile' },
+		],
+	})
 
-function onTabClick(tabId: string) {
-  const tab = props.tabs.find(t => t.id === tabId)
-  if (tab) {
-    uni.switchTab({ url: tab.path })
-  }
-  emit('change', tabId)
-}
+	function getIcon(tabId : string, tabIcon : string) : string {
+		return `${iconBasePath}/${tabIcon}${props.activeTab === tabId ? '-a' : ''}.png`
+	}
+
+	const emit = defineEmits<{ change : [tabId: string] }>()
+
+	function onTabClick(tabId : string) {
+		const tab = props.tabs.find(t => t.id === tabId)
+		if (tab) {
+			uni.reLaunch({ url: tab.path })
+		}
+		emit('change', tabId)
+	}
 </script>
 
 <style scoped>
-.tab-bar {
-  display: flex;
-  height: 56px;
-  background: #ffffff;
-  border-top: 1px solid #f0f0f0;
-}
+	.tab-bar {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		width: 100vw;
+		background: #ffffff;
+		display: flex;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		height: 56px;
+		border-top: 1px solid #f0f0f0;
+	}
 
-.tab-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+	.tab-item {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+	}
 
-.tab-icon {
-  font-size: 20px;
-  margin-bottom: 2px;
-}
+	.tab-icon {
+		width: 22px;
+		height: 22px;
+	}
 
-.tab-label {
-  font-size: 10px;
-  color: #aaa;
-}
+	.tab-label {
+		font-size: 10px;
+		color: #aaa;
+	}
 
-.tab-item.active .tab-label {
-  color: #2d6a4f;
-  font-weight: 600;
-}
+	.label-active {
+		color: #2d6a4f;
+		font-weight: 600;
+	}
 </style>

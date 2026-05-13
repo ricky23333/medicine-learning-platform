@@ -15,7 +15,7 @@
         @click="goCategories(museum)"
       >
         <view class="museum-icon">{{ museum.icon }}</view>
-        <view class="museum-content">
+        <view class="museum-content">          
           <text class="museum-name">{{ museum.name }}</text>
           <text class="museum-desc">{{ museum.description.slice(0, 30) }}...</text>
           <view class="museum-tags">
@@ -68,6 +68,7 @@ function goCategories(museum: { id: string; name: string }) {
   padding: 12px 16px;
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
+  flex-direction: row;
 }
 
 .nav-back {
@@ -96,6 +97,7 @@ function goCategories(museum: { id: string; name: string }) {
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+  flex-direction: row;
 }
 
 .museum-icon {
@@ -109,6 +111,7 @@ function goCategories(museum: { id: string; name: string }) {
   font-size: 24px;
   flex-shrink: 0;
 }
+
 
 .museum-content {
   flex: 1;
@@ -132,6 +135,7 @@ function goCategories(museum: { id: string; name: string }) {
 .museum-tags {
   display: flex;
   gap: 8px;
+  flex-direction: row;
 }
 
 .tag {
@@ -151,7 +155,7 @@ function goCategories(museum: { id: string; name: string }) {
 }
 
 .arrow {
-  font-size: 18px;
+  font-size: 28px;
   color: #ccc;
 }
 </style>
