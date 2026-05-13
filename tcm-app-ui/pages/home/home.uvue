@@ -1,0 +1,417 @@
+<template>
+  <view class="home-page">
+    <!-- 顶部Header -->
+    <view class="header">
+      <view class="header-content">
+        <view class="user-info">
+          <text class="welcome">欢迎回来</text>
+          <text class="user-name">{{ user?.name || "游客" }}</text>
+        </view>
+        <view class="avatar">
+          <text class="avatar-text">{{ user?.name?.[0] || "?" }}</text>
+        </view>
+      </view>
+
+      <!-- 统计卡片 -->
+      <view class="stats">
+        <view class="stat-item">
+          <view class="stat-value-wrap">
+            <text class="stat-value">{{ museums.length }}</text>
+            <text class="stat-unit">个</text>
+          </view>
+          <text class="stat-label">标本馆</text>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value-wrap">
+            <text class="stat-value">{{ totalSpecimens }}</text>
+            <text class="stat-unit">种</text>
+          </view>
+          <text class="stat-label">馆藏标本</text>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value-wrap">
+            <text class="stat-value">{{ examCount }}</text>
+            <text class="stat-unit">次</text>
+          </view>
+          <text class="stat-label">我的考试</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 内容区域 -->
+    <view class="content">
+      <!-- 快速入口 -->
+      <view class="section">
+        <text class="section-title">快速入口</text>
+        <view class="quick-actions">
+          <view class="action-card action-green" @click="goMuseums">
+            <text class="action-icon">🔬</text>
+            <view class="action-info">
+              <text class="action-label">浏览标本</text>
+              <text class="action-sub">查看馆藏</text>
+            </view>
+          </view>
+          <view class="action-card action-blue" @click="goExamSelect">
+            <text class="action-icon">📝</text>
+            <view class="action-info">
+              <text class="action-label">开始考试</text>
+              <text class="action-sub">测试识别能力</text>
+            </view>
+          </view>
+          <view class="action-card action-pink" @click="goHistory">
+            <text class="action-icon">📊</text>
+            <view class="action-info">
+              <text class="action-label">考试记录</text>
+              <text class="action-sub">查看历史成绩</text>
+            </view>
+          </view>
+          <view class="action-card action-orange" @click="goProfile">
+            <text class="action-icon">👤</text>
+            <view class="action-info">
+              <text class="action-label">个人中心</text>
+              <text class="action-sub">账号设置</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 标本馆列表 -->
+      <view class="section">
+        <text class="section-title">标本馆</text>
+        <view class="museum-list">
+          <view
+            v-for="museum in museums"
+            :key="museum.id"
+            class="museum-card"
+            @click="goCategories(museum)"
+          >
+            <text class="museum-icon">{{ museum.icon }}</text>
+            <view class="museum-info">
+              <text class="museum-name">{{ museum.name }}</text>
+              <text class="museum-count"
+                >{{ getSpecimenCount(museum.id) }}种标本 ·
+                {{ museum.categories.length }}个分类</text
+              >
+            </view>
+            <text class="arrow">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="home" />
+  </view>
+</template>
+
+<script setup lang="uts">
+  import { computed } from 'vue'
+  import { useAppContext } from '@/context/AppContext.uts'
+  import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+  const context = useAppContext()
+
+  const user = computed(() => context.currentUser)
+  const museums = computed(() => context.getMuseums())
+
+  // 计算总标本数
+  const totalSpecimens = computed(() => {
+    return context.specimens.filter(s => s.images.some(i => i.status === 'approved')).length
+  })
+
+  // 计算我的考试次数
+  const examCount = computed(() => {
+    if (!user.value) return 0
+    return context.getMyExamRecords(user.value.id).length
+  })
+
+  // 获取博物馆的标本数量
+  function getSpecimenCount(museumId: string): number {
+    return context.specimens.filter(s => s.museumId === museumId).length
+  }
+
+  // 跳转标本馆
+  function goMuseums() {
+    uni.switchTab({ url: '/pages/museums/museums' })
+  }
+
+  // 跳转分类
+  function goCategories(museum: { id: string }) {
+    uni.navigateTo({
+      url: `/pages/museums/categories?museumId=${museum.id}`,
+    })
+  }
+
+  // 跳转考试选择
+  function goExamSelect() {
+    uni.navigateTo({ url: '/pages/exam/exam-select' })
+  }
+
+  // 跳转考试记录
+  function goHistory() {
+    uni.navigateTo({ url: '/pages/exam/history' })
+  }
+
+  // 跳转个人中心
+  function goProfile() {
+    uni.navigateTo({ url: '/pages/profile/profile' })
+  }
+</script>
+
+<style scoped>
+  .home-page {
+    min-height: 100vh;
+    background: #f0f4f0;
+    padding-bottom: 60px;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
+    padding: 24px 16px 16px;
+  }
+
+  .header-content {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .welcome {
+    font-size: 13px;
+    color: #95d5b2;
+  }
+
+  .user-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-top: 2px;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .stat-value-wrap {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  .stat-unit {
+    font-size: 11px;
+    font-weight: 400;
+    color: #ffffff;
+    margin-left: 1px;
+  }
+
+  .stat-label {
+    display: block;
+    font-size: 11px;
+    color: #b7e4c7;
+    margin-top: 2px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .section {
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+  }
+
+  .quick-actions {
+    /* background: #ffffff; */
+    border-radius: 16px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    gap: 2vw;
+  }
+
+  .action-card {
+    display: flex;
+    align-items: center;
+    width: 42vw;
+    gap: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .action-card:last-child {
+    border-bottom: none;
+  }
+
+  .action-icon {
+    font-size: 24px;
+  }
+
+  .action-info {
+    flex: 1;
+  }
+
+  .action-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .action-sub {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-top: 1px;
+  }
+
+  .museum-list {
+    display: flex;
+    gap: 8px;
+  }
+
+  .museum-card {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    background: #ffffff;
+    border-radius: 2vw;
+    gap: 12px;
+    padding: 14px;
+    border-bottom: 1px solid #f5f5f5;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .museum-card:last-child {
+    border-bottom: none;
+  }
+
+  .museum-icon {
+    font-size: 24px;
+  }
+
+  .museum-info {
+    flex: 1;
+  }
+
+  .museum-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #222;
+  }
+
+  .museum-count {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .arrow {
+    font-size: 18px;
+    color: #ccc;
+  }
+
+  .action-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+  }
+
+  .action-green {
+    background: #e8f5e9;
+    border-color: #e8f5e9;
+  }
+
+  .action-green .action-label {
+    color: #2d6a4f;
+  }
+
+  .action-blue {
+    background: #e3f2fd;
+    border-color: #e3f2fd;
+  }
+
+  .action-blue .action-label {
+    color: #1565c0;
+  }
+
+  .action-pink {
+    background: #fce4ec;
+    border-color: #fce4ec;
+  }
+
+  .action-pink .action-label {
+    color: #880e4f;
+  }
+
+  .action-orange {
+    background: #fff3e0;
+    border-color: #fff3e0;
+  }
+
+  .action-orange .action-label {
+    color: #bf360c;
+  }
+</style>

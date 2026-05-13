@@ -1,0 +1,244 @@
+<template>
+  <view class="image-viewer">
+    <!-- 主图 -->
+    <view class="main-image" @click="onPreview">
+      <image :src="src" mode="aspectFill" class="image" />
+      <!-- 水印 -->
+      <view class="watermark-overlay">
+        <view v-for="r in 4" :key="r">
+          <text v-for="c in 3" :key="c" class="watermark-text" :style="{ top: `${(r-1) * 30 + 5}%`, left: `${(c-1) * 38 - 5}%` }">中药数字标本馆</text>
+        </view>
+      </view>
+      <view class="zoom-hint">
+        <text class="zoom-icon">🔍</text>
+      </view>
+    </view>
+
+    <!-- 缩略图列表 -->
+    <scroll-view v-if="thumbnails && thumbnails.length > 1" scroll-x class="thumbnail-list">
+      <view
+        v-for="(thumb, index) in thumbnails"
+        :key="index"
+        class="thumbnail"
+        :class="{ active: currentIndex === index }"
+        @click="onThumbnailClick(index)"
+      >
+        <image :src="thumb" mode="aspectFill" class="thumb-image" />
+      </view>
+    </scroll-view>
+
+    <!-- 全屏预览弹窗 -->
+    <view v-if="showPreview" class="preview-overlay" @click="closePreview">
+      <view class="preview-toolbar">
+        <view class="toolbar-btn" @click.stop="zoomIn">
+          <text class="toolbar-icon">➕</text>
+        </view>
+        <view class="toolbar-btn" @click.stop="zoomOut">
+          <text class="toolbar-icon">➖</text>
+        </view>
+        <view class="toolbar-btn" @click.stop="resetZoom">
+          <text class="toolbar-icon">🔄</text>
+        </view>
+        <view class="toolbar-btn" @click.stop="closePreview">
+          <text class="toolbar-icon">❌</text>
+        </view>
+      </view>
+      <view class="preview-image-container" :style="{ transform: `scale(${scale})` }" @click.stop>
+        <image :src="currentSrc" mode="aspectFit" class="preview-image" />
+        <!-- 水印 -->
+        <view class="preview-watermark">
+          <view v-for="r in 5" :key="r">
+            <text v-for="c in 4" :key="c" class="watermark-text" :style="{ top: `${(r-1) * 22 + 3}%`, left: `${(c-1) * 28 - 5}%` }">中药数字标本馆</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+interface Props {
+  src: string
+  thumbnails?: string[]
+  alt?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  thumbnails: () => [],
+  alt: '',
+})
+
+const currentIndex = ref(0)
+const showPreview = ref(false)
+const scale = ref(1)
+
+// 当前显示的图片源
+const currentSrc = computed(() => {
+  if (props.thumbnails && props.thumbnails.length > 0) {
+    return props.thumbnails[currentIndex.value] || props.src
+  }
+  return props.src
+})
+
+// 点击主图打开预览
+function onPreview() {
+  showPreview.value = true
+  scale.value = 1
+}
+
+// 关闭预览
+function closePreview() {
+  showPreview.value = false
+}
+
+// 缩略图点击
+function onThumbnailClick(index: number) {
+  currentIndex.value = index
+}
+
+// 放大
+function zoomIn() {
+  scale.value = Math.min(scale.value + 0.3, 3)
+}
+
+// 缩小
+function zoomOut() {
+  scale.value = Math.max(scale.value - 0.3, 0.5)
+}
+
+// 重置缩放
+function resetZoom() {
+  scale.value = 1
+}
+</script>
+
+<style scoped>
+.image-viewer {
+  width: 100%;
+}
+
+.main-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+}
+
+.watermark-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.watermark-text {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  transform: rotate(-25deg);
+  font-size: 10px;
+}
+
+.zoom-hint {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 4px 8px;
+}
+
+.zoom-icon {
+  font-size: 12px;
+}
+
+.thumbnail-list {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.thumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  flex-shrink: 0;
+}
+
+.thumbnail.active {
+  border-color: #2d6a4f;
+}
+
+.thumb-image {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 10000;
+}
+
+.toolbar-btn {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar-icon {
+  font-size: 16px;
+}
+
+.preview-image-container {
+  width: 90vw;
+  height: 85vh;
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-watermark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.preview-watermark .watermark-text {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+  transform: rotate(-25deg);
+  font-size: 12px;
+}
+</style>

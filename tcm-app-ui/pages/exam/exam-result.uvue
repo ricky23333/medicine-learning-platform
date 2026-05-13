@@ -1,0 +1,247 @@
+<template>
+  <view class="exam-result-page">
+    <!-- 顶部结果区 -->
+    <view class="result-header">
+      <view class="score-circle">
+        <text class="score">{{ lastExamRecord?.score || 0 }}</text>
+        <text class="total">/ {{ lastExamRecord?.totalQuestions || 0 }}</text>
+      </view>
+      <text class="grade">{{ gradeText }} · {{ gradePercent }}分</text>
+      <text class="museum-name">{{ lastExamRecord?.museumName }}</text>
+    </view>
+
+    <!-- 答题详情 -->
+    <view class="result-content">
+      <text class="detail-title">答题详情（共{{ lastExamRecord?.questions.length || 0 }}题）</text>
+
+      <view
+        v-for="(q, index) in lastExamRecord?.questions || []"
+        :key="q.id"
+        class="question-card"
+      >
+        <view class="question-num" :class="{ correct: q.isCorrect, wrong: !q.isCorrect }">
+          {{ index + 1 }}
+        </view>
+        <view class="question-info">
+          <view class="answer-row">
+            <text class="answer-label">正确答案：</text>
+            <text class="answer-correct">{{ q.correctAnswer }}</text>
+          </view>
+          <view class="answer-row">
+            <text class="answer-label">我的答案：</text>
+            <text class="answer-mine" :class="{ wrong: !q.isCorrect }">
+              {{ q.userAnswer || '（未填写）' }}
+            </text>
+            <text v-if="q.isCorrect" class="icon-correct">✓</text>
+            <text v-else class="icon-wrong">✗</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 按钮 -->
+      <view class="buttons">
+        <view class="btn" @click="goHistory">查看记录</view>
+        <view class="btn primary" @click="goExamSelect">再次考试</view>
+      </view>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="exam" />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+import { useAppContext } from '@/context/AppContext.uts'
+import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+const context = useAppContext()
+
+// 获取最新的考试记录（应该从exam页面传递过来，这里简化处理）
+const lastExamRecord = computed(() => {
+  if (!context.currentUser) return null
+  const records = context.getMyExamRecords(context.currentUser.id)
+  return records.length > 0 ? records[0] : null
+})
+
+// 评级
+const gradeText = computed(() => {
+  const pct = gradePercent.value
+  if (pct >= 90) return '优秀'
+  if (pct >= 75) return '良好'
+  if (pct >= 60) return '及格'
+  return '不及格'
+})
+
+const gradePercent = computed(() => {
+  const record = lastExamRecord.value
+  if (!record || record.totalQuestions === 0) return 0
+  return Math.round((record.score / record.totalQuestions) * 100)
+})
+
+function goHistory() {
+  uni.navigateTo({ url: '/pages/exam/history' })
+}
+
+function goExamSelect() {
+  uni.navigateTo({ url: '/pages/exam/exam-select' })
+}
+</script>
+
+<style scoped>
+.exam-result-page {
+  min-height: 100vh;
+  background: #f8faf8;
+  padding-bottom: 60px;
+}
+
+.result-header {
+  background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
+  padding: 32px 16px 24px;
+  text-align: center;
+}
+
+.score-circle {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.score {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.total {
+  font-size: 18px;
+  color: #b7e4c7;
+}
+
+.grade {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.museum-name {
+  display: block;
+  font-size: 13px;
+  color: #95d5b2;
+}
+
+.result-content {
+  padding: 16px;
+}
+
+.detail-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.question-card {
+  display: flex;
+  gap: 12px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.question-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.question-num.correct {
+  background: #e8f5e9;
+  color: #2d6a4f;
+}
+
+.question-num.wrong {
+  background: #ffebee;
+  color: #ef4444;
+}
+
+.question-info {
+  flex: 1;
+}
+
+.answer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.answer-label {
+  font-size: 13px;
+  color: #888;
+}
+
+.answer-correct {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2d6a4f;
+}
+
+.answer-mine {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2d6a4f;
+}
+
+.answer-mine.wrong {
+  color: #ef4444;
+}
+
+.icon-correct {
+  font-size: 14px;
+  color: #2d6a4f;
+  margin-left: 4px;
+}
+
+.icon-wrong {
+  font-size: 14px;
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f5e9;
+  color: #2d6a4f;
+  font-size: 14px;
+  border-radius: 16px;
+}
+
+.btn.primary {
+  background: #2d6a4f;
+  color: #ffffff;
+}
+</style>

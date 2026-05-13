@@ -1,10 +1,14 @@
 <script setup lang="uts">
+	import { initAppContext } from './context/AppContext.uts'
+
 	// #ifdef APP-ANDROID || APP-HARMONY
 	let firstBackTime = 0
 	// #endif
 
 	onLaunch(() => {
 		console.log('App Launch')
+		// 初始化全局上下文
+		initAppContext()
 	})
 
 	onAppShow(() => {

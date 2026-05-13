@@ -1,0 +1,80 @@
+<template>
+  <view class="tab-bar">
+    <view
+      v-for="tab in tabs"
+      :key="tab.id"
+      class="tab-item"
+      :class="{ active: activeTab === tab.id }"
+      @click="onTabClick(tab.id)"
+    >
+      <text class="tab-icon">{{ tab.icon }}</text>
+      <text class="tab-label">{{ tab.label }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+interface Tab {
+  id: string
+  icon: string
+  label: string
+  path: string
+}
+
+interface Props {
+  activeTab: string
+  tabs?: Tab[]
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  tabs: () => [
+    { id: 'home', icon: '🏠', label: '首页', path: '/pages/home/home' },
+    { id: 'browse', icon: '🔍', label: '浏览', path: '/pages/museums/museums' },
+    { id: 'exam', icon: '📝', label: '考试', path: '/pages/exam/exam-select' },
+    { id: 'history', icon: '📊', label: '记录', path: '/pages/exam/history' },
+    { id: 'profile', icon: '👤', label: '我的', path: '/pages/profile/profile' },
+  ],
+})
+
+const emit = defineEmits<{ change: [tabId: string] }>()
+
+function onTabClick(tabId: string) {
+  const tab = props.tabs.find(t => t.id === tabId)
+  if (tab) {
+    uni.switchTab({ url: tab.path })
+  }
+  emit('change', tabId)
+}
+</script>
+
+<style scoped>
+.tab-bar {
+  display: flex;
+  height: 56px;
+  background: #ffffff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-icon {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.tab-label {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.tab-item.active .tab-label {
+  color: #2d6a4f;
+  font-weight: 600;
+}
+</style>

@@ -1,0 +1,187 @@
+import { reactive } from 'vue'
+import type { User, Museum, Specimen, ExamRecord, LoginResult } from '../types/index.uts'
+import { MUSEUMS, SPECIMENS, USERS, EXAM_RECORDS } from '../data/mockData.uts'
+
+// 全局状态Key
+const APP_CONTEXT_KEY = 'AppContext'
+
+// ContextValue类型
+interface AppContextValue {
+  // 状态
+  currentUser: User | null
+  museums: Museum[]
+  specimens: Specimen[]
+  examRecords: ExamRecord[]
+  // 认证方法
+  login: (phone: string, password: string) => LoginResult
+  logout: () => void
+  changePassword: (userId: string, newPassword: string) => boolean
+  // 数据获取方法
+  getMuseums: () => Museum[]
+  getCategoriesByMuseum: (museumId: string) => Array<{ id: string; name: string; specimenCount: number }>
+  getSpecimensByCategory: (categoryId: string) => Specimen[]
+  getApprovedSpecimens: (museumId: string, categoryIds?: string[]) => Specimen[]
+  getMyExamRecords: (userId: string) => ExamRecord[]
+  getExamRecordById: (id: string) => ExamRecord | null
+  // 业务方法
+  submitExam: (record: Omit<ExamRecord, 'id'>) => ExamRecord
+  applyForVIP: (userId: string, reason: string) => void
+}
+
+// 创建全局状态
+const state = reactive({
+  currentUser: null as User | null,
+  museums: MUSEUMS,
+  specimens: SPECIMENS,
+  examRecords: EXAM_RECORDS,
+})
+
+// 从本地存储恢复用户状态
+function restoreUser() {
+  const stored = uni.getStorageSync('currentUser')
+  if (stored) {
+    try {
+      state.currentUser = JSON.parse(stored) as User
+    } catch {
+      state.currentUser = null
+    }
+  }
+}
+
+// 登录
+function login(phone: string, password: string): LoginResult {
+  const user = USERS.find(u => u.phone === phone)
+  if (!user) return { success: false, message: '账号不存在' }
+  if (user.status === 'pending') return { success: false, message: '账号待审核' }
+  if (user.status === 'suspended') return { success: false, message: '账号已停用' }
+  if (user.password !== password) return { success: false, message: '密码错误' }
+
+  state.currentUser = user
+  uni.setStorageSync('currentUser', JSON.stringify(user))
+  return { success: true, message: '登录成功', user }
+}
+
+// 登出
+function logout() {
+  state.currentUser = null
+  uni.removeStorageSync('currentUser')
+}
+
+// 修改密码
+function changePassword(userId: string, newPassword: string): boolean {
+  const user = USERS.find(u => u.id === userId)
+  if (!user) return false
+  user.password = newPassword
+  user.firstLogin = false
+
+  // 更新当前用户
+  if (state.currentUser && state.currentUser.id === userId) {
+    state.currentUser = { ...user }
+    uni.setStorageSync('currentUser', JSON.stringify(state.currentUser))
+  }
+  return true
+}
+
+// 获取博物馆列表
+function getMuseums(): Museum[] {
+  return state.museums
+}
+
+// 获取博物馆的分类
+function getCategoriesByMuseum(museumId: string): Array<{ id: string; name: string; specimenCount: number }> {
+  const museum = state.museums.find(m => m.id === museumId)
+  return museum ? museum.categories : []
+}
+
+// 获取分类下的标本
+function getSpecimensByCategory(categoryId: string): Specimen[] {
+  return state.specimens.filter(s => s.categoryId === categoryId)
+}
+
+// 获取可用于考试的标本（已审核的图片）
+function getApprovedSpecimens(museumId: string, categoryIds?: string[]): Specimen[] {
+  return state.specimens.filter(s => {
+    if (s.museumId !== museumId) return false
+    if (categoryIds && categoryIds.length > 0 && !categoryIds.includes(s.categoryId)) return false
+    return s.images.some(img => img.status === 'approved')
+  })
+}
+
+// 获取我的考试记录
+function getMyExamRecords(userId: string): ExamRecord[] {
+  return state.examRecords
+    .filter(r => r.userId === userId)
+    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+}
+
+// 根据ID获取考试记录
+function getExamRecordById(id: string): ExamRecord | null {
+  return state.examRecords.find(r => r.id === id) || null
+}
+
+// 提交考试成绩
+function submitExam(record: Omit<ExamRecord, 'id'>): ExamRecord {
+  const newRecord: ExamRecord = {
+    ...record,
+    id: `exam-${Date.now()}`,
+  }
+  state.examRecords.push(newRecord)
+  return newRecord
+}
+
+// 申请VIP
+function applyForVIP(userId: string, reason: string): void {
+  const user = USERS.find(u => u.id === userId)
+  if (user) {
+    user.vipStatus = 'pending'
+    // 更新当前用户
+    if (state.currentUser && state.currentUser.id === userId) {
+      state.currentUser = { ...user }
+      uni.setStorageSync('currentUser', JSON.stringify(state.currentUser))
+    }
+  }
+}
+
+// 初始化上下文
+export function initAppContext() {
+  restoreUser()
+}
+
+// 导出全局上下文
+export const appContext: AppContextValue = {
+  currentUser: state.currentUser as unknown as User | null,
+  museums: state.museums as unknown as Museum[],
+  specimens: state.specimens as unknown as Specimen[],
+  examRecords: state.examRecords as unknown as ExamRecord[],
+  login,
+  logout,
+  changePassword,
+  getMuseums,
+  getCategoriesByMuseum,
+  getSpecimensByCategory,
+  getApprovedSpecimens,
+  getMyExamRecords,
+  getExamRecordById,
+  submitExam,
+  applyForVIP,
+}
+
+// Consumer - 获取全局上下文（使用模块级单例）
+export function useAppContext(): AppContextValue {
+  return appContext
+}
+
+// 角色映射
+export const ROLE_MAP: Record<string, string> = {
+  student: '学生',
+  teacher: '教师',
+  vip_teacher: 'VIP教师',
+  admin: '管理员',
+}
+
+// VIP状态映射
+export const VIP_STATUS_MAP: Record<string, string> = {
+  none: '未申请',
+  pending: '审核中',
+  approved: '已开通',
+}

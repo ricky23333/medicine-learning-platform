@@ -1,0 +1,192 @@
+<template>
+	<view class="page">
+		<!-- 导航栏 -->
+		<view class="navbar">
+			<text class="nav-back" @click="goBack">←</text>
+			<text class="nav-title">隐私政策</text>
+		</view>
+
+		<!-- 内容区域 -->
+		<scroll-view scroll-y class="content">
+			<view class="article">
+				<h1 class="article-title">隐私政策</h1>
+				<p class="article-date">最近更新日期：2026年05月10日</p>
+
+				<view class="section">
+					<h2>一、信息收集</h2>
+					<p>本平台承诺尊重并保护用户的个人隐私。在您使用本平台服务时，我们可能会收集以下信息：</p>
+					<ul>
+						<li><strong>注册信息</strong>：包括您的姓名、手机号码、所在院校、学号/工号、专业/职位等信息</li>
+						<li><strong>头像和昵称</strong>：用于展示您的用户形象</li>
+						<li><strong>使用信息</strong>：包括您的学习记录、考试记录、浏览历史等</li>
+						<li><strong>设备信息</strong>：包括设备型号、操作系统版本等，用于优化服务体验</li>
+					</ul>
+				</view>
+
+				<view class="section">
+					<h2>二、信息使用</h2>
+					<p>我们收集的信息将用于以下目的：</p>
+					<ul>
+						<li>提供、维护和改进我们的服务</li>
+						<li>个性化您的用户体验</li>
+						<li>记录您的学习进度和考试情况</li>
+						<li>向您发送服务相关的通知</li>
+						<li>预防和解决欺诈、安全问题</li>
+					</ul>
+				</view>
+
+				<view class="section">
+					<h2>三、信息共享</h2>
+					<p>我们承诺不会出售您的个人信息。在以下情况下，我们可能会共享您的信息：</p>
+					<ul>
+						<li><strong>法定要求</strong>：根据法律法规、法院命令或政府要求</li>
+						<li><strong>服务提供商</strong>：向我们提供服务的第三方（如云存储服务商），但仅限于提供服务所必需</li>
+						<li><strong>用户同意</strong>：在获得您明确同意的情况下</li>
+					</ul>
+				</view>
+
+				<view class="section">
+					<h2>四、信息存储</h2>
+					<p>您的信息将存储在中华人民共和国境内的服务器上。我们会采取合理的安全措施保护您的信息，防止信息被未经授权的访问、使用或泄露。</p>
+					<p>当您注销账号后，我们将在合理期限内删除您的个人信息。</p>
+				</view>
+
+				<view class="section">
+					<h2>五、Cookie 使用</h2>
+					<p>本平台可能会使用 Cookie 和类似技术来改善用户体验。Cookie 是存储在您设备上的小文件，用于记住您的偏好设置和登录状态。</p>
+					<p>您可以通过设备设置禁用 Cookie，但这可能会影响部分功能的使用。</p>
+				</view>
+
+				<view class="section">
+					<h2>六、权限申请</h2>
+					<p>为提供更好的服务，本平台可能会申请以下权限：</p>
+					<ul>
+						<li><strong>头像和昵称</strong>：用于在平台上展示您的个人形象</li>
+						<li><strong>相册权限</strong>：用于上传头像图片</li>
+					</ul>
+					<p>我们会尊重您的选择，不会强制要求您授予这些权限。</p>
+				</view>
+
+				<view class="section">
+					<h2>七、用户权利</h2>
+					<p>您对自己的个人信息享有以下权利：</p>
+					<ul>
+						<li>访问您的个人信息</li>
+						<li>更正不准确的信息</li>
+						<li>删除您的个人信息</li>
+						<li>撤回同意</li>
+						<li>注销账号</li>
+					</ul>
+					<p>如需行使上述权利，请通过联系我们页面提供的联系方式与我们联系。</p>
+				</view>
+
+				<view class="section">
+					<h2>八、未成年人保护</h2>
+					<p>本平台主要面向高校师生。我们非常重视对未成年人隐私的保护。如果我们发现自己在未事先获得可证实的父母同意的情况下收集了未成年人的个人信息，我们会设法尽快删除相关信息。</p>
+				</view>
+
+				<view class="section">
+					<h2>九、政策更新</h2>
+					<p>我们可能会不时更新本隐私政策。任何更新都会在本页面发布，建议您定期查阅以了解最新信息。在某些情况下，我们可能会通过应用内通知或电子邮件告知您有关隐私政策的重大变更。</p>
+				</view>
+
+				<view class="section">
+					<h2>十、联系我们</h2>
+					<p>如果您对本隐私政策有任何疑问、意见或建议，请通过以下方式联系我们：</p>
+					<p class="contact">联系邮箱：privacy@tcm-learning.edu.cn</p>
+				</view>
+			</view>
+		</scroll-view>
+	</view>
+</template>
+
+<script setup lang="uts">
+	function goBack() {
+		uni.navigateBack()
+	}
+</script>
+
+<style scoped>
+.page {
+	min-height: 100vh;
+	background: #f8faf8;
+}
+
+.navbar {
+	display: flex;
+	align-items: center;
+	padding: 12px 16px;
+	background: #ffffff;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-back {
+	font-size: 20px;
+	color: #666;
+	margin-right: 12px;
+}
+
+.nav-title {
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.content {
+	height: calc(100vh - 45px);
+}
+
+.article {
+	padding: 20px 16px 40px;
+}
+
+.article-title {
+	font-size: 20px;
+	font-weight: 700;
+	color: #1a1a1a;
+	text-align: center;
+	margin-bottom: 8px;
+}
+
+.article-date {
+	font-size: 12px;
+	color: #888;
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.section {
+	margin-bottom: 20px;
+}
+
+.section h2 {
+	font-size: 15px;
+	font-weight: 600;
+	color: #1a1a1a;
+	margin-bottom: 10px;
+}
+
+.section p {
+	font-size: 13px;
+	color: #444;
+	line-height: 1.8;
+	margin-bottom: 8px;
+}
+
+.section ul {
+	margin: 0;
+	padding-left: 20px;
+}
+
+.section li {
+	font-size: 13px;
+	color: #444;
+	line-height: 1.8;
+	margin-bottom: 4px;
+}
+
+.contact {
+	background: #f8faf8;
+	padding: 12px;
+	border-radius: 8px;
+}
+</style>

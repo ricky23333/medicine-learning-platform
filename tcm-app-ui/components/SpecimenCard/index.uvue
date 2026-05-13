@@ -1,0 +1,85 @@
+<template>
+  <view class="specimen-card" @click="onClick">
+    <view class="image-wrapper">
+      <image v-if="imageUrl" :src="imageUrl" mode="aspectFill" class="specimen-image" />
+      <view v-else class="placeholder">
+        <text class="placeholder-icon">🔬</text>
+      </view>
+    </view>
+    <view class="info">
+      <text class="name">{{ name }}</text>
+      <text v-if="latinName" class="latin">{{ latinName }}</text>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+interface Props {
+  id: string
+  name: string
+  latinName?: string
+  imageUrl?: string
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{ click: [id: string] }>()
+
+function onClick() {
+  emit('click', props.id)
+}
+</script>
+
+<style scoped>
+.specimen-card {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.image-wrapper {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f0f4f0;
+}
+
+.specimen-image {
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-icon {
+  font-size: 32px;
+}
+
+.info {
+  padding: 12px;
+}
+
+.name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.latin {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>

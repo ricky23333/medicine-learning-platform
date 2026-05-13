@@ -1,0 +1,137 @@
+<template>
+  <view class="categories-page">
+    <!-- 导航栏 -->
+    <view class="navbar">
+      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-title">{{ museumName }}</text>
+    </view>
+
+    <!-- 分类列表 -->
+    <view class="category-list">
+      <view
+        v-for="cat in categories"
+        :key="cat.id"
+        class="category-card"
+        @click="goSpecimens(cat)"
+      >
+        <view class="category-icon">📚</view>
+        <view class="category-info">
+          <text class="category-name">{{ cat.name }}</text>
+          <text class="category-count">{{ cat.specimenCount || 0 }}种标本</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="browse" />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { useAppContext } from '@/context/AppContext.uts'
+import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+const context = useAppContext()
+
+const museumId = ref('')
+const museumName = ref('')
+const categories = computed(() => context.getCategoriesByMuseum(museumId.value))
+
+onLoad((options: any) => {
+  if (options) {
+    museumId.value = options.museumId || ''
+    museumName.value = decodeURIComponent(options.museumName || '标本馆')
+  }
+})
+
+function goBack() {
+  uni.navigateBack()
+}
+
+function goSpecimens(cat: { id: string; name: string }) {
+  uni.navigateTo({
+    url: `/pages/museums/specimens?categoryId=${cat.id}&categoryName=${encodeURIComponent(cat.name)}`,
+  })
+}
+</script>
+
+<style scoped>
+.categories-page {
+  min-height: 100vh;
+  background: #f8faf8;
+  padding-bottom: 60px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-back {
+  font-size: 20px;
+  color: #666;
+  margin-right: 12px;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.category-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e8f5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.category-info {
+  flex: 1;
+}
+
+.category-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.category-count {
+  display: block;
+  font-size: 12px;
+  color: #888;
+}
+
+.arrow {
+  font-size: 18px;
+  color: #ccc;
+}
+</style>

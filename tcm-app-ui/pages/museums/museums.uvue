@@ -1,0 +1,157 @@
+<template>
+  <view class="museums-page">
+    <!-- 导航栏 -->
+    <view class="navbar">
+      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-title">标本馆</text>
+    </view>
+
+    <!-- 标本馆列表 -->
+    <view class="museum-list">
+      <view
+        v-for="museum in museums"
+        :key="museum.id"
+        class="museum-card"
+        @click="goCategories(museum)"
+      >
+        <view class="museum-icon">{{ museum.icon }}</view>
+        <view class="museum-content">
+          <text class="museum-name">{{ museum.name }}</text>
+          <text class="museum-desc">{{ museum.description.slice(0, 30) }}...</text>
+          <view class="museum-tags">
+            <text class="tag">{{ museum.categories.length }}个分类</text>
+            <text class="tag-outline">{{ getSpecimenCount(museum.id) }}种标本</text>
+          </view>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="browse" />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { computed } from 'vue'
+import { useAppContext } from '@/context/AppContext.uts'
+import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+const context = useAppContext()
+const museums = computed(() => context.getMuseums())
+
+function goBack() {
+  uni.switchTab({ url: '/pages/home/home' })
+}
+
+function getSpecimenCount(museumId: string): number {
+  return context.specimens.filter(s => s.museumId === museumId).length
+}
+
+function goCategories(museum: { id: string; name: string }) {
+  uni.navigateTo({
+    url: `/pages/museums/categories?museumId=${museum.id}&museumName=${encodeURIComponent(museum.name)}`,
+  })
+}
+</script>
+
+<style scoped>
+.museums-page {
+  min-height: 100vh;
+  background: #f8faf8;
+  padding-bottom: 60px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-back {
+  font-size: 20px;
+  color: #666;
+  margin-right: 12px;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.museum-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.museum-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.museum-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #e8f5e9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.museum-content {
+  flex: 1;
+}
+
+.museum-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 4px;
+}
+
+.museum-desc {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.museum-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 11px;
+  background: #e8f5e9;
+  color: #2d6a4f;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.tag-outline {
+  font-size: 11px;
+  background: #f0f4f0;
+  color: #555;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.arrow {
+  font-size: 18px;
+  color: #ccc;
+}
+</style>

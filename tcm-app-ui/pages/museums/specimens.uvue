@@ -1,0 +1,213 @@
+<template>
+  <view class="specimens-page">
+    <!-- 导航栏 -->
+    <view class="navbar">
+      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-title">{{ categoryName }}</text>
+    </view>
+
+    <!-- 搜索框 -->
+    <view class="search-bar">
+      <text class="search-icon">🔍</text>
+      <input
+        v-model="searchQuery"
+        placeholder="搜索标本名称..."
+        class="search-input"
+      />
+    </view>
+
+    <!-- 标本格子列表 -->
+    <view class="specimen-grid">
+      <view
+        v-for="sp in filteredSpecimens"
+        :key="sp.id"
+        class="specimen-card"
+        @click="goDetail(sp)"
+      >
+        <view class="image-wrapper">
+          <image v-if="getApprovedImage(sp)" :src="getApprovedImage(sp)!.url" mode="aspectFill" class="specimen-image" />
+          <view v-else class="placeholder">🔬</view>
+        </view>
+        <view class="specimen-info">
+          <text class="specimen-name">{{ sp.name }}</text>
+          <text v-if="sp.latinName" class="specimen-latin">{{ sp.latinName }}</text>
+        </view>
+      </view>
+
+      <!-- 空状态 -->
+      <view v-if="filteredSpecimens.length === 0" class="empty-state">
+        <text class="empty-text">暂无标本</text>
+      </view>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="browse" />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import type { Specimen, SpecimenImage } from '@/types/index.uts'
+import { useAppContext } from '@/context/AppContext.uts'
+import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+const context = useAppContext()
+
+const categoryId = ref('')
+const categoryName = ref('')
+const searchQuery = ref('')
+
+// 标本列表
+const specimens = computed(() => context.getSpecimensByCategory(categoryId.value))
+
+// 过滤后的标本
+const filteredSpecimens = computed(() => {
+  let list = specimens.value
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    list = list.filter(sp =>
+      sp.name.toLowerCase().includes(q) ||
+      (sp.latinName && sp.latinName.toLowerCase().includes(q))
+    )
+  }
+  return list
+})
+
+onLoad((options: any) => {
+  if (options) {
+    categoryId.value = options.categoryId || ''
+    categoryName.value = decodeURIComponent(options.categoryName || '标本')
+  }
+})
+
+function goBack() {
+  uni.navigateBack()
+}
+
+function getApprovedImage(sp: Specimen): SpecimenImage | undefined {
+  return sp.images.find(img => img.status === 'approved')
+}
+
+function goDetail(sp: Specimen) {
+  uni.navigateTo({
+    url: `/pages/museums/specimen-detail?specimenId=${sp.id}&specimenName=${encodeURIComponent(sp.name)}`,
+  })
+}
+</script>
+
+<style scoped>
+.specimens-page {
+  min-height: 100vh;
+  background: #f8faf8;
+  padding-bottom: 60px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-back {
+  font-size: 20px;
+  color: #666;
+  margin-right: 12px;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ffffff;
+}
+
+.search-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.search-input {
+  flex: 1;
+  height: 40px;
+  background: #f8faf8;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.specimen-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 16px;
+}
+
+.specimen-card {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.image-wrapper {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #f0f4f0;
+  overflow: hidden;
+}
+
+.specimen-image {
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.specimen-info {
+  padding: 12px;
+}
+
+.specimen-name {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.specimen-latin {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 0;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #aaa;
+}
+</style>

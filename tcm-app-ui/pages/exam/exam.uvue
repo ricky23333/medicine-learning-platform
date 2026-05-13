@@ -1,0 +1,322 @@
+<template>
+  <view class="exam-page">
+    <!-- 进度条区域 -->
+    <view class="progress-bar">
+      <view class="progress-info">
+        <text class="progress-text">第 {{ currentIndex + 1 }} / {{ totalQuestions }} 题</text>
+        <text class="quit-btn" @click="confirmQuit">放弃</text>
+      </view>
+      <view class="progress-track">
+        <view class="progress-fill" :style="{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }"></view>
+      </view>
+    </view>
+
+    <!-- 标本图片 -->
+    <view class="image-area">
+      <ImageViewer
+        v-if="currentSpecimen && approvedImage"
+        :src="approvedImage.url"
+      />
+      <view v-else class="placeholder">🔬</view>
+    </view>
+
+    <!-- 答案输入区域 -->
+    <view class="answer-area">
+      <text class="question-text">请填写此标本的名称：</text>
+      <input
+        v-model="answer"
+        placeholder="填写标本名称..."
+        class="answer-input"
+        @focus="onFocus"
+        @blur="onBlur"
+      />
+    </view>
+
+    <!-- 底部导航 -->
+    <view class="bottom-nav">
+      <view
+        class="nav-btn prev"
+        :class="{ disabled: currentIndex === 0 }"
+        @click="goPrev"
+      >
+        <text class="nav-icon">‹</text>
+        <text class="nav-text">上一题</text>
+      </view>
+
+      <view
+        v-if="currentIndex < totalQuestions - 1"
+        class="nav-btn next"
+        @click="goNext"
+      >
+        <text class="nav-text">下一题</text>
+        <text class="nav-icon">›</text>
+      </view>
+      <view
+        v-else
+        class="nav-btn submit"
+        @click="confirmSubmit"
+      >
+        <text class="nav-text">提交答卷</text>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import type { Specimen, SpecimenImage } from '@/types/index.uts'
+import { useAppContext } from '@/context/AppContext.uts'
+import ImageViewer from '@/components/ImageViewer/index.uvue'
+
+const context = useAppContext()
+
+const museumId = ref('')
+const categoryIds = ref<string[]>([])
+const examSpecimens = ref<Specimen[]>([])
+const answers = ref<string[]>([])
+const currentIndex = ref(0)
+
+const totalQuestions = computed(() => examSpecimens.value.length)
+
+const currentSpecimen = computed(() => examSpecimens.value[currentIndex.value])
+
+const approvedImage = computed(() => {
+  return currentSpecimen.value?.images.find(img => img.status === 'approved')
+})
+
+const answer = computed({
+  get: () => answers.value[currentIndex.value] || '',
+  set: (val) => {
+    answers.value[currentIndex.value] = val
+  },
+})
+
+onLoad((options: any) => {
+  if (options) {
+    museumId.value = options.museumId || ''
+    const catIds = options.categoryIds || ''
+    categoryIds.value = catIds ? catIds.split(',').filter((s: string) => s) : []
+
+    // 获取可用于考试的标本
+    const pool = context.getApprovedSpecimens(
+      museumId.value,
+      categoryIds.value.length > 0 ? categoryIds.value : undefined
+    )
+
+    // 随机抽取最多20个
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(20, pool.length))
+    examSpecimens.value = shuffled
+    answers.value = new Array(shuffled.length).fill('')
+  }
+})
+
+function confirmQuit() {
+  uni.showModal({
+    title: '确认',
+    content: '确定放弃考试？',
+    success: (res) => {
+      if (res.confirm) {
+        uni.navigateBack()
+      }
+    },
+  })
+}
+
+function goPrev() {
+  if (currentIndex.value > 0) {
+    currentIndex.value--
+  }
+}
+
+function goNext() {
+  if (currentIndex.value < totalQuestions.value - 1) {
+    currentIndex.value++
+  }
+}
+
+function confirmSubmit() {
+  uni.showModal({
+    title: '确认',
+    content: '确认提交答案？',
+    success: (res) => {
+      if (res.confirm) {
+        submitExam()
+      }
+    },
+  })
+}
+
+function submitExam() {
+  const museum = context.museums.find(m => m.id === museumId.value)
+  const questions = examSpecimens.value.map((sp, i) => {
+    const img = sp.images.find(img => img.status === 'approved')
+    const userAnswer = answers.value[i]?.trim() || ''
+    return {
+      id: `q-${i}`,
+      specimenId: sp.id,
+      specimenName: sp.name,
+      imageUrl: img?.url || '',
+      correctAnswer: sp.name,
+      userAnswer,
+      isCorrect: userAnswer === sp.name,
+    }
+  })
+
+  const score = questions.filter(q => q.isCorrect).length
+  const record = {
+    userId: context.currentUser?.id || '',
+    userName: context.currentUser?.name || '',
+    museumId: museumId.value,
+    museumName: museum?.name || '',
+    categoryIds: categoryIds.value,
+    questions,
+    score,
+    totalQuestions: examSpecimens.value.length,
+    submittedAt: new Date().toISOString(),
+  }
+
+  context.submitExam(record)
+
+  // 跳转到结果页
+  uni.navigateTo({
+    url: '/pages/exam/exam-result',
+  })
+}
+
+function onFocus(e: any) {
+  // 聚焦时样式变化
+}
+
+function onBlur(e: any) {
+  // 失焦时样式变化
+}
+</script>
+
+<style scoped>
+.exam-page {
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-bar {
+  padding: 12px 16px;
+  background: #f8faf8;
+  border-bottom: 1px solid #eee;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: #888;
+}
+
+.quit-btn {
+  font-size: 13px;
+  color: #ef4444;
+}
+
+.progress-track {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #2d6a4f;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.image-area {
+  flex: 1;
+  background: #f0f4f0;
+  overflow: hidden;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+}
+
+.answer-area {
+  padding: 16px;
+}
+
+.question-text {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.answer-input {
+  width: 100%;
+  height: 48px;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 0 16px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.bottom-nav {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 48px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+.nav-btn.prev {
+  background: #f0f0f0;
+  color: #555;
+}
+
+.nav-btn.prev.disabled {
+  color: #bbb;
+}
+
+.nav-btn.next {
+  background: #2d6a4f;
+  color: #ffffff;
+}
+
+.nav-btn.submit {
+  background: #ef4444;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.nav-icon {
+  font-size: 18px;
+}
+
+.nav-text {
+  font-size: 14px;
+}
+</style>

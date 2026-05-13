@@ -1,0 +1,277 @@
+<template>
+  <view class="exam-select-page">
+    <!-- 导航栏 -->
+    <view class="navbar">
+      <text class="nav-back" @click="goBack">←</text>
+      <text class="nav-title">选择题库</text>
+    </view>
+
+    <view class="content">
+      <!-- 说明卡片 -->
+      <view class="tips-card">
+        <text class="tips-text">📝 从选定的标本中随机抽取 <strong>20</strong> 张图片，仅展示图片，请填写标本名称。不计时，可随时提交。</text>
+      </view>
+
+      <!-- 标本馆选择 -->
+      <view class="section">
+        <text class="section-label">选择标本馆 *</text>
+        <view class="museum-list">
+          <view
+            v-for="museum in museums"
+            :key="museum.id"
+            class="museum-option"
+            :class="{ selected: selectedMuseumId === museum.id }"
+            @click="selectMuseum(museum.id)"
+          >
+            <text class="museum-icon">{{ museum.icon }}</text>
+            <text class="museum-name">{{ museum.name }}</text>
+            <text v-if="selectedMuseumId === museum.id" class="check-icon">✓</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分类选择 -->
+      <view v-if="selectedMuseum" class="section">
+        <text class="section-label">选择分类（不选默认全部）</text>
+        <view class="category-grid">
+          <view
+            v-for="cat in selectedMuseum.categories"
+            :key="cat.id"
+            class="category-option"
+            :class="{ selected: selectedCategoryIds.includes(cat.id) }"
+            @click="toggleCategory(cat.id)"
+          >
+            <view class="checkbox" :class="{ checked: selectedCategoryIds.includes(cat.id) }">
+              <text v-if="selectedCategoryIds.includes(cat.id)" class="check">✓</text>
+            </view>
+            <text class="cat-name">{{ cat.name }}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 开始考试按钮 -->
+      <button
+        class="btn-start"
+        :class="{ disabled: !selectedMuseumId }"
+        :disabled="!selectedMuseumId"
+        @click="startExam"
+      >开始考试</button>
+    </view>
+
+    <!-- 底部导航 -->
+    <BottomTabBar activeTab="exam" />
+  </view>
+</template>
+
+<script setup lang="uts">
+import { ref, computed } from 'vue'
+import { useAppContext } from '@/context/AppContext.uts'
+import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+
+const context = useAppContext()
+
+const selectedMuseumId = ref('')
+const selectedCategoryIds = ref<string[]>([])
+
+const museums = computed(() => context.getMuseums())
+
+const selectedMuseum = computed(() => {
+  return museums.value.find(m => m.id === selectedMuseumId.value)
+})
+
+function goBack() {
+  uni.switchTab({ url: '/pages/home/home' })
+}
+
+function selectMuseum(museumId: string) {
+  selectedMuseumId.value = museumId
+  selectedCategoryIds.value = []
+}
+
+function toggleCategory(catId: string) {
+  const index = selectedCategoryIds.value.indexOf(catId)
+  if (index > -1) {
+    selectedCategoryIds.value.splice(index, 1)
+  } else {
+    selectedCategoryIds.value.push(catId)
+  }
+}
+
+function startExam() {
+  if (!selectedMuseumId.value) {
+    uni.showToast({ title: '请先选择标本馆', icon: 'none' })
+    return
+  }
+
+  // 检查标本数量
+  const pool = context.getApprovedSpecimens(
+    selectedMuseumId.value,
+    selectedCategoryIds.value.length > 0 ? selectedCategoryIds.value : undefined
+  )
+
+  if (pool.length < 3) {
+    uni.showToast({ title: '该题库标本数量不足，至少需要3个', icon: 'none' })
+    return
+  }
+
+  // 跳转到考试页面
+  uni.navigateTo({
+    url: `/pages/exam/exam?museumId=${selectedMuseumId.value}&categoryIds=${selectedCategoryIds.value.join(',')}`,
+  })
+}
+</script>
+
+<style scoped>
+.exam-select-page {
+  min-height: 100vh;
+  background: #f8faf8;
+  padding-bottom: 60px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-back {
+  font-size: 20px;
+  color: #666;
+  margin-right: 12px;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.content {
+  padding: 16px;
+}
+
+.tips-card {
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.tips-text {
+  font-size: 13px;
+  color: #2d6a4f;
+  line-height: 1.6;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.section-label {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.museum-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.museum-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.museum-option.selected {
+  background: #e8f5e9;
+  border-color: #2d6a4f;
+}
+
+.museum-icon {
+  font-size: 20px;
+}
+
+.museum-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: #222;
+}
+
+.check-icon {
+  font-size: 16px;
+  color: #2d6a4f;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.category-option.selected {
+  background: #e8f5e9;
+  border-color: #2d6a4f;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkbox.checked {
+  background: #2d6a4f;
+}
+
+.check {
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.cat-name {
+  font-size: 13px;
+  color: #333;
+}
+
+.btn-start {
+  width: 100%;
+  height: 52px;
+  background: #2d6a4f;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 16px;
+}
+
+.btn-start.disabled {
+  background: #ccc;
+}
+</style>
