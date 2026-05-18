@@ -8,13 +8,15 @@ export class ReqWechatLoginDto {
 }
 
 export class ReqWechatRegisterDto {
-  @ApiProperty({ description: '微信授权code' })
+  @ApiProperty({ description: '微信授权code（可不传，如不传则不绑定openid）', required: false })
+  @IsOptional()
   @IsString()
-  code: string;
+  code?: string;
 
-  @ApiProperty({ description: '手机号' })
+  @ApiProperty({ description: '手机号（可不传，如不传则必须通过code获取openid）', required: false })
+  @IsOptional()
   @IsString()
-  phone: string;
+  phone?: string;
 
   @ApiProperty({ description: '真实姓名' })
   @IsString()

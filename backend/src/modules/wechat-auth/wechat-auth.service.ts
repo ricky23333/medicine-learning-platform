@@ -83,35 +83,56 @@ export class WechatAuthService {
   async wechatRegister(dto: ReqWechatRegisterDto) {
     const { code, phone, realName, userType, institution, majorGrade, studentNo } = dto;
 
-    // 1. 验证微信code换取openid
-    const openid = await this.getWechatOpenid(code);
-
-    // 2. 检查手机号是否已注册
-    const existingUser = await this.prisma.sysUser.findFirst({
-      where: { userName: phone },
-    });
-    if (existingUser) {
-      throw new ApiException('该手机号已注册');
+    // 0. 手机号和openid必须有一个存在
+    let openid: string | null = null;
+    if (code) {
+      openid = await this.getWechatOpenid(code);
     }
 
-    // 3. 检查openid是否已绑定其他用户
-    const existingOpenid = await this.prisma.appUser.findUnique({
-      where: { openid },
-    });
-    if (existingOpenid) {
-      throw new ApiException('该微信已绑定其他账号');
+    if (!phone && !openid) {
+      throw new ApiException('手机号和微信openid至少需要填写一个');
     }
 
-    // 4. 创建用户
+    // 0.1 如果只有openid没有手机号，且身份为教师，必须填写手机号
+    if (!phone && openid && userType === 'teacher') {
+      throw new ApiException('教师用户注册必须填写手机号');
+    }
+
+    // 1. 处理用户名 - 优先使用手机号，否则使用微信标识
+    let userName: string;
+    if (phone) {
+      // 检查手机号是否已注册
+      const existingUser = await this.prisma.sysUser.findFirst({
+        where: { userName: phone },
+      });
+      if (existingUser) {
+        throw new ApiException('该手机号已注册');
+      }
+      userName = phone;
+    } else {
+      userName = `wechat_${openid.slice(-10)}`;
+    }
+
+    // 2. 如果有openid，检查是否已绑定其他用户
+    if (openid) {
+      const existingOpenid = await this.prisma.appUser.findUnique({
+        where: { openid },
+      });
+      if (existingOpenid) {
+        throw new ApiException('该微信已绑定其他账号');
+      }
+    }
+
+    // 3. 创建用户
     const salt = await bcrypt.genSalt();
     const defaultPassword = await bcrypt.hash('888888', salt);
 
     const user = await this.prisma.sysUser.create({
       data: {
-        userName: phone,
+        userName,
         nickName: realName,
         password: defaultPassword,
-        phonenumber: phone,
+        phonenumber: phone || '',
         status: '0',
         delFlag: '0',
       },
@@ -123,7 +144,7 @@ export class WechatAuthService {
         openid,
         userType: userType || 'student',
         realName,
-        phone,
+        phone: phone || '',
         institution: institution || '',
         majorGrade: userType === 'student' ? majorGrade : null,
         studentNo: userType === 'student' ? studentNo : null,

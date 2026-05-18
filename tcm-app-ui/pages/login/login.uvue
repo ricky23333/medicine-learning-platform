@@ -165,7 +165,7 @@
 					<template v-if="accountForm.userType === 'teacher'">
 						<view class="form-item">
 							<text class="form-label">联系方式 *</text>
-							<input v-model="accountForm.contact" placeholder="手机号或邮箱" class="form-input" />
+							<input v-model="accountForm.contact" type="tel" placeholder="请输入手机号" class="form-input" />
 						</view>
 					</template>
 
@@ -188,7 +188,7 @@
 					<scroll-view scroll-y class="school-scroll">
 						<view v-for="school in schoolTree" :key="school.deptId" class="school-item">
 							<view class="school-row" :class="{ expandable: school.children?.length }"
-								@click="toggleSchoolExpand(school)">
+								@click="school.children?.length ? toggleSchoolExpand(school) : selectSchool(school)">
 								<view class="school-info" :style="{ paddingLeft: school.level * 16 + 'px' }">
 									<text v-if="school.children?.length"
 										class="expand-icon">{{ school.expanded ? '▼' : '▶' }}</text>
@@ -197,32 +197,17 @@
 								</view>
 								<text v-if="accountForm.deptId === school.deptId" class="check-icon">✓</text>
 							</view>
-							<!-- 子节点 -->
+							<!-- 子节点（展开显示） -->
 							<template v-if="school.children?.length && school.expanded">
 								<view v-for="child in school.children" :key="child.deptId" class="school-item child">
-									<view class="school-row" @click="selectSchool(child)">
-										<view class="school-info"
-											:style="{ paddingLeft: (child.level || school.level + 1) * 16 + 'px' }">
+									<view class="school-row" @click="child.children?.length ? toggleSchoolExpand(child) : selectSchool(child)">
+										<view class="school-info" :style="{ paddingLeft: child.level * 16 + 'px' }">
+											<text v-if="child.children?.length" class="expand-icon">{{ child.expanded ? '▼' : '▶' }}</text>
 											<text class="school-text"
 												:class="{ selected: accountForm.deptId === child.deptId }">{{ child.deptName }}</text>
 										</view>
 										<text v-if="accountForm.deptId === child.deptId" class="check-icon">✓</text>
 									</view>
-									<!-- 孙节点 -->
-									<template v-if="child.children?.length && child.expanded">
-										<view v-for="grandChild in child.children" :key="grandChild.deptId"
-											class="school-item grand-child">
-											<view class="school-row" @click="selectSchool(grandChild)">
-												<view class="school-info"
-													:style="{ paddingLeft: (grandChild.level || child.level + 1) * 16 + 'px' }">
-													<text class="school-text"
-														:class="{ selected: accountForm.deptId === grandChild.deptId }">{{ grandChild.deptName }}</text>
-												</view>
-												<text v-if="accountForm.deptId === grandChild.deptId"
-													class="check-icon">✓</text>
-											</view>
-										</view>
-									</template>
 								</view>
 							</template>
 						</view>
@@ -498,23 +483,44 @@
 	}
 
 	async function loadSchoolList() {
-		console.log(77777)
 		if (schoolTree.value.length > 0) return
 
 		uni.showLoading({ title: '加载学校...' })
 		try {
 			const list = await getSchoolList() as any[]
-			// 添加层级和展开状态
-			schoolTree.value = list.map(school => ({
-				...school,
-				level: 0,
-				expanded: false
-			}))
+			// 扁平化树结构，跳过顶层节点，从第二级开始展示
+			const flatList : any[] = []
+			list.forEach(root => {
+				if (root.children && root.children.length > 0) {
+					// 直接子节点作为 level=1（第二级）处理
+					root.children.forEach((child : any) => {
+						flattenSchool(child, 1, flatList)
+					})
+				}
+			})
+			schoolTree.value = flatList
 			uni.hideLoading()
 		} catch (err : any) {
 			uni.hideLoading()
 			uni.showToast({ title: '获取学校列表失败', icon: 'none' })
 		}
+	}
+
+	// 递归扁平化学校树
+	function flattenSchool(school : any, level : number, result : any[]) {
+		// 添加当前节点
+		result.push({
+			...school,
+			level,
+			expanded: false
+		})
+		// 递归处理子节点
+		if (school.children) {
+			school.children.forEach((child : any) => {
+				flattenSchool(child, level + 1, result)
+			})
+		}
+	}
 	}
 
 	function toggleSchoolExpand(school : any) {
@@ -556,6 +562,11 @@
 		} else {
 			if (!accountForm.contact) {
 				uni.showToast({ title: '请输入联系方式', icon: 'none' })
+				return
+			}
+			// 验证手机号格式
+			if (!/^1[3-9]\d{9}$/.test(accountForm.contact)) {
+				uni.showToast({ title: '联系方式必须为手机号格式', icon: 'none' })
 				return
 			}
 		}
