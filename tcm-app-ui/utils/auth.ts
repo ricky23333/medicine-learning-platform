@@ -37,6 +37,9 @@ export interface WechatLoginResponse {
 	userId : number
 	userType : string
 	realName : string
+	nickname ?: string
+	avatar ?: string
+	phone ?: string
 }
 
 // 账号密码登录响应
@@ -90,34 +93,25 @@ export function getWxLoginCode() : Promise<string> {
 }
 
 /**
- * 微信一键登录（获取手机号+登录）
- * @param e - 微信手机号按钮事件.detail
+ * 微信登录（使用code换取用户信息）
+ * @param code - 微信授权code
  */
-export function wechatLogin(e : { detail : { errMsg : string; code ?: string; phoneNumber ?: string } }) : Promise<WechatLoginResponse> {
+export function wechatLoginByCode(code : string) : Promise<WechatLoginResponse> {
 	return new Promise((resolve, reject) => {
 		// #ifdef MP-WEIXIN
-		const { errMsg, code, phoneNumber } = e.detail
-
-		if (errMsg !== 'getPhoneNumber:ok') {
-			reject(new Error('获取手机号授权失败'))
-			return
-		}
-
-		// 如果有手机号，先调用微信登录接口
-		const loginCode = code || ''
-
 		uni.request({
 			url: `${API_BASE_URL}/app/auth/wechat-login`,
 			method: 'POST',
-			data: { code: loginCode, phone: phoneNumber },
+			data: { code },
 			header: {
 				'Content-Type': 'application/json',
 			},
 			success: (res : any) => {
-				if (res.statusCode === 200 && res.data.code === 200) {
-					resolve(res.data.data)
+				console.log(1111, res)
+				if (res.data && res.data.code === 200) {
+					resolve(res.data)
 				} else {
-					reject(new Error(res.data.msg || '登录失败'))
+					reject(new Error(res.msg || '登录失败'))
 				}
 			},
 			fail: (err) => {
@@ -393,7 +387,7 @@ export function wechatRegister(data : {
 				'Content-Type': 'application/json',
 			},
 			success: (res : any) => {
-				if (res.code === 200) {
+				if (res.data && res.data.code === 200) {
 					resolve(res.data)
 				} else {
 					reject(new Error(res.data.msg || '注册失败'))

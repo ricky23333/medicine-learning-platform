@@ -61,10 +61,6 @@
 			</view>
 		</view>
 
-		<!-- 微信手机号授权按钮（隐藏） -->
-		<button v-if="showPhoneBtn" class="btn-phone-hidden" id="phoneBtn" open-type="getPhoneNumber"
-			@getphonenumber="handleGetPhone">获取手机号</button>
-
 		<!-- ==================== 账号密码登录弹窗 ==================== -->
 		<view v-if="showAccountModal" class="modal-overlay" @click="closeAccountModal">
 			<view class="modal-content account-modal" @click.stop>
@@ -225,7 +221,7 @@
 
 <script setup lang="uts">
 	import { ref, reactive, onMounted } from 'vue'
-	import { wechatLogin, wechatRegister, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
+	import { wechatLoginByCode, wechatRegister, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
 
 	// 当前Tab
 	const currentTab = ref<'login' | 'register'>('login')
@@ -245,7 +241,6 @@
 
 	// ==================== 微信登录/注册 ====================
 	const showWechatModal = ref(false)
-	const showPhoneBtn = ref(false)
 
 	function showWechatLogin() {
 		currentTab.value = 'login'
@@ -264,19 +259,38 @@
 	function handleWechatAgree() {
 		showWechatModal.value = false
 		if (currentTab.value === 'login') {
-			// 登录模式：获取手机号
-			showPhoneBtn.value = true
-			setTimeout(() => {
-				const query = uni.createSelectorQuery()
-				query.select('#phoneBtn').node((res : any) => {
-					if (res.node) {
-						res.node.click()
-					}
-				}).exec()
-			}, 100)
+			// 登录模式：获取微信code登录
+			handleWxLogin()
 		} else {
 			// 注册模式：获取微信code
 			handleWxRegister()
+		}
+	}
+
+	// 微信用户登录 - 获取code登录
+	async function handleWxLogin() {
+		uni.showLoading({ title: '登录中...' })
+		try {
+			// 获取微信code
+			const code = await getWxLoginCode() as string
+			// 调用后端接口登录
+			const res = await wechatLoginByCode(code) as any
+			uni.hideLoading()
+			// 缓存用户信息
+			uni.setStorageSync('token', res.token)
+			uni.setStorageSync('userId', res.userId)
+			uni.setStorageSync('userType', res.userType)
+			uni.setStorageSync('realName', res.realName)
+			if (res.nickname) uni.setStorageSync('nickname', res.nickname)
+			if (res.avatar) uni.setStorageSync('avatar', res.avatar)
+			if (res.phone) uni.setStorageSync('phone', res.phone)
+			uni.showToast({ title: '登录成功', icon: 'success' })
+			setTimeout(() => {
+				uni.reLaunch({ url: '/pages/home/home' })
+			}, 1500)
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: err.message || '登录失败', icon: 'none' })
 		}
 	}
 
@@ -322,41 +336,6 @@
 			reject(new Error('仅支持微信小程序环境'))
 			// #endif
 		})
-	}
-
-	async function handleGetPhone(e : any) {
-		showPhoneBtn.value = false
-		if (e.detail.errMsg !== 'getPhoneNumber:ok') {
-			uni.showToast({ title: '需要授权获取手机号才能继续', icon: 'none' })
-			return
-		}
-
-		uni.showLoading({ title: '处理中...' })
-
-		try {
-			if (currentTab.value === 'login') {
-				// 微信登录
-				const res = await wechatLogin(e) as any
-				uni.hideLoading()
-				uni.setStorageSync('token', res.token)
-				uni.setStorageSync('userId', res.userId)
-				uni.setStorageSync('userType', res.userType)
-				uni.setStorageSync('realName', res.realName)
-				uni.showToast({ title: '登录成功', icon: 'success' })
-				setTimeout(() => {
-					uni.reLaunch({ url: '/pages/home/home' })
-				}, 1500)
-			} else {
-				// 微信注册 - 需要补充信息
-				uni.hideLoading()
-				uni.showToast({ title: '请补充注册信息', icon: 'none' })
-				accountForm.phone = e.detail.phoneNumber || ''
-				showRegisterInfoModal.value = true
-			}
-		} catch (err : any) {
-			uni.hideLoading()
-			uni.showToast({ title: err.message || '操作失败', icon: 'none' })
-		}
 	}
 
 	// ==================== 账号密码登录/注册 ====================
