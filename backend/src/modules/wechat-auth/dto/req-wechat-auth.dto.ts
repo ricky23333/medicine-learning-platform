@@ -39,4 +39,8 @@ export class ReqWechatRegisterDto {
   @IsOptional()
   @IsString()
   studentNo?: string;
+
+  @ApiProperty({ description: '组织ID' })
+  @IsString()
+  deptId: string;
 }

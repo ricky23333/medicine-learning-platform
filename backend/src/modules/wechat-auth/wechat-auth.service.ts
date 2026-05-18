@@ -18,7 +18,7 @@ export class WechatAuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   /* 微信登录 */
   async wechatLogin(dto: ReqWechatLoginDto) {
@@ -81,10 +81,11 @@ export class WechatAuthService {
 
   /* 微信注册 */
   async wechatRegister(dto: ReqWechatRegisterDto) {
-    const { code, phone, realName, userType, institution, majorGrade, studentNo } = dto;
+    const { code, phone, realName, userType, institution, majorGrade, studentNo, deptId } = dto;
 
     // 0. 手机号和openid必须有一个存在
     let openid: string | null = null;
+
     if (code) {
       openid = await this.getWechatOpenid(code);
     }
@@ -96,6 +97,14 @@ export class WechatAuthService {
     // 0.1 如果只有openid没有手机号，且身份为教师，必须填写手机号
     if (!phone && openid && userType === 'teacher') {
       throw new ApiException('教师用户注册必须填写手机号');
+    }
+
+    // 0.2 校验组织ID是否存在
+    const dept = await this.prisma.sysDept.findUnique({
+      where: { deptId: Number(deptId) },
+    });
+    if (!dept) {
+      throw new ApiException('指定的组织不存在');
     }
 
     // 1. 处理用户名 - 优先使用手机号，否则使用微信标识
@@ -133,6 +142,7 @@ export class WechatAuthService {
         nickName: realName,
         password: defaultPassword,
         phonenumber: phone || '',
+        deptId: Number(deptId),
         status: '0',
         delFlag: '0',
       },
@@ -178,7 +188,7 @@ export class WechatAuthService {
 
       return data.openid;
     } catch (error) {
-      throw new ApiException('微信服务调用失败');
+      throw new ApiException('微信服务调用失败，请稍后再试');
     }
   }
 }

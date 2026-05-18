@@ -137,8 +137,8 @@
 					<view class="form-item">
 						<text class="form-label">学校 *</text>
 						<view class="school-select" @click="showSchoolPicker = true">
-							<text v-if="!accountForm.institution" class="placeholder">请选择学校</text>
-							<text v-else class="school-name">{{ accountForm.institution }}</text>
+							<text v-if="!accountForm.deptId" class="placeholder">请选择学校</text>
+							<text v-else class="school-name">{{ accountForm.deptName }}</text>
 							<text class="arrow">▼</text>
 						</view>
 					</view>
@@ -200,9 +200,11 @@
 							<!-- 子节点（展开显示） -->
 							<template v-if="school.children?.length && school.expanded">
 								<view v-for="child in school.children" :key="child.deptId" class="school-item child">
-									<view class="school-row" @click="child.children?.length ? toggleSchoolExpand(child) : selectSchool(child)">
+									<view class="school-row"
+										@click="child.children?.length ? toggleSchoolExpand(child) : selectSchool(child)">
 										<view class="school-info" :style="{ paddingLeft: child.level * 16 + 'px' }">
-											<text v-if="child.children?.length" class="expand-icon">{{ child.expanded ? '▼' : '▶' }}</text>
+											<text v-if="child.children?.length"
+												class="expand-icon">{{ child.expanded ? '▼' : '▶' }}</text>
 											<text class="school-text"
 												:class="{ selected: accountForm.deptId === child.deptId }">{{ child.deptName }}</text>
 										</view>
@@ -369,7 +371,7 @@
 		// 注册信息
 		userType: 'student' as 'student' | 'teacher',
 		deptId: 0,
-		institution: '',
+		deptName: '',
 		realName: '',
 		studentNo: '',
 		majorGrade: '',
@@ -521,7 +523,6 @@
 			})
 		}
 	}
-	}
 
 	function toggleSchoolExpand(school : any) {
 		school.expanded = !school.expanded
@@ -529,7 +530,7 @@
 
 	function selectSchool(school : any) {
 		accountForm.deptId = school.deptId
-		accountForm.institution = school.deptName
+		accountForm.deptName = school.deptName
 	}
 
 	function confirmSchoolSelection() {
@@ -582,7 +583,8 @@
 					code: accountForm.wxCode,
 					realName: accountForm.realName,
 					userType: accountForm.userType,
-					institution: accountForm.institution,
+					deptId: accountForm.deptId.toString(),
+					institution: accountForm.deptId.toString(),
 					majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
 					studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
 					contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
@@ -594,14 +596,15 @@
 					password: accountForm.password,
 					realName: accountForm.realName,
 					userType: accountForm.userType,
-					institution: accountForm.institution,
+					deptId: accountForm.deptId.toString(),
+					institution: accountForm.deptId.toString(),
 					majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
 					studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
 					contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
 				})
 			}
 			uni.hideLoading()
-			uni.showToast({ title: '注册成功，请等待审核', icon: 'success' })
+			uni.showToast({ title: '注册成功待审核', icon: 'success' })
 			setTimeout(() => {
 				closeRegisterInfoModal()
 				currentTab.value = 'login'
@@ -913,6 +916,9 @@
 		font-weight: 600;
 		border: none;
 		border-radius: 12px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 
 	.btn-login[disabled] {

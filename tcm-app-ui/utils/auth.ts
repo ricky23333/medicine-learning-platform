@@ -2,7 +2,7 @@
  * 微信登录工具函数
  */
 
-const API_BASE_URL = 'https://dhtcm.cn/api'
+const API_BASE_URL = 'http://localhost:5880'
 
 // 微信登录凭证 code 有效期约5分钟
 export interface LoginCodeResult {
@@ -141,7 +141,6 @@ export function getSchoolList() : Promise<DeptListResponse> {
 			url: `${API_BASE_URL}/system/dept/public/list`,
 			method: 'GET',
 			success: (res : any) => {
-				console.log(111111, res)
 				if (res.statusCode === 200 && res.data.code === 200) {
 					// 将扁平数据转换为树形结构
 					const deptList = res.data.data as DeptItem[]
@@ -326,7 +325,7 @@ export function registerByPassword(data : {
 	password : string
 	realName : string
 	userType : 'student' | 'teacher'
-	institution : string  // 学校名称
+	deptId : number  // 学校ID
 	majorGrade ?: string  // 专业年级（学生）
 	studentNo ?: string   // 学号（学生）
 	contact ?: string     // 联系方式（老师）
@@ -340,7 +339,7 @@ export function registerByPassword(data : {
 				password: data.password,
 				realName: data.realName,
 				userType: data.userType,
-				institution: data.institution,
+				deptId: data.deptId,
 				majorGrade: data.majorGrade,
 				studentNo: data.studentNo,
 				contact: data.contact,
@@ -370,7 +369,8 @@ export function wechatRegister(data : {
 	code : string  // 微信授权code
 	realName : string
 	userType : 'student' | 'teacher'
-	institution : string  // 学校名称
+	deptId : string  // 学校ID
+	institution : string
 	majorGrade ?: string  // 专业年级（学生）
 	studentNo ?: string   // 学号（学生）
 	contact ?: string     // 联系方式（老师）
@@ -383,6 +383,7 @@ export function wechatRegister(data : {
 				code: data.code,
 				realName: data.realName,
 				userType: data.userType,
+				deptId: data.deptId,
 				institution: data.institution,
 				majorGrade: data.majorGrade,
 				studentNo: data.studentNo,
@@ -392,7 +393,7 @@ export function wechatRegister(data : {
 				'Content-Type': 'application/json',
 			},
 			success: (res : any) => {
-				if (res.statusCode === 200 && res.data.code === 200) {
+				if (res.code === 200) {
 					resolve(res.data)
 				} else {
 					reject(new Error(res.data.msg || '注册失败'))
