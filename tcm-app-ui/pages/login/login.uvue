@@ -11,39 +11,225 @@
 
 		<!-- 按钮区域 -->
 		<view class="button-container">
-			<button class="btn-start" @click="showAgreement">开始使用</button>
+			<!-- 立即注册/登录切换 -->
+			<view class="switch-link">
+				<text class="switch-text">{{ currentTab === 'login' ? '没有账号？' : '已有账号？' }}</text>
+				<text class="switch-btn" @click="toggleTab">{{ currentTab === 'login' ? '立即注册' : '立即登录' }}</text>
+			</view>
+			<!-- 微信登录按钮 -->
+			<button class="btn-wechat" @click="currentTab === 'login' ? showWechatLogin() : showWechatRegister()">
+				<image class="btn-icon" src="/static/icons/wechat.png" mode="aspectFit" />
+				<text class="btn-text">{{ currentTab === 'login' ? '微信用户登录' : '微信用户注册' }}</text>
+			</button>
+
+			<!-- 账号密码登录/注册按钮 -->
+			<button class="btn-account" @click="currentTab === 'login' ? showAccountLogin() : showAccountRegister()">
+				<image class="btn-icon" src="/static/icons/account.png" mode="aspectFit" />
+				<text class="btn-text">{{ currentTab === 'login' ? '账号密码登录' : '账号密码注册' }}</text>
+			</button>
 		</view>
 
-		<!-- 协议确认弹窗 -->
-		<view v-if="showModal" class="modal-overlay" @click="closeModal">
+		<!-- ==================== 微信登录弹窗 ==================== -->
+		<view v-if="showWechatModal" class="modal-overlay" @click="closeWechatModal">
 			<view class="modal-content" @click.stop>
 				<view class="modal-header">
-					<text class="modal-title">服务协议</text>
+					<text class="modal-title">微信用户{{ currentTab === 'login' ? '登录' : '注册' }}</text>
 				</view>
 				<view class="modal-body">
 					<text class="agreement-text">
-						在使用【TCM数字标本学习助手】服务之前，请仔细阅读《服务协议》、《隐私政策》、《免责声明》，同时申请获取你的头像、昵称权限。
+						{{ currentTab === 'login' ? '登录' : '注册' }}【TCM数字标本学习助手】，需要获取您的微信手机号授权。
 					</text>
 					<text class="agreement-text" space="nbsp">
-						如您同意以上政策和权限申请，请点击"同意"开始使用【TCM数字标本学习助手】
+						请仔细阅读《服务协议》、《隐私政策》、《免责声明》。如您同意授权，请点击"同意"继续。
 					</text>
 
-					<!-- 协议链接 -->
 					<view class="link-list">
 						<text class="link-item" @click="goPage('service-agreement')">《服务协议》</text>
 						<text class="link-item" @click="goPage('privacy-policy')">《隐私政策》</text>
 						<text class="link-item" @click="goPage('disclaimer')">《免责声明》</text>
 					</view>
 
-					<!-- 权限说明 -->
-					<view class="permission-note">					
-					    <image class="permission-icon" src="/static/icons/camera.png" mode="aspectFit" />
-						<text class="permission-text">我们将申请获取您的头像和昵称权限</text>
+					<view class="permission-note">
+						<text class="permission-icon">📱</text>
+						<text class="permission-text">获取手机号用于账号创建和登录</text>
 					</view>
 				</view>
 				<view class="modal-footer">
-					<button class="btn-reject" @click="handleReject">拒绝</button>
-					<button class="btn-agree" @click="handleAgree">同意</button>
+					<button class="btn-reject" @click="closeWechatModal">拒绝</button>
+					<button class="btn-agree" @click="handleWechatAgree">同意</button>
+				</view>
+			</view>
+		</view>
+
+		<!-- 微信手机号授权按钮（隐藏） -->
+		<button v-if="showPhoneBtn" class="btn-phone-hidden" id="phoneBtn" open-type="getPhoneNumber"
+			@getphonenumber="handleGetPhone">获取手机号</button>
+
+		<!-- ==================== 账号密码登录弹窗 ==================== -->
+		<view v-if="showAccountModal" class="modal-overlay" @click="closeAccountModal">
+			<view class="modal-content account-modal" @click.stop>
+				<view class="modal-header">
+					<text class="modal-title">账号密码{{ currentTab === 'login' ? '登录' : '注册' }}</text>
+					<text class="modal-close" @click="closeAccountModal">×</text>
+				</view>
+				<view class="modal-body">
+					<!-- 账号 -->
+					<view class="form-item">
+						<text class="form-label">账号</text>
+						<input v-model="accountForm.username" placeholder="请输入手机号" class="form-input" type="tel" />
+					</view>
+
+					<!-- 密码 -->
+					<view class="form-item">
+						<text class="form-label">密码</text>
+						<input v-model="accountForm.password" type="password" placeholder="请输入密码" class="form-input" />
+					</view>
+
+					<!-- 注册模式：确认密码 -->
+					<view v-if="currentTab === 'register'" class="form-item">
+						<text class="form-label">确认密码</text>
+						<input v-model="accountForm.confirmPassword" type="password" placeholder="请再次输入密码"
+							class="form-input" />
+					</view>
+
+					<!-- 协议勾选 -->
+					<view class="agreement-check" @click="toggleAgreement">
+						<view class="checkbox" :class="{ checked: accountForm.agreed }">
+							<text v-if="accountForm.agreed" class="check-icon">✓</text>
+						</view>
+						<text class="agreement-text-small">我已阅读并同意</text>
+						<text class="link-small" @click.stop="goPage('service-agreement')">《服务协议》</text>
+						<text class="link-small" @click.stop="goPage('privacy-policy')">《隐私政策》</text>
+						<text class="link-small" @click.stop="goPage('disclaimer')">《免责声明》</text>
+					</view>
+
+					<!-- 登录/注册按钮 -->
+					<button class="btn-login" @click="handleAccountSubmit" :disabled="submitting">
+						{{ currentTab === 'login' ? '登录' : '注册' }}
+					</button>
+				</view>
+			</view>
+		</view>
+
+		<!-- ==================== 账号密码注册信息填写弹窗 ==================== -->
+		<view v-if="showRegisterInfoModal" class="modal-overlay" @click="closeRegisterInfoModal">
+			<view class="modal-content register-modal" @click.stop>
+				<view class="modal-header">
+					<text class="modal-title">填写{{ accountForm.userType === 'student' ? '学生' : '教师' }}信息</text>
+					<text class="modal-close" @click="closeRegisterInfoModal">×</text>
+				</view>
+				<view class="modal-body">
+					<!-- 角色选择 -->
+					<view class="role-selector">
+						<view class="role-btn" :class="{ active: accountForm.userType === 'student' }"
+							@click="accountForm.userType = 'student'">
+							<text class="role-icon">🎓</text>
+							<text class="role-label">学生</text>
+						</view>
+						<view class="role-btn" :class="{ active: accountForm.userType === 'teacher' }"
+							@click="accountForm.userType = 'teacher'">
+							<text class="role-icon">👨‍🏫</text>
+							<text class="role-label">教师</text>
+						</view>
+					</view>
+
+					<!-- 学校选择 -->
+					<view class="form-item">
+						<text class="form-label">学校 *</text>
+						<view class="school-select" @click="showSchoolPicker = true">
+							<text v-if="!accountForm.institution" class="placeholder">请选择学校</text>
+							<text v-else class="school-name">{{ accountForm.institution }}</text>
+							<text class="arrow">▼</text>
+						</view>
+					</view>
+
+					<!-- 姓名 -->
+					<view class="form-item">
+						<text class="form-label">姓名 *</text>
+						<input v-model="accountForm.realName" placeholder="请输入真实姓名" class="form-input" />
+					</view>
+
+					<!-- 学生专属字段 -->
+					<template v-if="accountForm.userType === 'student'">
+						<view class="form-item">
+							<text class="form-label">学号 *</text>
+							<input v-model="accountForm.studentNo" placeholder="请输入学号" class="form-input" />
+						</view>
+						<view class="form-item">
+							<text class="form-label">专业年级 *</text>
+							<input v-model="accountForm.majorGrade" placeholder="如：中医学2022级" class="form-input" />
+						</view>
+					</template>
+
+					<!-- 教师专属字段 -->
+					<template v-if="accountForm.userType === 'teacher'">
+						<view class="form-item">
+							<text class="form-label">联系方式 *</text>
+							<input v-model="accountForm.contact" placeholder="手机号或邮箱" class="form-input" />
+						</view>
+					</template>
+
+					<!-- 提交按钮 -->
+					<button class="btn-login" @click="handleRegisterInfoSubmit" :disabled="submitting">
+						完成注册
+					</button>
+				</view>
+			</view>
+		</view>
+
+		<!-- ==================== 学校选择器弹窗 ==================== -->
+		<view v-if="showSchoolPicker" class="modal-overlay" @click="showSchoolPicker = false">
+			<view class="modal-content school-picker-modal" @click.stop>
+				<view class="modal-header">
+					<text class="modal-title">选择学校</text>
+					<text class="modal-close" @click="showSchoolPicker = false">×</text>
+				</view>
+				<view class="modal-body school-list">
+					<scroll-view scroll-y class="school-scroll">
+						<view v-for="school in schoolTree" :key="school.deptId" class="school-item">
+							<view class="school-row" :class="{ expandable: school.children?.length }"
+								@click="toggleSchoolExpand(school)">
+								<view class="school-info" :style="{ paddingLeft: school.level * 16 + 'px' }">
+									<text v-if="school.children?.length"
+										class="expand-icon">{{ school.expanded ? '▼' : '▶' }}</text>
+									<text class="school-text"
+										:class="{ selected: accountForm.deptId === school.deptId }">{{ school.deptName }}</text>
+								</view>
+								<text v-if="accountForm.deptId === school.deptId" class="check-icon">✓</text>
+							</view>
+							<!-- 子节点 -->
+							<template v-if="school.children?.length && school.expanded">
+								<view v-for="child in school.children" :key="child.deptId" class="school-item child">
+									<view class="school-row" @click="selectSchool(child)">
+										<view class="school-info"
+											:style="{ paddingLeft: (child.level || school.level + 1) * 16 + 'px' }">
+											<text class="school-text"
+												:class="{ selected: accountForm.deptId === child.deptId }">{{ child.deptName }}</text>
+										</view>
+										<text v-if="accountForm.deptId === child.deptId" class="check-icon">✓</text>
+									</view>
+									<!-- 孙节点 -->
+									<template v-if="child.children?.length && child.expanded">
+										<view v-for="grandChild in child.children" :key="grandChild.deptId"
+											class="school-item grand-child">
+											<view class="school-row" @click="selectSchool(grandChild)">
+												<view class="school-info"
+													:style="{ paddingLeft: (grandChild.level || child.level + 1) * 16 + 'px' }">
+													<text class="school-text"
+														:class="{ selected: accountForm.deptId === grandChild.deptId }">{{ grandChild.deptName }}</text>
+												</view>
+												<text v-if="accountForm.deptId === grandChild.deptId"
+													class="check-icon">✓</text>
+											</view>
+										</view>
+									</template>
+								</view>
+							</template>
+						</view>
+					</scroll-view>
+				</view>
+				<view class="modal-footer">
+					<button class="btn-confirm" @click="confirmSchoolSelection">确定</button>
 				</view>
 			</view>
 		</view>
@@ -51,17 +237,300 @@
 </template>
 
 <script setup lang="uts">
-	import { ref } from 'vue'
+	import { ref, reactive, onMounted } from 'vue'
+	import { wechatLogin, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
 
-	const showModal = ref(false)
+	// 当前Tab
+	const currentTab = ref<'login' | 'register'>('login')
 
-	function showAgreement() {
-		showModal.value = true
+	// 学校数据
+	const schoolTree = ref<(DeptItem & { level : number; expanded ?: boolean })[]>([])
+
+	function switchTab(tab : 'login' | 'register') {
+		currentTab.value = tab
 	}
 
-	function closeModal() {
-		showModal.value = false
+	function toggleTab() {
+		currentTab.value = currentTab.value === 'login' ? 'register' : 'login'
 	}
+
+	// ==================== 微信登录/注册 ====================
+	const showWechatModal = ref(false)
+	const showPhoneBtn = ref(false)
+
+	function showWechatLogin() {
+		currentTab.value = 'login'
+		showWechatModal.value = true
+	}
+
+	function showWechatRegister() {
+		currentTab.value = 'register'
+		showWechatModal.value = true
+	}
+
+	function closeWechatModal() {
+		showWechatModal.value = false
+	}
+
+	function handleWechatAgree() {
+		showWechatModal.value = false
+		showPhoneBtn.value = true
+		setTimeout(() => {
+			const query = uni.createSelectorQuery()
+			query.select('#phoneBtn').node((res : any) => {
+				if (res.node) {
+								res.node.click()
+				}
+			}).exec()
+		}, 100)
+	}
+
+	async function handleGetPhone(e : any) {
+		showPhoneBtn.value = false
+		if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+			uni.showToast({ title: '需要授权获取手机号才能继续', icon: 'none' })
+			return
+		}
+
+		uni.showLoading({ title: '处理中...' })
+
+		try {
+			if (currentTab.value === 'login') {
+				// 微信登录
+				const res = await wechatLogin(e) as any
+				uni.hideLoading()
+				uni.setStorageSync('token', res.token)
+				uni.setStorageSync('userId', res.userId)
+				uni.setStorageSync('userType', res.userType)
+				uni.setStorageSync('realName', res.realName)
+				uni.showToast({ title: '登录成功', icon: 'success' })
+				setTimeout(() => {
+					uni.reLaunch({ url: '/pages/home/home' })
+				}, 1500)
+			} else {
+				// 微信注册 - 需要补充信息
+				uni.hideLoading()
+				uni.showToast({ title: '请补充注册信息', icon: 'none' })
+				accountForm.phone = e.detail.phoneNumber || ''
+				showRegisterInfoModal.value = true
+			}
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: err.message || '操作失败', icon: 'none' })
+		}
+	}
+
+	// ==================== 账号密码登录/注册 ====================
+	const showAccountModal = ref(false)
+	const submitting = ref(false)
+
+	const accountForm = reactive({
+		username: '',
+		password: '',
+		confirmPassword: '',
+		agreed: false,
+		// 注册信息
+		userType: 'student' as 'student' | 'teacher',
+		deptId: 0,
+		institution: '',
+		realName: '',
+		studentNo: '',
+		majorGrade: '',
+		contact: '',
+		phone: '',
+	})
+
+	function showAccountLogin() {
+		currentTab.value = 'login'
+		showAccountModal.value = true
+	}
+
+	function showAccountRegister() {
+		currentTab.value = 'register'
+		showAccountModal.value = true
+	}
+
+	function closeAccountModal() {
+		showAccountModal.value = false
+	}
+
+	function toggleAgreement() {
+		accountForm.agreed = !accountForm.agreed
+	}
+
+	async function handleAccountSubmit() {
+		// 验证表单
+		if (!accountForm.username) {
+			uni.showToast({ title: '请输入账号', icon: 'none' })
+			return
+		}
+
+		// 验证手机号格式
+		if (!/^1[3-9]\d{9}$/.test(accountForm.username)) {
+			uni.showToast({ title: '账号必须为手机号格式', icon: 'none' })
+			return
+		}
+
+		if (!accountForm.password) {
+			uni.showToast({ title: '请输入密码', icon: 'none' })
+			return
+		}
+
+		if (currentTab.value === 'register') {
+			if (!accountForm.confirmPassword) {
+				uni.showToast({ title: '请确认密码', icon: 'none' })
+				return
+			}
+			if (accountForm.password !== accountForm.confirmPassword) {
+				uni.showToast({ title: '两次密码不一致', icon: 'none' })
+				return
+			}
+			if (!accountForm.agreed) {
+				uni.showToast({ title: '请先阅读并同意协议', icon: 'none' })
+				return
+			}
+			// 注册模式 - 弹出信息填写弹窗
+			accountForm.phone = accountForm.username
+			loadSchoolList()
+			closeAccountModal()
+			showRegisterInfoModal.value = true
+			return
+		}
+
+		// 登录模式
+		submitting.value = true
+		uni.showLoading({ title: '登录中...' })
+
+		try {
+			// 简化登录（无验证码模式）
+			const res = await uni.request({
+				url: 'https://dhtcm.cn/api/login',
+				method: 'POST',
+				data: {
+					username: accountForm.username,
+					password: accountForm.password
+				},
+				header: { 'Content-Type': 'application/json' }
+			}) as any
+
+			uni.hideLoading()
+			if (res.data.code === 200) {
+				uni.setStorageSync('token', res.data.data.token)
+				uni.showToast({ title: '登录成功', icon: 'success' })
+				setTimeout(() => {
+					closeAccountModal()
+					uni.reLaunch({ url: '/pages/home/home' })
+				}, 1500)
+			} else {
+				uni.showToast({ title: res.data.msg || '登录失败', icon: 'none' })
+			}
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: err.message || '登录失败', icon: 'none' })
+		} finally {
+			submitting.value = false
+		}
+	}
+
+	// ==================== 注册信息填写 ====================
+	const showRegisterInfoModal = ref(false)
+
+	function closeRegisterInfoModal() {
+		showRegisterInfoModal.value = false
+	}
+
+	async function loadSchoolList() {
+		if (schoolTree.value.length > 0) return
+
+		uni.showLoading({ title: '加载学校...' })
+		try {
+			const list = await getSchoolList() as any[]
+			// 添加层级和展开状态
+			schoolTree.value = list.map(school => ({
+				...school,
+				level: 0,
+				expanded: false
+			}))
+			uni.hideLoading()
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: '获取学校列表失败', icon: 'none' })
+		}
+	}
+
+	function toggleSchoolExpand(school : any) {
+		school.expanded = !school.expanded
+	}
+
+	function selectSchool(school : any) {
+		accountForm.deptId = school.deptId
+		accountForm.institution = school.deptName
+	}
+
+	function confirmSchoolSelection() {
+		if (!accountForm.deptId) {
+			uni.showToast({ title: '请选择学校', icon: 'none' })
+			return
+		}
+		showSchoolPicker.value = false
+	}
+
+	async function handleRegisterInfoSubmit() {
+		// 验证表单
+		if (!accountForm.deptId) {
+			uni.showToast({ title: '请选择学校', icon: 'none' })
+			return
+		}
+		if (!accountForm.realName) {
+			uni.showToast({ title: '请输入姓名', icon: 'none' })
+			return
+		}
+		if (accountForm.userType === 'student') {
+			if (!accountForm.studentNo) {
+				uni.showToast({ title: '请输入学号', icon: 'none' })
+				return
+			}
+			if (!accountForm.majorGrade) {
+				uni.showToast({ title: '请输入专业年级', icon: 'none' })
+				return
+			}
+		} else {
+			if (!accountForm.contact) {
+				uni.showToast({ title: '请输入联系方式', icon: 'none' })
+				return
+			}
+		}
+
+		submitting.value = true
+		uni.showLoading({ title: '注册中...' })
+
+		try {
+			await registerByPassword({
+				username: accountForm.username,
+				password: accountForm.password,
+				realName: accountForm.realName,
+				userType: accountForm.userType,
+				institution: accountForm.institution,
+				majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
+				studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
+				contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
+			})
+			uni.hideLoading()
+			uni.showToast({ title: '注册成功，请等待审核', icon: 'success' })
+			setTimeout(() => {
+				closeRegisterInfoModal()
+				currentTab.value = 'login'
+			}, 2000)
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: err.message || '注册失败', icon: 'none' })
+		} finally {
+			submitting.value = false
+		}
+	}
+
+	// ==================== 学校选择器 ====================
+	const showSchoolPicker = ref(false)
 
 	function goPage(page : string) {
 		let url = ''
@@ -79,18 +548,6 @@
 		if (url) {
 			uni.navigateTo({ url })
 		}
-	}
-
-	function handleReject() {
-		showModal.value = false
-	}
-
-	function handleAgree() {
-		// 记录用户同意状态
-		uni.setStorageSync('agreedToTerms', true)
-		showModal.value = false
-		// 跳转到首页
-		uni.reLaunch({ url: '/pages/home/home' })
 	}
 </script>
 
@@ -142,25 +599,83 @@
 		margin-top: 4px;
 	}
 
+	/* 按钮容器 */
 	.button-container {
 		position: absolute;
 		bottom: 40px;
 		left: 24px;
 		right: 24px;
+		display: flex;
+		flex-direction: column;
+		overflow: show;
+		gap: 12px;
 	}
 
-	.btn-start {
+	/* 立即注册/登录切换 */
+	.switch-link {
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		position: absolute;
+		overflow: visible !important;
+		top: -50px;
+		right: 0;
+		z-index: 999;
+		flex-direction: row;
+	}
+
+	.switch-text {
+		font-size: 13px;
+		color: rgba(0, 0, 0, 0.8);
+	}
+
+	.switch-btn {
+		font-size: 14px;
+		color: #52b788;
+		font-weight: 600;
+		margin-left: 4px;
+	}
+
+	.btn-wechat,
+	.btn-account {
 		width: 100%;
 		height: 52px;
-		background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
-		color: #ffffff;
-		font-size: 16px;
-		font-weight: 600;
-		border: none;
 		border-radius: 16px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		gap: 8px;
+		font-size: 16px;
+		font-weight: 600;
+		border: none;
+		flex-direction: row;
+	}
+
+	.btn-wechat {
+		background: #07c160;
+		color: #ffffff;
+	}
+
+	.btn-account {
+		background: #ffffff;
+		color: #1b3a2d;
+		border: 1.5px solid #e0e0e0;
+	}
+
+	.btn-icon {
+		width: 20px;
+		height: 20px;
+	}
+
+	.btn-text {
+		font-size: 15px;
+	}
+
+	/* 隐藏的微信手机号按钮 */
+	.btn-phone-hidden {
+		position: absolute;
+		display: none;
+		opacity: 1;
 	}
 
 	/* 弹窗样式 */
@@ -187,6 +702,10 @@
 		padding: 20px 24px 12px;
 		text-align: center;
 		border-bottom: 1px solid #f0f0f0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
 	}
 
 	.modal-title {
@@ -195,52 +714,16 @@
 		color: #1a1a1a;
 	}
 
+	.modal-close {
+		position: absolute;
+		right: 16px;
+		top: 16px;
+		font-size: 24px;
+		color: #999;
+	}
+
 	.modal-body {
 		padding: 16px 24px;
-	}
-
-	.agreement-text {
-		display: block;
-		font-size: 13px;
-		color: #444;
-		line-height: 1.7;
-		margin-bottom: 12px;
-	}
-
-	.link-list {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin: 16px 0;
-	
-	}
-
-	.link-item {
-		font-size: 13px;
-		color: #1565c0;
-		text-decoration: underline;
-	}
-
-	.permission-note {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		background: #f8faf8;
-		padding: 12px;
-		border-radius: 12px;
-		margin-top: 8px;
-		flex-direction: row;
-	}
-
-	.permission-icon {
-		font-size: 16px;
-		width: 16px;
-		height: 16px;
-	}
-
-	.permission-text {
-		font-size: 12px;
-		color: #666;
 	}
 
 	.modal-footer {
@@ -265,7 +748,274 @@
 	}
 
 	.btn-agree {
-		background: #2d6a4f;
+		background: #07c160;
 		color: #ffffff;
+	}
+
+	/* 账号登录/注册弹窗 */
+	.account-modal,
+	.register-modal {
+		max-width: 360px;
+	}
+
+	.form-item {
+		margin-bottom: 16px;
+	}
+
+	.form-label {
+		display: block;
+		font-size: 13px;
+		color: #555;
+		margin-bottom: 6px;
+	}
+
+	.form-input {
+		width: 100%;
+		height: 44px;
+		background: #f8f8f8;
+		border: 1.5px solid #e0e0e0;
+		border-radius: 10px;
+		padding: 0 12px;
+		font-size: 14px;
+		box-sizing: border-box;
+	}
+
+	.agreement-check {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin: 16px 0;
+		flex-wrap: wrap;
+		flex-direction: row;
+	}
+
+	.checkbox {
+		width: 18px;
+		height: 18px;
+		border: 1.5px solid #ccc;
+		border-radius: 4px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.checkbox.checked {
+		background: #07c160;
+		border-color: #07c160;
+	}
+
+	.check-icon {
+		color: #ffffff;
+		font-size: 12px;
+	}
+
+	.agreement-text-small {
+		font-size: 12px;
+		color: #666;
+	}
+
+	.link-small {
+		font-size: 12px;
+		color: #1565c0;
+	}
+
+	.btn-login {
+		width: 100%;
+		height: 48px;
+		background: #07c160;
+		color: #ffffff;
+		font-size: 15px;
+		font-weight: 600;
+		border: none;
+		border-radius: 12px;
+	}
+
+	.btn-login[disabled] {
+		background: #a0d9b4;
+	}
+
+	/* 注册信息弹窗 */
+	.register-modal .modal-body {
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+
+	.role-selector {
+		display: flex;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.role-btn {
+		flex: 1;
+		padding: 12px;
+		border: 2px solid #e0e0e0;
+		border-radius: 12px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.role-btn.active {
+		border-color: #07c160;
+		background: #f0fff4;
+	}
+
+	.role-icon {
+		font-size: 24px;
+	}
+
+	.role-label {
+		font-size: 13px;
+		color: #333;
+	}
+
+	.school-select {
+		width: 100%;
+		height: 44px;
+		background: #f8f8f8;
+		border: 1.5px solid #e0e0e0;
+		border-radius: 10px;
+		padding: 0 12px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.school-select .placeholder {
+		color: #999;
+		font-size: 14px;
+	}
+
+	.school-select .school-name {
+		font-size: 14px;
+		color: #333;
+		flex: 1;
+	}
+
+	.school-select .arrow {
+		font-size: 10px;
+		color: #999;
+	}
+
+	/* 学校选择器弹窗 */
+	.school-picker-modal {
+		max-width: 360px;
+		max-height: 70vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.school-picker-modal .modal-body {
+		padding: 0;
+		max-height: 50vh;
+		overflow: hidden;
+	}
+
+	.school-scroll {
+		height: 50vh;
+	}
+
+	.school-list {
+		padding: 8px 0;
+	}
+
+	.school-item {
+		padding: 0;
+	}
+
+	.school-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 16px;
+	}
+
+	.school-row:active {
+		background: #f5f5f5;
+	}
+
+	.school-info {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.expand-icon {
+		font-size: 10px;
+		color: #999;
+		width: 12px;
+	}
+
+	.school-text {
+		font-size: 14px;
+		color: #333;
+	}
+
+	.school-text.selected {
+		color: #07c160;
+		font-weight: 500;
+	}
+
+	.check-icon {
+		color: #07c160;
+		font-size: 14px;
+	}
+
+	.btn-confirm {
+		flex: 1;
+		height: 44px;
+		background: #07c160;
+		color: #ffffff;
+		font-size: 14px;
+		font-weight: 500;
+		border: none;
+		border-radius: 12px;
+	}
+
+	/* 协议弹窗样式 */
+	.agreement-text {
+		display: block;
+		font-size: 13px;
+		color: #444;
+		line-height: 1.7;
+		margin-bottom: 12px;
+	}
+
+	.link-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin: 16px 0;
+	}
+
+	.link-item {
+		font-size: 13px;
+		color: #1565c0;
+		text-decoration: underline;
+	}
+
+	.permission-note {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: #f8faf8;
+		padding: 12px;
+		border-radius: 12px;
+		margin-top: 8px;
+	}
+
+	.permission-icon {
+		font-size: 16px;
+	}
+
+	.permission-text {
+		font-size: 12px;
+		color: #666;
+	}
+
+	view {
+		overflow: visible !important;
 	}
 </style>

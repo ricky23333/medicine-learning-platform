@@ -21,6 +21,7 @@ import { ExamModule } from './modules/exam/exam.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AppUserModule } from './modules/app-user/app-user.module';
 import { VipModule } from './modules/vip/vip.module';
+import { WechatAuthModule } from './modules/wechat-auth/wechat-auth.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { VipModule } from './modules/vip/vip.module';
     StatsModule,
     AppUserModule,
     VipModule,
+    WechatAuthModule,
   ],
   controllers: [AppController],
 })

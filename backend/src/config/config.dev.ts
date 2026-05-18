@@ -58,4 +58,12 @@ export default {
    * 启用就是后端允许跨域
    */
   cors: true,
+
+  /**
+   * 微信小程序配置
+   */
+  wechat: {
+    appId: process.env.WECHAT_APP_ID || '',
+    appSecret: process.env.WECHAT_APP_SECRET || '',
+  },
 };

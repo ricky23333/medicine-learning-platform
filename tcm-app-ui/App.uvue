@@ -7,6 +7,11 @@
 
 	onLaunch(() => {
 		console.log('App Launch')
+		  if (wx.onSubpackageLoad) {
+      wx.onSubpackageLoad((res) => {
+        console.log(`分包 ${res.name} 下载耗时: ${res.duration}ms`);
+      });
+    }
 		// 初始化全局上下文
 		initAppContext()
 	})

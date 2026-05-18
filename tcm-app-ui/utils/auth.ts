@@ -1,0 +1,362 @@
+/**
+ * 微信登录工具函数
+ */
+
+const API_BASE_URL = 'https://dhtcm.cn/api'
+
+// 微信登录凭证 code 有效期约5分钟
+export interface LoginCodeResult {
+	code: string
+}
+
+// 注册申请数据类型
+export interface RegistrationData {
+	// 公共字段
+	name: string
+	unit: string
+	role: 'student' | 'teacher'
+	// 微信手机号（用户授权后获取）
+	phone?: string
+	// 学生专属字段
+	studentId?: string
+	major?: string
+	// 老师专属字段
+	contact?: string
+}
+
+// API 响应类型
+interface ApiResponse<T> {
+	code: number
+	msg?: string
+	data?: T
+}
+
+// 微信登录响应
+export interface WechatLoginResponse {
+	token: string
+	userId: number
+	userType: string
+	realName: string
+}
+
+// 账号密码登录响应
+export interface LoginResponse {
+	token: string
+}
+
+// 验证码响应
+export interface CaptchaResponse {
+	img: string
+	uuid: string
+}
+
+// 学校/部门数据类型
+export interface DeptItem {
+	deptId: number
+	parentId: number | null
+	deptName: string
+	children?: DeptItem[]
+}
+
+// 学校列表响应
+export type DeptListResponse = DeptItem[]
+
+/**
+ * 获取微信登录凭证 code
+ */
+export function getWxLoginCode(): Promise<string> {
+	return new Promise((resolve, reject) => {
+		// #ifdef MP-WEIXIN
+		uni.login({
+			provider: 'weixin',
+			onlyAuthorize: true,
+			success: (res) => {
+				if (res.code) {
+					resolve(res.code)
+				} else {
+					reject(new Error('获取登录凭证失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '微信登录失败'))
+			}
+		})
+		// #endif
+
+		// #ifndef MP-WEIXIN
+		reject(new Error('仅支持微信小程序环境'))
+		// #endif
+	})
+}
+
+/**
+ * 微信一键登录（获取手机号+登录）
+ * @param e - 微信手机号按钮事件.detail
+ */
+export function wechatLogin(e: { detail: { errMsg: string; code?: string; phoneNumber?: string } }): Promise<WechatLoginResponse> {
+	return new Promise((resolve, reject) => {
+		// #ifdef MP-WEIXIN
+		const { errMsg, code, phoneNumber } = e.detail
+
+		if (errMsg !== 'getPhoneNumber:ok') {
+			reject(new Error('获取手机号授权失败'))
+			return
+		}
+
+		// 如果有手机号，先调用微信登录接口
+		const loginCode = code || ''
+
+		uni.request({
+			url: `${API_BASE_URL}/app/auth/wechat-login`,
+			method: 'POST',
+			data: { code: loginCode, phone: phoneNumber },
+			header: {
+				'Content-Type': 'application/json',
+			},
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data)
+				} else {
+					reject(new Error(res.data.msg || '登录失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+		// #endif
+
+		// #ifndef MP-WEIXIN
+		reject(new Error('仅支持微信小程序环境'))
+		// #endif
+	})
+}
+
+/**
+ * 获取学校/部门列表
+ */
+export function getSchoolList(): Promise<DeptListResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/system/dept/public/list`,
+			method: 'GET',
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					// 将扁平数据转换为树形结构
+					const deptList = res.data.data as DeptItem[]
+					const treeData = buildDeptTree(deptList)
+					resolve(treeData)
+				} else {
+					reject(new Error(res.data.msg || '获取学校列表失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
+/**
+ * 将扁平部门数据转换为树形结构
+ */
+function buildDeptTree(deptList: DeptItem[]): DeptItem[] {
+	const map = new Map<number, DeptItem>()
+	const roots: DeptItem[] = []
+
+	// 先把所有节点放入map
+	deptList.forEach(dept => {
+		map.set(dept.deptId, { ...dept, children: [] })
+	})
+
+	// 再遍历一次，构建树
+	deptList.forEach(dept => {
+		const node = map.get(dept.deptId)!
+		if (dept.parentId === null || dept.parentId === 0) {
+			roots.push(node)
+		} else {
+			const parent = map.get(dept.parentId)
+			if (parent) {
+				parent.children!.push(node)
+			} else {
+				// 如果父节点不存在，也作为根节点
+				roots.push(node)
+			}
+		}
+	})
+
+	return roots
+}
+
+/**
+ * 获取图片验证码
+ */
+export function getCaptcha(): Promise<CaptchaResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/captchaImage`,
+			method: 'GET',
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data)
+				} else {
+					reject(new Error(res.data.msg || '获取验证码失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
+/**
+ * 账号密码登录
+ * @param uuid - 验证码 UUID
+ * @param code - 验证码
+ * @param username - 用户名/手机号
+ * @param password - 密码
+ */
+export function loginByPassword(uuid: string, code: string, username: string, password: string): Promise<LoginResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/login`,
+			method: 'POST',
+			data: { uuid, code, username, password },
+			header: {
+				'Content-Type': 'application/json',
+			},
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data)
+				} else {
+					reject(new Error(res.data.msg || '登录失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
+/**
+ * 获取微信手机号
+ * @param e - 微信手机号按钮事件.detail
+ * @returns Promise<{ code: string }> - 手机号获取凭证
+ */
+export function getPhoneNumber(e: { detail: { errMsg: string; code?: string; phoneNumber?: string } }): Promise<{ code: string; phoneNumber?: string }> {
+	return new Promise((resolve, reject) => {
+		// #ifdef MP-WEIXIN
+		const { errMsg, code, phoneNumber } = e.detail
+
+		if (errMsg !== 'getPhoneNumber:ok') {
+			reject(new Error('获取手机号授权失败'))
+			return
+		}
+
+		// 优先使用微信直接返回的手机号（部分版本支持）
+		if (phoneNumber) {
+			resolve({ code: code || '', phoneNumber })
+			return
+		}
+
+		// 否则使用 code 交给后端解密
+		if (code) {
+			resolve({ code, phoneNumber: undefined })
+		} else {
+			reject(new Error('获取手机号凭证失败'))
+		}
+		// #endif
+
+		// #ifndef MP-WEIXIN
+		reject(new Error('仅支持微信小程序环境'))
+		// #endif
+	})
+}
+
+/**
+ * 提交注册申请到后端
+ * @param data - 注册表单数据
+ */
+export function submitRegistration(data: RegistrationData): Promise<ApiResponse<{ pending: boolean }>> {
+	return new Promise((resolve, reject) => {
+		// #ifdef MP-WEIXIN
+		uni.request({
+			url: `${API_BASE_URL}/app/auth/wechat-register`,
+			method: 'POST',
+			data: {
+				code: data.phone, // 传递手机号作为标识
+				phone: data.phone,
+				realName: data.name,
+				userType: data.role,
+				institution: data.unit,
+				majorGrade: data.major,
+				studentNo: data.studentId,
+			},
+			header: {
+				'Content-Type': 'application/json',
+			},
+			success: (res) => {
+				if (res.statusCode === 200) {
+					resolve(res.data as ApiResponse<{ pending: boolean }>)
+				} else {
+					reject(new Error(`请求失败: ${res.statusCode}`))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+		// #endif
+
+		// #ifndef MP-WEIXIN
+		reject(new Error('仅支持微信小程序环境'))
+		// #endif
+	})
+}
+
+/**
+ * 账号密码注册
+ * @param data - 注册表单数据
+ */
+export function registerByPassword(data: {
+	username: string  // 手机号作为账号
+	password: string
+	realName: string
+	userType: 'student' | 'teacher'
+	institution: string  // 学校名称
+	majorGrade?: string  // 专业年级（学生）
+	studentNo?: string   // 学号（学生）
+	contact?: string     // 联系方式（老师）
+}): Promise<ApiResponse<{ userId: number }>> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/app/auth/register`,
+			method: 'POST',
+			data: {
+				username: data.username,
+				password: data.password,
+				realName: data.realName,
+				userType: data.userType,
+				institution: data.institution,
+				majorGrade: data.majorGrade,
+				studentNo: data.studentNo,
+				contact: data.contact,
+			},
+			header: {
+				'Content-Type': 'application/json',
+			},
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data)
+				} else {
+					reject(new Error(res.data.msg || '注册失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}

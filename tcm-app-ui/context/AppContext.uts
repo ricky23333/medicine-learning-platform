@@ -14,6 +14,7 @@ interface AppContextValue {
   examRecords: ExamRecord[]
   // 认证方法
   login: (phone: string, password: string) => LoginResult
+  loginByPhone: (phone: string) => LoginResult
   logout: () => void
   changePassword: (userId: string, newPassword: string) => boolean
   // 数据获取方法
@@ -52,9 +53,22 @@ function restoreUser() {
 function login(phone: string, password: string): LoginResult {
   const user = USERS.find(u => u.phone === phone)
   if (!user) return { success: false, message: '账号不存在' }
-  if (user.status === 'pending') return { success: false, message: '账号待审核' }
+  if (user.status === 'pending') return { success: false, message: '账号待审核，请等待管理员批准' }
   if (user.status === 'suspended') return { success: false, message: '账号已停用' }
   if (user.password !== password) return { success: false, message: '密码错误' }
+
+  state.currentUser = user
+  uni.setStorageSync('currentUser', JSON.stringify(user))
+  return { success: true, message: '登录成功', user }
+}
+
+// 通过手机号登录（审核通过后自动登录）
+function loginByPhone(phone: string): LoginResult {
+  const user = USERS.find(u => u.phone === phone)
+  if (!user) return { success: false, message: '账号不存在' }
+  if (user.status === 'pending') return { success: false, message: '账号待审核，请等待管理员批准' }
+  if (user.status === 'suspended') return { success: false, message: '账号已停用' }
+  if (user.status !== 'active') return { success: false, message: '账号状态异常' }
 
   state.currentUser = user
   uni.setStorageSync('currentUser', JSON.stringify(user))
@@ -154,6 +168,7 @@ export const appContext: AppContextValue = {
   specimens: state.specimens as unknown as Specimen[],
   examRecords: state.examRecords as unknown as ExamRecord[],
   login,
+  loginByPhone,
   logout,
   changePassword,
   getMuseums,

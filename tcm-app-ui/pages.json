@@ -54,7 +54,7 @@
     {
       "path": "pages/home/home",
       "style": {
-        "navigationBarTitleText": "首页",
+        "navigationBarTitleText": "中药材数字标本学习助手",
         "navigationBarBackgroundColor": "#1b3a2d",
         "navigationBarTextStyle": "white"
       }

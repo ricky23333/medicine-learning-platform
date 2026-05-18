@@ -395,6 +395,7 @@ model AppUser {
   userType     String    @default("student") @db.VarChar(20)
   realName     String    @db.VarChar(50)
   phone        String    @db.VarChar(11)
+  openid       String?   @unique @db.VarChar(50)
   institution  String    @db.VarChar(100)
   majorGrade   String?   @db.VarChar(50)
   studentNo    String?   @db.VarChar(30)

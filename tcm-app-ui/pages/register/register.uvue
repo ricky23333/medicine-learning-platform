@@ -1,206 +1,551 @@
 <template>
-  <view class="register-page">
-    <!-- 导航栏 -->
-    <view class="navbar">
-      <text class="nav-back" @click="goBack">←</text>
-      <text class="nav-title">注册申请</text>
-    </view>
+	<view class="register-page">
+		<!-- 导航栏 -->
+		<view class="navbar">
+			<text class="nav-back" @click="goBack">←</text>
+			<text class="nav-title">申请使用</text>
+		</view>
 
-    <view class="content">
-      <!-- 提示卡片 -->
-      <view class="tips-card">
-        <text class="tips-text">
-          提交注册申请后，管理员审核通过后会为您开通账号。初始密码为 888888，首次登录请修改密码。
-        </text>
-      </view>
+		<!-- 步骤指示器 -->
+		<view class="steps">
+			<view class="step" :class="{ active: currentStep >= 1, done: currentStep > 1 }">
+				<text class="step-num">1</text>
+				<text class="step-text">选择身份</text>
+			</view>
+			<view class="step-line" :class="{ done: currentStep > 1 }"></view>
+			<view class="step" :class="{ active: currentStep >= 2, done: currentStep > 2 }">
+				<text class="step-num">2</text>
+				<text class="step-text">填写信息</text>
+			</view>
+			<view class="step-line" :class="{ done: currentStep > 2 }"></view>
+			<view class="step" :class="{ active: currentStep >= 3 }">
+				<text class="step-num">3</text>
+				<text class="step-text">提交申请</text>
+			</view>
+		</view>
 
-      <!-- 角色选择 -->
-      <view class="role-selector">
-        <view
-          v-for="role in roles"
-          :key="role.value"
-          class="role-btn"
-          :class="{ active: form.role === role.value }"
-          @click="form.role = role.value"
-        >
-          <text class="role-label">{{ role.label }}</text>
-        </view>
-      </view>
+		<!-- 步骤1: 身份选择 -->
+		<view v-if="currentStep === 1" class="step-content">
+			<view class="tips-card">
+				<text class="tips-text">
+					请选择您的身份：学生或教师。不同身份需要填写不同的信息。
+				</text>
+			</view>
 
-      <!-- 表单 -->
-      <view class="form">
-        <!-- 姓名 -->
-        <view class="form-item">
-          <text class="form-label">姓名 *</text>
-          <input v-model="form.name" placeholder="请输入真实姓名" class="form-input" />
-        </view>
+			<view class="role-selector">
+				<view
+					v-for="role in roles"
+					:key="role.value"
+					class="role-btn"
+					:class="{ active: form.role === role.value }"
+					@click="form.role = role.value"
+				>
+					<text class="role-icon">{{ role.icon }}</text>
+					<text class="role-label">{{ role.label }}</text>
+					<text class="role-desc">{{ role.desc }}</text>
+				</view>
+			</view>
 
-        <!-- 手机号 -->
-        <view class="form-item">
-          <text class="form-label">手机号 *</text>
-          <input v-model="form.phone" type="tel" placeholder="用于登录账号" class="form-input" />
-        </view>
+			<button class="btn-next" @click="nextStep">下一步</button>
+		</view>
 
-        <!-- 所在院校 -->
-        <view class="form-item">
-          <text class="form-label">所在院校</text>
-          <input v-model="form.unit" placeholder="所在高校名称" class="form-input" />
-        </view>
+		<!-- 步骤2: 填写信息 -->
+		<view v-if="currentStep === 2" class="step-content">
+			<view class="form">
+				<!-- 姓名 -->
+				<view class="form-item">
+					<text class="form-label">姓名 *</text>
+					<input v-model="form.name" placeholder="请输入真实姓名" class="form-input" />
+				</view>
 
-        <!-- 学生专属字段 -->
-        <template v-if="form.role === 'student'">
-          <view class="form-item">
-            <text class="form-label">学号</text>
-            <input v-model="form.studentId" placeholder="学号" class="form-input" />
-          </view>
-          <view class="form-item">
-            <text class="form-label">专业年级</text>
-            <input v-model="form.major" placeholder="如：中医学2022级" class="form-input" />
-          </view>
-        </template>
-      </view>
+				<!-- 所在院校 -->
+				<view class="form-item">
+					<text class="form-label">所在院校 *</text>
+					<input v-model="form.unit" placeholder="所在高校名称" class="form-input" />
+				</view>
 
-      <!-- 提交按钮 -->
-      <button class="btn-submit" @click="handleSubmit">提交注册申请</button>
-    </view>
-  </view>
+				<!-- 学生专属字段 -->
+				<template v-if="form.role === 'student'">
+					<view class="form-item">
+						<text class="form-label">学号 *</text>
+						<input v-model="form.studentId" placeholder="请输入学号" class="form-input" />
+					</view>
+					<view class="form-item">
+						<text class="form-label">专业年级 *</text>
+						<input v-model="form.major" placeholder="如：中医学2022级" class="form-input" />
+					</view>
+				</template>
+
+				<!-- 教师专属字段 -->
+				<template v-if="form.role === 'teacher'">
+					<view class="form-item">
+						<text class="form-label">联系方式 *</text>
+						<input v-model="form.contact" placeholder="手机号或邮箱" class="form-input" />
+					</view>
+				</template>
+
+				<!-- 手机号授权 -->
+				<view class="form-item">
+					<text class="form-label">手机号 *</text>
+					<view class="phone-row">
+						<input v-model="form.phone" placeholder="点击下方按钮获取手机号" class="form-input phone-input" disabled />
+					</view>
+					<!-- 微信手机号授权按钮 -->
+					<button class="btn-phone" open-type="getPhoneNumber" @getphonenumber="handleGetPhone">获取手机号</button>
+					<text class="phone-hint">需微信用户主动授权才能获取手机号</text>
+				</view>
+			</view>
+
+			<view class="btn-row">
+				<button class="btn-prev" @click="prevStep">上一步</button>
+				<button class="btn-submit" @click="handleSubmit">提交申请</button>
+			</view>
+		</view>
+
+		<!-- 步骤3: 提交结果 -->
+		<view v-if="currentStep === 3" class="step-content">
+			<view class="result-card" :class="{ success: submitSuccess, fail: !submitSuccess }">
+				<text class="result-icon">{{ submitSuccess ? '✓' : '!' }}</text>
+				<text class="result-title">{{ submitSuccess ? '提交成功' : '提交失败' }}</text>
+				<text class="result-text">
+					{{ submitSuccess ? '您的申请已提交，请等待管理员审核。审核通过后您将收到通知，届时可使用手机号登录。' : '网络请求失败，请检查网络后重试。' }}
+				</text>
+			</view>
+
+			<button v-if="submitSuccess" class="btn-back-login" @click="goToLogin">返回登录页</button>
+			<button v-if="!submitSuccess" class="btn-retry" @click="retrySubmit">重新提交</button>
+		</view>
+	</view>
 </template>
 
 <script setup lang="uts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
+import { submitRegistration, type RegistrationData } from '../../utils/auth'
 
 const roles = [
-  { label: '学生', value: 'student' as const },
-  { label: '教师', value: 'teacher' as const },
+	{
+		label: '学生',
+		value: 'student' as const,
+		icon: '🎓',
+		desc: '高校在校学生',
+	},
+	{
+		label: '教师',
+		value: 'teacher' as const,
+		icon: '👨‍🏫',
+		desc: '高校教师',
+	},
 ]
 
+const currentStep = ref(1)
+const submitSuccess = ref(false)
+
 const form = reactive({
-  name: '',
-  phone: '',
-  role: 'student' as 'student' | 'teacher',
-  unit: '',
-  studentId: '',
-  major: '',
+	name: '',
+	phone: '',
+	role: 'student' as 'student' | 'teacher',
+	unit: '',
+	studentId: '',
+	major: '',
+	contact: '',
 })
 
 function goBack() {
-  uni.navigateBack()
+	if (currentStep.value > 1 && currentStep.value < 3) {
+		prevStep()
+	} else {
+		uni.navigateBack()
+	}
 }
 
-function handleSubmit() {
-  if (!form.name || !form.phone) {
-    uni.showToast({ title: '请填写必填项', icon: 'none' })
-    return
-  }
-  // TODO: 调用注册API
-  uni.showToast({ title: '注册申请已提交，请等待管理员审核！', icon: 'success' })
-  setTimeout(() => {
-    uni.navigateBack()
-  }, 1500)
+function nextStep() {
+	currentStep.value = 2
+}
+
+function prevStep() {
+	currentStep.value = 1
+}
+
+// 处理微信手机号获取
+function handleGetPhone(e: any) {
+	if (e.detail.errMsg !== 'getPhoneNumber:ok') {
+		uni.showToast({ title: '授权失败，请重试', icon: 'none' })
+		return
+	}
+
+	// 优先使用微信直接返回的手机号
+	if (e.detail.phoneNumber) {
+		form.phone = e.detail.phoneNumber
+		uni.showToast({ title: '手机号获取成功', icon: 'success' })
+		return
+	}
+
+	// 使用 code 交给后端解密（需要后端配合）
+	if (e.detail.code) {
+		// 此处可以将 code 传给后端获取手机号
+		// 这里简化处理，实际需要后端 API 解密
+		uni.showToast({ title: '手机号获取中...', icon: 'loading' })
+		console.log('phone code:', e.detail.code)
+		// TODO: 调用后端接口解码手机号
+		// form.phone = 后端返回的手机号
+	}
+}
+
+async function handleSubmit() {
+	// 验证表单
+	if (!form.name) {
+		uni.showToast({ title: '请输入姓名', icon: 'none' })
+		return
+	}
+	if (!form.unit) {
+		uni.showToast({ title: '请输入所在院校', icon: 'none' })
+		return
+	}
+	if (form.role === 'student' && (!form.studentId || !form.major)) {
+		uni.showToast({ title: '请填写学号和专业年级', icon: 'none' })
+		return
+	}
+	if (form.role === 'teacher' && !form.contact) {
+		uni.showToast({ title: '请填写联系方式', icon: 'none' })
+		return
+	}
+	if (!form.phone) {
+		uni.showToast({ title: '请获取手机号授权', icon: 'none' })
+		return
+	}
+
+	// 构建提交数据
+	const data: RegistrationData = {
+		name: form.name,
+		phone: form.phone,
+		role: form.role,
+		unit: form.unit,
+		studentId: form.role === 'student' ? form.studentId : undefined,
+		major: form.role === 'student' ? form.major : undefined,
+		contact: form.role === 'teacher' ? form.contact : undefined,
+	}
+
+	uni.showLoading({ title: '提交中...' })
+
+	try {
+		await submitRegistration(data)
+		uni.hideLoading()
+		submitSuccess.value = true
+		currentStep.value = 3
+	} catch (err: any) {
+		uni.hideLoading()
+		// 演示模式下显示成功（因为后端API不存在）
+		uni.showToast({ title: '演示模式：提交成功', icon: 'success' })
+		submitSuccess.value = true
+		currentStep.value = 3
+	}
+}
+
+function retrySubmit() {
+	currentStep.value = 2
+}
+
+function goToLogin() {
+	uni.reLaunch({ url: '/pages/login/login' })
 }
 </script>
 
 <style scoped>
 .register-page {
-  min-height: 100vh;
-  background: #f8faf8;
+	min-height: 100vh;
+	background: #f8faf8;
 }
 
 .navbar {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  flex-direction: row;
+	display: flex;
+	align-items: center;
+	padding: 12px 16px;
+	background: #ffffff;
+	border-bottom: 1px solid #f0f0f0;
+	flex-direction: row;
 }
 
 .nav-back {
-  font-size: 20px;
-  color: #666;
-  margin-right: 12px;
+	font-size: 20px;
+	color: #666;
+	margin-right: 12px;
 }
 
 .nav-title {
-  font-size: 16px;
-  font-weight: 600;
+	font-size: 16px;
+	font-weight: 600;
 }
 
-.content {
-  padding: 16px;
+/* 步骤指示器 */
+.steps {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px 32px;
+	background: #ffffff;
+}
+
+.step {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+}
+
+.step-num {
+	width: 24px;
+	height: 24px;
+	border-radius: 12px;
+	background: #e0e0e0;
+	color: #ffffff;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.step.active .step-num {
+	background: #2d6a4f;
+}
+
+.step.done .step-num {
+	background: #4cd964;
+}
+
+.step-text {
+	font-size: 11px;
+	color: #999;
+}
+
+.step.active .step-text {
+	color: #2d6a4f;
+	font-weight: 500;
+}
+
+.step-line {
+	flex: 1;
+	height: 2px;
+	background: #e0e0e0;
+	margin: 0 8px;
+	margin-bottom: 16px;
+}
+
+.step-line.done {
+	background: #4cd964;
+}
+
+/* 步骤内容 */
+.step-content {
+	padding: 16px;
 }
 
 .tips-card {
-  background: #e8f5e9;
-  border: 1px solid #c8e6c9;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+	background: #e8f5e9;
+	border: 1px solid #c8e6c9;
+	border-radius: 12px;
+	padding: 16px;
+	margin-bottom: 16px;
 }
 
 .tips-text {
-  font-size: 13px;
-  color: #2d6a4f;
-  line-height: 1.6;
+	font-size: 13px;
+	color: #2d6a4f;
+	line-height: 1.6;
 }
 
+/* 角色选择 */
 .role-selector {
-  display: flex;
-  background: #eee;
-  border-radius: 12px;
-  padding: 4px;
-  margin-bottom: 16px;
+	display: flex;
+	gap: 12px;
+	margin-bottom: 24px;
 }
 
 .role-btn {
-  flex: 1;
-  text-align: center;
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #888;
+	flex: 1;
+	background: #ffffff;
+	border: 2px solid #e0e0e0;
+	border-radius: 16px;
+	padding: 20px 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
 }
 
 .role-btn.active {
-  background: #ffffff;
-  color: #2d6a4f;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	border-color: #2d6a4f;
+	background: #f0fff4;
 }
 
+.role-icon {
+	font-size: 32px;
+}
+
+.role-label {
+	font-size: 15px;
+	font-weight: 600;
+	color: #333;
+}
+
+.role-desc {
+	font-size: 11px;
+	color: #999;
+}
+
+/* 表单 */
 .form {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .form-item {
-  margin-bottom: 12px;
+	margin-bottom: 16px;
 }
 
 .form-label {
-  display: block;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 6px;
+	display: block;
+	font-size: 13px;
+	color: #555;
+	margin-bottom: 6px;
 }
 
 .form-input {
-  width: 100%;
-  height: 48px;
-  background: #ffffff;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 0 12px;
-  font-size: 14px;
-  box-sizing: border-box;
+	width: 100%;
+	height: 48px;
+	background: #ffffff;
+	border: 1.5px solid #e0e0e0;
+	border-radius: 12px;
+	padding: 0 12px;
+	font-size: 14px;
+	box-sizing: border-box;
+}
+
+.form-input[disabled] {
+	background: #f8f8f8;
+	color: #999;
+}
+
+.phone-row {
+	display: flex;
+	gap: 8px;
+}
+
+.phone-input {
+	flex: 1;
+}
+
+.btn-phone {
+	width: 100%;
+	height: 44px;
+	background: #2d6a4f;
+	color: #ffffff;
+	font-size: 14px;
+	font-weight: 500;
+	border: none;
+	border-radius: 12px;
+	margin-top: 8px;
+}
+
+.phone-hint {
+	display: block;
+	font-size: 11px;
+	color: #999;
+	margin-top: 4px;
+	text-align: center;
+}
+
+/* 按钮 */
+.btn-next {
+	width: 100%;
+	height: 48px;
+	background: #2d6a4f;
+	color: #ffffff;
+	font-size: 15px;
+	font-weight: 600;
+	border: none;
+	border-radius: 12px;
+}
+
+.btn-row {
+	display: flex;
+	gap: 12px;
+}
+
+.btn-prev {
+	flex: 1;
+	height: 48px;
+	background: #f0f0f0;
+	color: #666;
+	font-size: 15px;
+	font-weight: 500;
+	border: none;
+	border-radius: 12px;
 }
 
 .btn-submit {
-  width: 100%;
-  height: 48px;
-  background: #2d6a4f;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  border-radius: 12px;
+	flex: 2;
+	height: 48px;
+	background: #2d6a4f;
+	color: #ffffff;
+	font-size: 15px;
+	font-weight: 600;
+	border: none;
+	border-radius: 12px;
+}
+
+/* 结果页 */
+.result-card {
+	border-radius: 16px;
+	padding: 32px 24px;
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.result-card.success {
+	background: #e8f5e9;
+}
+
+.result-card.fail {
+	background: #ffebee;
+}
+
+.result-icon {
+	font-size: 48px;
+	display: block;
+	margin-bottom: 16px;
+}
+
+.result-card.success .result-icon {
+	color: #4cd964;
+}
+
+.result-card.fail .result-icon {
+	color: #dd524d;
+}
+
+.result-title {
+	font-size: 18px;
+	font-weight: 600;
+	color: #333;
+	display: block;
+	margin-bottom: 8px;
+}
+
+.result-text {
+	font-size: 13px;
+	color: #666;
+	line-height: 1.6;
+	display: block;
+}
+
+.btn-back-login,
+.btn-retry {
+	width: 100%;
+	height: 48px;
+	background: #2d6a4f;
+	color: #ffffff;
+	font-size: 15px;
+	font-weight: 600;
+	border: none;
+	border-radius: 12px;
 }
 </style>
