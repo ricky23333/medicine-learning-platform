@@ -238,7 +238,7 @@
 
 <script setup lang="uts">
 	import { ref, reactive, onMounted } from 'vue'
-	import { wechatLogin, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
+	import { wechatLogin, wechatRegister, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
 
 	// 当前Tab
 	const currentTab = ref<'login' | 'register'>('login')
@@ -252,6 +252,8 @@
 
 	function toggleTab() {
 		currentTab.value = currentTab.value === 'login' ? 'register' : 'login'
+		// 清空微信code
+		accountForm.wxCode = ''
 	}
 
 	// ==================== 微信登录/注册 ====================
@@ -274,15 +276,65 @@
 
 	function handleWechatAgree() {
 		showWechatModal.value = false
-		showPhoneBtn.value = true
-		setTimeout(() => {
-			const query = uni.createSelectorQuery()
-			query.select('#phoneBtn').node((res : any) => {
-				if (res.node) {
-								res.node.click()
+		if (currentTab.value === 'login') {
+			// 登录模式：获取手机号
+			showPhoneBtn.value = true
+			setTimeout(() => {
+				const query = uni.createSelectorQuery()
+				query.select('#phoneBtn').node((res : any) => {
+					if (res.node) {
+						res.node.click()
+					}
+				}).exec()
+			}, 100)
+		} else {
+			// 注册模式：获取微信code
+			handleWxRegister()
+		}
+	}
+
+	// 微信用户注册 - 获取code
+	async function handleWxRegister() {
+		uni.showLoading({ title: '获取授权...' })
+		try {
+			// 获取微信code
+			const code = await getWxLoginCode() as string
+			uni.hideLoading()
+			// 保存code，弹出注册信息填写弹窗
+			// 先加载学校列表
+			await loadSchoolList()
+			accountForm.wxCode = code
+			showRegisterInfoModal.value = true
+		} catch (err : any) {
+			uni.hideLoading()
+			uni.showToast({ title: err.message || '获取授权失败', icon: 'none' })
+		}
+	}
+
+	// 获取微信登录code
+	function getWxLoginCode() {
+		return new Promise((resolve, reject) => {
+			// #ifdef MP-WEIXIN
+			uni.login({
+				provider: 'weixin',
+				onlyAuthorize: true,
+				success: (res) => {
+					if (res.code) {
+						resolve(res.code)
+					} else {
+						reject(new Error('获取登录凭证失败'))
+					}
+				},
+				fail: (err) => {
+					reject(new Error(err.errMsg || '微信登录失败'))
 				}
-			}).exec()
-		}, 100)
+			})
+			// #endif
+
+			// #ifndef MP-WEIXIN
+			reject(new Error('仅支持微信小程序环境'))
+			// #endif
+		})
 	}
 
 	async function handleGetPhone(e : any) {
@@ -338,6 +390,7 @@
 		majorGrade: '',
 		contact: '',
 		phone: '',
+		wxCode: '',
 	})
 
 	function showAccountLogin() {
@@ -391,8 +444,13 @@
 			}
 			// 注册模式 - 弹出信息填写弹窗
 			accountForm.phone = accountForm.username
-			loadSchoolList()
+			// 清空微信code（账号注册不需要）
+			accountForm.wxCode = ''
+			// 关闭账号弹窗
 			closeAccountModal()
+			// 先加载学校列表
+			await loadSchoolList()
+			// 再显示注册信息弹窗
 			showRegisterInfoModal.value = true
 			return
 		}
@@ -440,6 +498,7 @@
 	}
 
 	async function loadSchoolList() {
+		console.log(77777)
 		if (schoolTree.value.length > 0) return
 
 		uni.showLoading({ title: '加载学校...' })
@@ -505,16 +564,31 @@
 		uni.showLoading({ title: '注册中...' })
 
 		try {
-			await registerByPassword({
-				username: accountForm.username,
-				password: accountForm.password,
-				realName: accountForm.realName,
-				userType: accountForm.userType,
-				institution: accountForm.institution,
-				majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
-				studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
-				contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
-			})
+			// 判断是微信注册还是账号密码注册
+			if (accountForm.wxCode) {
+				// 微信注册（使用code）
+				await wechatRegister({
+					code: accountForm.wxCode,
+					realName: accountForm.realName,
+					userType: accountForm.userType,
+					institution: accountForm.institution,
+					majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
+					studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
+					contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
+				})
+			} else {
+				// 账号密码注册
+				await registerByPassword({
+					username: accountForm.username,
+					password: accountForm.password,
+					realName: accountForm.realName,
+					userType: accountForm.userType,
+					institution: accountForm.institution,
+					majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
+					studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
+					contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
+				})
+			}
 			uni.hideLoading()
 			uni.showToast({ title: '注册成功，请等待审核', icon: 'success' })
 			setTimeout(() => {
@@ -844,6 +918,7 @@
 		display: flex;
 		gap: 12px;
 		margin-bottom: 16px;
+		flex-direction: row;
 	}
 
 	.role-btn {
@@ -881,6 +956,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		flex-direction: row;
 	}
 
 	.school-select .placeholder {
@@ -930,6 +1006,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 12px 16px;
+		flex-direction: row;
 	}
 
 	.school-row:active {
@@ -940,6 +1017,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		flex-direction: row;
 	}
 
 	.expand-icon {
