@@ -3,51 +3,55 @@
     <!-- 导航栏 -->
     <view class="navbar">
       <text class="nav-back" @click="goBack">←</text>
-      <text class="nav-title">{{ specimen?.name || '标本详情' }}</text>
+      <text class="nav-title">{{ specimen?.specimenName || '标本详情' }}</text>
     </view>
 
     <view class="content" v-if="specimen">
       <!-- 图片区域 -->
       <view class="image-section">
         <ImageViewer
-          v-if="approvedImages.length > 0"
-          :src="approvedImages[0].url"
-          :thumbnails="approvedImages.map(img => img.url)"
+          v-if="specimen.imgUrls && specimen.imgUrls.length > 0"
+          :src="specimen.imgUrls[0]"
+          :thumbnails="specimen.imgUrls"
         />
         <view v-else class="placeholder">🔬</view>
       </view>
 
       <!-- 缩略图列表 -->
-      <view v-if="approvedImages.length > 1" class="thumbnail-list">
+      <view v-if="specimen.imgUrls && specimen.imgUrls.length > 1" class="thumbnail-list">
         <view
-          v-for="(img, index) in approvedImages"
-          :key="img.id"
+          v-for="(url, index) in specimen.imgUrls"
+          :key="index"
           class="thumbnail"
           :class="{ active: currentImageIndex === index }"
           @click="currentImageIndex = index"
         >
-          <image :src="img.url" mode="aspectFill" />
+          <image :src="url" mode="aspectFill" />
         </view>
       </view>
 
       <!-- 标本信息 -->
       <view class="info-section">
-        <text class="specimen-name">{{ specimen.name }}</text>
-        <text v-if="specimen.latinName" class="specimen-latin">{{ specimen.latinName }}</text>
+        <text class="specimen-name">{{ specimen.specimenName }}</text>
+        <text v-if="specimen.LatinName" class="specimen-latin">{{ specimen.LatinName }}</text>
 
         <!-- 标签 -->
         <view class="tags">
-          <text class="tag">{{ museum?.name }}</text>
-          <text class="tag-outline">{{ category?.name }}</text>
-          <text v-if="specimen.properties" class="tag-warning">{{ specimen.properties }}</text>
+          <text class="tag">{{ specimen.museumName }}</text>
+          <text class="tag-outline">{{ specimen.categoryName }}</text>
         </view>
 
         <!-- 备注 -->
         <view class="notes-card">
           <text class="notes-title">备注信息</text>
-          <text class="notes-content">{{ specimen.notes || '暂无备注' }}</text>
+          <text class="notes-content">{{ specimen.description || '暂无备注' }}</text>
         </view>
       </view>
+    </view>
+
+    <!-- 加载中 -->
+    <view v-else-if="loading" class="empty-state">
+      <text class="empty-text">加载中...</text>
     </view>
 
     <!-- 底部导航 -->
@@ -56,40 +60,32 @@
 </template>
 
 <script setup lang="uts">
-import { ref, computed } from 'vue'
-import type { SpecimenImage } from '@/types/index.uts'
-import { useAppContext } from '@/context/AppContext.uts'
+import { ref, onMounted } from 'vue'
 import ImageViewer from '@/components/ImageViewer/index.uvue'
 import BottomTabBar from '@/components/BottomTabBar/index.uvue'
-
-const context = useAppContext()
+import { getSpecimenDetail, type SpecimenDetailResponse } from '@/utils/auth'
 
 const specimenId = ref('')
-const specimenName = ref('')
+const specimen = ref<SpecimenDetailResponse | null>(null)
 const currentImageIndex = ref(0)
-
-const specimen = computed(() => {
-  return context.specimens.find(s => s.id === specimenId.value)
-})
-
-const approvedImages = computed(() => {
-  return specimen.value?.images.filter(img => img.status === 'approved') || []
-})
-
-const museum = computed(() => {
-  if (!specimen.value) return null
-  return context.museums.find(m => m.id === specimen.value!.museumId)
-})
-
-const category = computed(() => {
-  if (!specimen.value || !museum.value) return null
-  return museum.value.categories.find(c => c.id === specimen.value!.categoryId)
-})
+const loading = ref(false)
 
 onLoad((options: any) => {
   if (options) {
     specimenId.value = options.specimenId || ''
-    specimenName.value = decodeURIComponent(options.specimenName || '标本详情')
+  }
+})
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const detail = await getSpecimenDetail(Number(specimenId.value))
+    specimen.value = detail
+  } catch (err: any) {
+    console.error('获取标本详情失败:', err)
+    uni.showToast({ title: '获取标本详情失败', icon: 'none' })
+  } finally {
+    loading.value = false
   }
 })
 
@@ -243,5 +239,17 @@ function goBack() {
   font-size: 13px;
   color: #444;
   line-height: 1.8;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #999;
 }
 </style>

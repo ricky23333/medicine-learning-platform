@@ -58,7 +58,6 @@ export class SysConfigController {
 
   /* 分页查询参数列表 */
   @Get('list')
-  @RequiresPermissions('system:config:query')
   async list(@Query(PaginationPipe) getSysConfigListDto: GetSysConfigListDto) {
     return await this.sysConfigService.list(getSysConfigListDto);
   }

@@ -6,59 +6,59 @@ const API_BASE_URL = 'http://localhost:5880'
 
 // 微信登录凭证 code 有效期约5分钟
 export interface LoginCodeResult {
-	code : string
+	code: string
 }
 
 // 注册申请数据类型
 export interface RegistrationData {
 	// 公共字段
-	name : string
-	unit : string
-	role : 'student' | 'teacher'
+	name: string
+	unit: string
+	role: 'student' | 'teacher'
 	// 微信手机号（用户授权后获取）
-	phone ?: string
+	phone?: string
 	// 学生专属字段
-	studentId ?: string
-	major ?: string
+	studentId?: string
+	major?: string
 	// 老师专属字段
-	contact ?: string
+	contact?: string
 }
 
 // API 响应类型
 interface ApiResponse<T> {
-	code : number
-	msg ?: string
-	data ?: T
+	code: number
+	msg?: string
+	data?: T
 }
 
 // 微信登录响应
 export interface WechatLoginResponse {
-	token : string
-	userId : number
-	userType : string
-	realName : string
-	nickname ?: string
-	avatar ?: string
-	phone ?: string
+	token: string
+	userId: number
+	userType: string
+	realName: string
+	nickname?: string
+	avatar?: string
+	phone?: string
 }
 
 // 账号密码登录响应
 export interface LoginResponse {
-	token : string
+	token: string
 }
 
 // 验证码响应
 export interface CaptchaResponse {
-	img : string
-	uuid : string
+	img: string
+	uuid: string
 }
 
 // 学校/部门数据类型
 export interface DeptItem {
-	deptId : number
-	parentId : number | null
-	deptName : string
-	children ?: DeptItem[]
+	deptId: number
+	parentId: number | null
+	deptName: string
+	children?: DeptItem[]
 }
 
 // 学校列表响应
@@ -67,7 +67,7 @@ export type DeptListResponse = DeptItem[]
 /**
  * 获取微信登录凭证 code
  */
-export function getWxLoginCode() : Promise<string> {
+export function getWxLoginCode(): Promise<string> {
 	return new Promise((resolve, reject) => {
 		// #ifdef MP-WEIXIN
 		uni.login({
@@ -96,7 +96,7 @@ export function getWxLoginCode() : Promise<string> {
  * 微信登录（使用code换取用户信息）
  * @param code - 微信授权code
  */
-export function wechatLoginByCode(code : string) : Promise<WechatLoginResponse> {
+export function wechatLoginByCode(code: string): Promise<WechatLoginResponse> {
 	return new Promise((resolve, reject) => {
 		// #ifdef MP-WEIXIN
 		uni.request({
@@ -106,8 +106,7 @@ export function wechatLoginByCode(code : string) : Promise<WechatLoginResponse> 
 			header: {
 				'Content-Type': 'application/json',
 			},
-			success: (res : any) => {
-				console.log(1111, res)
+			success: (res: any) => {
 				if (res.data && res.data.code === 200) {
 					resolve(res.data)
 				} else {
@@ -129,12 +128,12 @@ export function wechatLoginByCode(code : string) : Promise<WechatLoginResponse> 
 /**
  * 获取学校/部门列表
  */
-export function getSchoolList() : Promise<DeptListResponse> {
+export function getSchoolList(): Promise<DeptListResponse> {
 	return new Promise((resolve, reject) => {
 		uni.request({
 			url: `${API_BASE_URL}/system/dept/public/list`,
 			method: 'GET',
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.statusCode === 200 && res.data.code === 200) {
 					// 将扁平数据转换为树形结构
 					const deptList = res.data.data as DeptItem[]
@@ -154,9 +153,9 @@ export function getSchoolList() : Promise<DeptListResponse> {
 /**
  * 将扁平部门数据转换为树形结构
  */
-function buildDeptTree(deptList : DeptItem[]) : DeptItem[] {
+function buildDeptTree(deptList: DeptItem[]): DeptItem[] {
 	const map = new Map<number, DeptItem>()
-	const roots : DeptItem[] = []
+	const roots: DeptItem[] = []
 
 	// 先把所有节点放入map
 	deptList.forEach(dept => {
@@ -185,12 +184,12 @@ function buildDeptTree(deptList : DeptItem[]) : DeptItem[] {
 /**
  * 获取图片验证码
  */
-export function getCaptcha() : Promise<CaptchaResponse> {
+export function getCaptcha(): Promise<CaptchaResponse> {
 	return new Promise((resolve, reject) => {
 		uni.request({
 			url: `${API_BASE_URL}/captchaImage`,
 			method: 'GET',
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.statusCode === 200 && res.data.code === 200) {
 					resolve(res.data.data)
 				} else {
@@ -211,7 +210,7 @@ export function getCaptcha() : Promise<CaptchaResponse> {
  * @param username - 用户名/手机号
  * @param password - 密码
  */
-export function loginByPassword(uuid : string, code : string, username : string, password : string) : Promise<LoginResponse> {
+export function loginByPassword(uuid: string, code: string, username: string, password: string): Promise<LoginResponse> {
 	return new Promise((resolve, reject) => {
 		uni.request({
 			url: `${API_BASE_URL}/login`,
@@ -220,7 +219,7 @@ export function loginByPassword(uuid : string, code : string, username : string,
 			header: {
 				'Content-Type': 'application/json',
 			},
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.statusCode === 200 && res.data.code === 200) {
 					resolve(res.data.data)
 				} else {
@@ -239,7 +238,7 @@ export function loginByPassword(uuid : string, code : string, username : string,
  * @param e - 微信手机号按钮事件.detail
  * @returns Promise<{ code: string }> - 手机号获取凭证
  */
-export function getPhoneNumber(e : { detail : { errMsg : string; code ?: string; phoneNumber ?: string } }) : Promise<{ code : string; phoneNumber ?: string }> {
+export function getPhoneNumber(e: { detail: { errMsg: string; code?: string; phoneNumber?: string } }): Promise<{ code: string; phoneNumber?: string }> {
 	return new Promise((resolve, reject) => {
 		// #ifdef MP-WEIXIN
 		const { errMsg, code, phoneNumber } = e.detail
@@ -269,11 +268,131 @@ export function getPhoneNumber(e : { detail : { errMsg : string; code ?: string;
 	})
 }
 
+// 标本馆数据类型
+export interface Museum {
+	museumId: number
+	museumName: string
+	description: string
+	categories: Category[]
+}
+
+export interface Category {
+	categoryId: number
+	categoryName: string
+	specCount: number
+}
+
+// 标本馆列表响应
+export type MuseumListResponse = Museum[]
+
+/**
+ * 获取标本馆列表
+ */
+export function getMuseumList(): Promise<MuseumListResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/app/museum/list`,
+			method: 'GET',
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data as MuseumListResponse)
+				} else {
+					reject(new Error(res.data.msg || '获取标本馆列表失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
+// 标本数据类型
+export interface SpecimenItem {
+	specimenId: number
+	specimenName: string
+	LatinName?: string
+	museumId: number
+	categoryId: number
+	imgUrl?: string
+	description?: string
+}
+
+// 标本列表响应
+export interface SpecimenListResponse {
+	total: number
+	list: SpecimenItem[]
+}
+
+/**
+ * 获取标本列表
+ * @param categoryId - 分类ID
+ * @param museumId - 标本馆ID
+ * @param pageNum - 页码
+ * @param pageSize - 每页数量
+ */
+export function getSpecimenList(categoryId: number, museumId: number, pageNum: number = 1, pageSize: number = 20): Promise<SpecimenListResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/app/specimen/list`,
+			method: 'GET',
+			data: { categoryId, museumId, pageNum, pageSize },
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data as SpecimenListResponse)
+				} else {
+					reject(new Error(res.data.msg || '获取标本列表失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
+// 标本详情响应
+export interface SpecimenDetailResponse {
+	specimenId: number
+	specimenName: string
+	LatinName?: string
+	museumId: number
+	museumName: string
+	categoryId: number
+	categoryName: string
+	imgUrls: string[]
+	description?: string
+}
+
+/**
+ * 获取标本详情
+ * @param specimenId - 标本ID
+ */
+export function getSpecimenDetail(specimenId: number): Promise<SpecimenDetailResponse> {
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${API_BASE_URL}/app/specimen/detail`,
+			method: 'GET',
+			data: { specimenId },
+			success: (res: any) => {
+				if (res.statusCode === 200 && res.data.code === 200) {
+					resolve(res.data.data as SpecimenDetailResponse)
+				} else {
+					reject(new Error(res.data.msg || '获取标本详情失败'))
+				}
+			},
+			fail: (err) => {
+				reject(new Error(err.errMsg || '网络请求失败'))
+			}
+		})
+	})
+}
+
 /**
  * 提交注册申请到后端
  * @param data - 注册表单数据
  */
-export function submitRegistration(data : RegistrationData) : Promise<ApiResponse<{ pending : boolean }>> {
+export function submitRegistration(data: RegistrationData): Promise<ApiResponse<{ pending: boolean }>> {
 	return new Promise((resolve, reject) => {
 		// #ifdef MP-WEIXIN
 		uni.request({
@@ -293,7 +412,7 @@ export function submitRegistration(data : RegistrationData) : Promise<ApiRespons
 			},
 			success: (res) => {
 				if (res.statusCode === 200) {
-					resolve(res.data as ApiResponse<{ pending : boolean }>)
+					resolve(res.data as ApiResponse<{ pending: boolean }>)
 				} else {
 					reject(new Error(`请求失败: ${res.statusCode}`))
 				}
@@ -314,16 +433,16 @@ export function submitRegistration(data : RegistrationData) : Promise<ApiRespons
  * 账号密码注册
  * @param data - 注册表单数据
  */
-export function registerByPassword(data : {
-	username : string  // 手机号作为账号
-	password : string
-	realName : string
-	userType : 'student' | 'teacher'
-	deptId : number  // 学校ID
-	majorGrade ?: string  // 专业年级（学生）
-	studentNo ?: string   // 学号（学生）
-	contact ?: string     // 联系方式（老师）
-}) : Promise<ApiResponse<{ userId : number }>> {
+export function registerByPassword(data: {
+	username: string  // 手机号作为账号
+	password: string
+	realName: string
+	userType: 'student' | 'teacher'
+	deptId: number  // 学校ID
+	majorGrade?: string  // 专业年级（学生）
+	studentNo?: string   // 学号（学生）
+	contact?: string     // 联系方式（老师）
+}): Promise<ApiResponse<{ userId: number }>> {
 	return new Promise((resolve, reject) => {
 		uni.request({
 			url: `${API_BASE_URL}/app/auth/register`,
@@ -341,7 +460,7 @@ export function registerByPassword(data : {
 			header: {
 				'Content-Type': 'application/json',
 			},
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.statusCode === 200 && res.data.code === 200) {
 					resolve(res.data)
 				} else {
@@ -359,16 +478,16 @@ export function registerByPassword(data : {
  * 微信用户注册（使用code）
  * @param data - 注册表单数据（含微信code）
  */
-export function wechatRegister(data : {
-	code : string  // 微信授权code
-	realName : string
-	userType : 'student' | 'teacher'
-	deptId : string  // 学校ID
-	institution : string
-	majorGrade ?: string  // 专业年级（学生）
-	studentNo ?: string   // 学号（学生）
-	contact ?: string     // 联系方式（老师）
-}) : Promise<ApiResponse<{ userId : number }>> {
+export function wechatRegister(data: {
+	code: string  // 微信授权code
+	realName: string
+	userType: 'student' | 'teacher'
+	deptId: string  // 学校ID
+	institution: string
+	majorGrade?: string  // 专业年级（学生）
+	studentNo?: string   // 学号（学生）
+	contact?: string     // 联系方式（老师）
+}): Promise<ApiResponse<{ userId: number }>> {
 	return new Promise((resolve, reject) => {
 		uni.request({
 			url: `${API_BASE_URL}/app/auth/wechat-register`,
@@ -386,7 +505,7 @@ export function wechatRegister(data : {
 			header: {
 				'Content-Type': 'application/json',
 			},
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.data && res.data.code === 200) {
 					resolve(res.data)
 				} else {

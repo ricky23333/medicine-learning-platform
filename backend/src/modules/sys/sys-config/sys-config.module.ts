@@ -4,6 +4,7 @@ import { SysConfigService } from './sys-config.service';
 
 @Module({
   controllers: [SysConfigController],
-  providers: [SysConfigService]
+  providers: [SysConfigService],
+  exports: [SysConfigService],
 })
 export class SysConfigModule {}

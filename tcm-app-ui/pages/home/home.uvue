@@ -5,7 +5,7 @@
 			<view class="header-content">
 				<view class="user-info">
 					<text class="welcome">欢迎回来</text>
-					<text class="user-name">{{ user?.name || "游客" }}</text>
+					<text class="user-name">{{ userName || "游客" }}</text>
 				</view>
 				<view class="avatar">
 					<text class="avatar-text">{{ user?.name?.[0] || "?" }}</text>
@@ -16,7 +16,7 @@
 			<view class="stats">
 				<view class="stat-item">
 					<view class="stat-value-wrap">
-						<text class="stat-value">{{ museums.length }}</text>
+						<text class="stat-value">{{ museumCount }}</text>
 						<text class="stat-unit">个</text>
 					</view>
 					<text class="stat-label">标本馆</text>
@@ -78,12 +78,21 @@
 			<!-- 标本馆列表 -->
 			<view class="section">
 				<text class="section-title">标本馆</text>
-				<view class="museum-list">
-					<view v-for="museum in museums" :key="museum.id" class="museum-card" @click="goCategories(museum)">
-						<text class="museum-icon">{{ museum.icon }}</text>
+				<!-- 加载中 -->
+				<view v-if="loading" class="empty-state">
+					<text class="empty-text">加载中...</text>
+				</view>
+				<!-- 无数据 -->
+				<view v-else-if="museums.length === 0" class="empty-state">
+					<text class="empty-text">暂无数据</text>
+				</view>
+				<!-- 标本馆列表 -->
+				<view v-else class="museum-list">
+					<view v-for="museum in museums" :key="museum.museumId" class="museum-card" @click="goCategories(museum)">
+						<text class="museum-icon">🏛️</text>
 						<view class="museum-info">
-							<text class="museum-name">{{ museum.name }}</text>
-							<text class="museum-count">{{ getSpecimenCount(museum.id) }}种标本 ·
+							<text class="museum-name">{{ museum.museumName }}</text>
+							<text class="museum-count">{{ getTotalSpecCount(museum) }}种标本 ·
 								{{ museum.categories.length }}个分类</text>
 						</view>
 						<text class="arrow">›</text>
@@ -98,19 +107,27 @@
 </template>
 
 <script setup lang="uts">
-	import { computed } from 'vue'
+	import { computed, onMounted, ref } from 'vue'
 	import { useAppContext } from '@/context/AppContext.uts'
 	import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+	import { getMuseumList, type Museum } from '@/utils/auth'
 
 	const context = useAppContext()
-
+	const userName = computed(() =>uni.getStorageSync('realName')) 
 	const user = computed(() => context.currentUser)
-	const museums = computed(() => context.getMuseums())
+	// 标本馆数据（从API获取）
+	const museums = ref<Museum[]>([])
+	const loading = ref(false)
 
-	// 计算总标本数
+	// 计算总标本数（从API数据）
 	const totalSpecimens = computed(() => {
-		return context.specimens.filter(s => s.images.some(i => i.status === 'approved')).length
+		return museums.value.reduce((sum, m) => {
+			return sum + m.categories.reduce((s, c) => s + c.specCount, 0)
+		}, 0)
 	})
+
+	// 计算标本馆数量
+	const museumCount = computed(() => museums.value.length)
 
 	// 计算我的考试次数
 	const examCount = computed(() => {
@@ -118,20 +135,38 @@
 		return context.getMyExamRecords(user.value.id).length
 	})
 
-	// 获取博物馆的标本数量
-	function getSpecimenCount(museumId : string) : number {
-		return context.specimens.filter(s => s.museumId === museumId).length
+	// 获取标本馆列表
+	async function loadMuseums() {
+		loading.value = true
+		try {
+			const list = await getMuseumList()
+			museums.value = list
+		} catch (err: any) {
+			console.error('获取标本馆列表失败:', err)
+			uni.showToast({ title: '获取标本馆列表失败', icon: 'none' })
+		} finally {
+			loading.value = false
+		}
+	}
+
+	onMounted(() => {
+		loadMuseums()
+	})
+
+	// 计算博物馆总标本数
+	function getTotalSpecCount(museum: Museum): number {
+		return museum.categories.reduce((sum, c) => sum + c.specCount, 0)
 	}
 
 	// 跳转标本馆
 	function goMuseums() {
-		uni.switchTab({ url: '/pages/museums/museums' })
+		uni.navigateTo({ url: '/pages/museums/museums' })
 	}
 
 	// 跳转分类
-	function goCategories(museum : { id : string }) {
+	function goCategories(museum : Museum) {
 		uni.navigateTo({
-			url: `/pages/museums/categories?museumId=${museum.id}`,
+			url: `/pages/museums/categories?museumId=${museum.museumId}&museumName=${encodeURIComponent(museum.museumName)}`,
 		})
 	}
 
@@ -359,6 +394,18 @@
 	.arrow {
 		font-size: 18px;
 		color: #ccc;
+	}
+
+	.empty-state {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 40px 0;
+	}
+
+	.empty-text {
+		font-size: 14px;
+		color: #999;
 	}
 
 	.action-card {

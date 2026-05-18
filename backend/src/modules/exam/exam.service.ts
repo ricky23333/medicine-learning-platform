@@ -6,10 +6,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { ApiException } from 'src/common/exceptions/api.exception';
+import { SysConfigService } from '../sys/sys-config/sys-config.service';
 
 @Injectable()
 export class ExamService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sysConfigService: SysConfigService,
+  ) {}
 
   /* 开始考试 */
   async startExam(userId: number, startExamDto: any) {
@@ -32,7 +36,7 @@ export class ExamService {
       },
     });
 
-    // 随机抽取20张图片（如果不足则全部抽取）
+    // 收集所有可用图片
     const availableImages: any[] = [];
     specimens.forEach((specimen) => {
       specimen.images.forEach((image) => {
@@ -44,9 +48,39 @@ export class ExamService {
       throw new ApiException('没有可用的标本图片');
     }
 
-    // 随机打乱并取20张
-    const shuffled = availableImages.sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(20, shuffled.length));
+    // 查找当前用户当前museum上次的历史考试记录，避免重复题目
+    let excludedImageIds: number[] = [];
+    if (museumId) {
+      const lastExam = await this.prisma.exam.findFirst({
+        where: { userId, museumId, status: '1' },
+        orderBy: { examTime: 'desc' },
+        include: {
+          questions: { select: { imageId: true } },
+        },
+      });
+      if (lastExam) {
+        excludedImageIds = lastExam.questions.map((q) => q.imageId);
+      }
+    }
+
+    // 过滤掉上次考试的题目
+    const filteredImages = availableImages.filter(
+      (img) => !excludedImageIds.includes(img.imageId),
+    );
+
+    // 随机打乱并取N张（优先从未考过的图片中选取，如果不够则补充已考过的）
+    const questionCount = Number(await this.sysConfigService.oneByconfigKey('global.exam.count')) || 20;
+    const shuffled = filteredImages.sort(() => Math.random() - 0.5);
+    let selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+
+    // 如果未考过的图片不足，从已考过的图片中补充
+    if (selected.length < questionCount) {
+      const otherImages = availableImages
+        .filter((img) => !selected.some((s) => s.imageId === img.imageId))
+        .sort(() => Math.random() - 0.5);
+      const needed = questionCount - selected.length;
+      selected = [...selected, ...otherImages.slice(0, needed)];
+    }
 
     // 创建考试记录
     const exam = await this.prisma.exam.create({

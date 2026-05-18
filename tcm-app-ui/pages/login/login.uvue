@@ -428,7 +428,7 @@
 		try {
 			// 简化登录（无验证码模式）
 			const res = await uni.request({
-				url: 'https://dhtcm.cn/api/login',
+				url: 'http://localhost:5880/api/login',
 				method: 'POST',
 				data: {
 					username: accountForm.username,

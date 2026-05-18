@@ -6,21 +6,29 @@
       <text class="nav-title">标本馆</text>
     </view>
 
+    <!-- 加载中 -->
+    <view v-if="loading" class="empty-state">
+      <text class="empty-text">加载中...</text>
+    </view>
+    <!-- 无数据 -->
+    <view v-else-if="museums.length === 0" class="empty-state">
+      <text class="empty-text">暂无数据</text>
+    </view>
     <!-- 标本馆列表 -->
-    <view class="museum-list">
+    <view v-else class="museum-list">
       <view
         v-for="museum in museums"
-        :key="museum.id"
+        :key="museum.museumId"
         class="museum-card"
         @click="goCategories(museum)"
       >
-        <view class="museum-icon">{{ museum.icon }}</view>
-        <view class="museum-content">          
-          <text class="museum-name">{{ museum.name }}</text>
+        <view class="museum-icon">🏛️</view>
+        <view class="museum-content">
+          <text class="museum-name">{{ museum.museumName }}</text>
           <text class="museum-desc">{{ museum.description.slice(0, 30) }}...</text>
           <view class="museum-tags">
             <text class="tag">{{ museum.categories.length }}个分类</text>
-            <text class="tag-outline">{{ getSpecimenCount(museum.id) }}种标本</text>
+            <text class="tag-outline">{{ getTotalSpecCount(museum) }}种标本</text>
           </view>
         </view>
         <text class="arrow">›</text>
@@ -33,24 +41,41 @@
 </template>
 
 <script setup lang="uts">
-import { computed } from 'vue'
-import { useAppContext } from '@/context/AppContext.uts'
+import { onMounted, ref } from 'vue'
 import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+import { getMuseumList, type Museum } from '@/utils/auth'
 
-const context = useAppContext()
-const museums = computed(() => context.getMuseums())
+const museums = ref<Museum[]>([])
+const loading = ref(false)
+
+async function loadMuseums() {
+  loading.value = true
+  try {
+    const list = await getMuseumList()
+    museums.value = list
+  } catch (err: any) {
+    console.error('获取标本馆列表失败:', err)
+    uni.showToast({ title: '获取标本馆列表失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadMuseums()
+})
 
 function goBack() {
-  uni.switchTab({ url: '/pages/home/home' })
+  uni.navigateBack()
 }
 
-function getSpecimenCount(museumId: string): number {
-  return context.specimens.filter(s => s.museumId === museumId).length
+function getTotalSpecCount(museum: Museum): number {
+  return museum.categories.reduce((sum, c) => sum + c.specCount, 0)
 }
 
-function goCategories(museum: { id: string; name: string }) {
+function goCategories(museum: Museum) {
   uni.navigateTo({
-    url: `/pages/museums/categories?museumId=${museum.id}&museumName=${encodeURIComponent(museum.name)}`,
+    url: `/pages/museums/categories?museumId=${museum.museumId}&museumName=${encodeURIComponent(museum.museumName)}`,
   })
 }
 </script>
@@ -157,5 +182,17 @@ function goCategories(museum: { id: string; name: string }) {
 .arrow {
   font-size: 28px;
   color: #ccc;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #999;
 }
 </style>

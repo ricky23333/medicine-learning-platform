@@ -8,30 +8,32 @@
 
     <!-- 搜索框 -->
     <view class="search-bar">
-    
       <input
         v-model="searchQuery"
         placeholder="搜索标本名称..."
         class="search-input"
       />
-     			<image class="search-icon" src="/static/icons/search.png" mode="aspectFit" />
     </view>
 
+    <!-- 加载中 -->
+    <view v-if="loading" class="empty-state">
+      <text class="empty-text">加载中...</text>
+    </view>
     <!-- 标本格子列表 -->
-    <view class="specimen-grid">
+    <view v-else class="specimen-grid">
       <view
         v-for="sp in filteredSpecimens"
-        :key="sp.id"
+        :key="sp.specimenId"
         class="specimen-card"
         @click="goDetail(sp)"
       >
         <view class="image-wrapper">
-          <image v-if="getApprovedImage(sp)" :src="getApprovedImage(sp)!.url" mode="aspectFill" class="specimen-image" />
+          <image v-if="sp.imgUrl" :src="sp.imgUrl" mode="aspectFill" class="specimen-image" />
           <view v-else class="placeholder">🔬</view>
         </view>
         <view class="specimen-info">
-          <text class="specimen-name">{{ sp.name }}</text>
-          <text v-if="sp.latinName" class="specimen-latin">{{ sp.latinName }}</text>
+          <text class="specimen-name">{{ sp.specimenName }}</text>
+          <text v-if="sp.LatinName" class="specimen-latin">{{ sp.LatinName }}</text>
         </view>
       </view>
 
@@ -47,19 +49,16 @@
 </template>
 
 <script setup lang="uts">
-import { ref, computed } from 'vue'
-import type { Specimen, SpecimenImage } from '@/types/index.uts'
-import { useAppContext } from '@/context/AppContext.uts'
+import { ref, computed, onMounted } from 'vue'
 import BottomTabBar from '@/components/BottomTabBar/index.uvue'
-
-const context = useAppContext()
+import { getSpecimenList, type SpecimenItem } from '@/utils/auth'
 
 const categoryId = ref('')
+const museumId = ref('')
 const categoryName = ref('')
 const searchQuery = ref('')
-
-// 标本列表
-const specimens = computed(() => context.getSpecimensByCategory(categoryId.value))
+const specimens = ref<SpecimenItem[]>([])
+const loading = ref(false)
 
 // 过滤后的标本
 const filteredSpecimens = computed(() => {
@@ -67,8 +66,8 @@ const filteredSpecimens = computed(() => {
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     list = list.filter(sp =>
-      sp.name.toLowerCase().includes(q) ||
-      (sp.latinName && sp.latinName.toLowerCase().includes(q))
+      sp.specimenName.toLowerCase().includes(q) ||
+      (sp.LatinName && sp.LatinName.toLowerCase().includes(q))
     )
   }
   return list
@@ -77,7 +76,21 @@ const filteredSpecimens = computed(() => {
 onLoad((options: any) => {
   if (options) {
     categoryId.value = options.categoryId || ''
+    museumId.value = options.museumId || ''
     categoryName.value = decodeURIComponent(options.categoryName || '标本')
+  }
+})
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    const res = await getSpecimenList(Number(categoryId.value), Number(museumId.value))
+    specimens.value = res.list
+  } catch (err: any) {
+    console.error('获取标本列表失败:', err)
+    uni.showToast({ title: '获取标本列表失败', icon: 'none' })
+  } finally {
+    loading.value = false
   }
 })
 
@@ -85,13 +98,9 @@ function goBack() {
   uni.navigateBack()
 }
 
-function getApprovedImage(sp: Specimen): SpecimenImage | undefined {
-  return sp.images.find(img => img.status === 'approved')
-}
-
-function goDetail(sp: Specimen) {
+function goDetail(sp: SpecimenItem) {
   uni.navigateTo({
-    url: `/pages/museums/specimen-detail?specimenId=${sp.id}&specimenName=${encodeURIComponent(sp.name)}`,
+    url: `/pages/museums/specimen-detail?specimenId=${sp.specimenId}&specimenName=${encodeURIComponent(sp.specimenName)}`,
   })
 }
 </script>

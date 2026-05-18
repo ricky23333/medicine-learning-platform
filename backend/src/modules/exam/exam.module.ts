@@ -6,8 +6,10 @@
 import { Module } from '@nestjs/common';
 import { ExamController } from './exam.controller';
 import { ExamService } from './exam.service';
+import { SysConfigModule } from '../sys/sys-config/sys-config.module';
 
 @Module({
+  imports: [SysConfigModule],
   controllers: [ExamController],
   providers: [ExamService],
 })
