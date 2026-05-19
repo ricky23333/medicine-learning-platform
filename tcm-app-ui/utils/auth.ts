@@ -199,6 +199,35 @@ export function getPhoneNumber(e : { detail : { errMsg : string; code ?: string;
 	})
 }
 
+// 用户信息类型
+export interface UserInfo {
+	userId: number
+	userType: string
+	realName: string
+	nickname?: string
+	avatar?: string
+	phone?: string
+	deptName?: string
+	majorGrade?: string
+	studentNo?: string
+	vipStatus: string
+}
+
+// 获取当前用户信息
+export function getUserInfo(): Promise<UserInfo> {
+	return get<UserInfo>('/app/user/info')
+}
+
+// 提交意见反馈
+export function submitFeedback(content: string): Promise<{ success: boolean }> {
+	return post<{ success: boolean }>('/app/feedback', { content })
+}
+
+// 退出登录
+export function logout(): Promise<{ success: boolean }> {
+	return post<{ success: boolean }>('/app/auth/logout')
+}
+
 // 标本馆数据类型
 export interface Museum {
 	museumId : number

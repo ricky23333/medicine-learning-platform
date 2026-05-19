@@ -14,7 +14,7 @@ import { AjaxResult } from 'src/common/class/ajax-result.class';
 @ApiBearerAuth()
 @Controller('app/exam')
 export class ExamController {
-  constructor(private readonly examService: ExamService) {}
+  constructor(private readonly examService: ExamService) { }
 
   /* 开始考试 */
   @Post('start')
@@ -33,7 +33,7 @@ export class ExamController {
     @User(UserEnum.userId) userId: number,
     @Body() submitDto: any,
   ) {
-    const result = await this.examService.submitExam(submitDto.examId, submitDto);
+    const result = await this.examService.submitExam(submitDto, userId);
     return AjaxResult.success(result);
   }
 

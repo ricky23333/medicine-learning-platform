@@ -1,582 +1,569 @@
 <template>
-  <view class="exam-page">
-    <!-- 进度条区域 -->
-    <view class="progress-bar">
-      <view class="progress-info">
-        <text class="progress-text">第 {{ currentIndex + 1 }} / {{ totalQuestions }} 题</text>
-      </view>
-      <view class="progress-track">
-        <view class="progress-fill" :style="{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }"></view>
-      </view>
-    </view>
+	<view class="exam-page">
+		<!-- 进度条区域 -->
+		<view class="progress-bar">
+			<view class="progress-info">
+				<text class="progress-text">第 {{ currentIndex + 1 }} / {{ totalQuestions }} 题</text>
+			</view>
+			<view class="progress-track">
+				<view class="progress-fill" :style="{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }">
+				</view>
+			</view>
+		</view>
 
-    <!-- 倒计时区域 -->
-    <view class="countdown-bar" :class="{ urgent: isUrgent }">
-      <text class="countdown-icon">⏱</text>
-      <text class="countdown-text">剩余时间：{{ formattedTime }}</text>
-      <view class="countdown-progress">
-        <view class="countdown-progress-fill" :style="{ width: `${remainingPercent}%` }"></view>
-      </view>
-    </view>
+		<!-- 倒计时区域 -->
+		<view class="countdown-bar" :class="{ urgent: isUrgent }">
+			<text class="countdown-icon">⏱</text>
+			<text class="countdown-text">剩余时间：{{ formattedTime }}</text>
+			<view class="countdown-progress">
+				<view class="countdown-progress-fill" :style="{ width: `${remainingPercent}%` }"></view>
+			</view>
+		</view>
 
-    <!-- 标本图片 -->
-    <view class="image-area">
-      <ImageViewer
-        v-if="currentSpecimen && approvedImage"
-        :src="approvedImage.url"
-      />
-      <view v-else class="placeholder">🔬</view>
-    </view>
+		<!-- 标本图片 -->
+		<view class="image-area">
+			<ImageViewer v-if="currentQuestion" :thumbnails="[currentQuestion.thumbnailUrl]"
+				:imgs="[currentQuestion.imageUrl]" />
+			<view v-else class="placeholder">🔬</view>
+		</view>
 
-    <!-- 答案输入区域 -->
-    <view class="answer-area">
-      <text class="question-text">请填写此标本的名称：</text>
-      <input
-        v-model="answer"
-        placeholder="填写标本名称..."
-        class="answer-input"
-        @focus="onFocus"
-        @blur="onBlur"
-      />
-    </view>
+		<!-- 答案输入区域 -->
+		<view class="answer-area">
+			<text class="question-text">请填写此标本的名称：</text>
+			<input v-model="answer" placeholder="填写标本名称..." class="answer-input" @focus="onFocus" @blur="onBlur" />
+		</view>
 
-    <!-- 底部导航 -->
-    <view class="bottom-nav">
-      <view
-        class="nav-btn prev"
-        :class="{ disabled: currentIndex === 0 }"
-        @click="goPrev"
-      >         
-                <image class="nav-icon" src="/static/icons/pre.png" mode="aspectFit" />
-        <text class="nav-text">上一题</text>
-      </view>
+		<!-- 底部导航 -->
+		<view class="bottom-nav">
+			<view class="nav-btn prev" :class="{ disabled: currentIndex === 0 }" @click="goPrev">
+				<image class="nav-icon" src="/static/icons/pre.png" mode="aspectFit" />
+				<text class="nav-text">上一题</text>
+			</view>
 
-      <view
-        v-if="currentIndex < totalQuestions - 1"
-        class="nav-btn next"
-        @click="goNext"
-      >
-        <text class="nav-text">下一题</text>
-         <image class="nav-icon" src="/static/icons/next.png" mode="aspectFit" />
-      </view>
-      <view
-        v-else
-        class="nav-btn submit"
-        @click="confirmSubmit"
-      >
-        <text class="nav-text">提交答卷</text>
-      </view>
-    </view>
+			<view v-if="currentIndex < totalQuestions - 1" class="nav-btn next" @click="goNext">
+				<text class="nav-text">下一题</text>
+				<image class="nav-icon" src="/static/icons/next.png" mode="aspectFit" />
+			</view>
+			<view v-else class="nav-btn submit" @click="confirmSubmit">
+				<text class="nav-text">提交答卷</text>
+			</view>
+		</view>
 
-    <!-- 考试成绩弹窗 -->
-    <view v-if="showResultModal" class="result-modal-mask">
-      <view class="result-modal">
-        <view class="result-header">
-          <text class="result-title">考试完成</text>
-        </view>
-        <view class="result-body">
-          <view class="score-circle">
-            <text class="score">{{ lastExamRecord?.score || 0 }}</text>
-            <text class="score-divider">/</text>
-            <text class="total">{{ lastExamRecord?.totalQuestions || 0 }}</text>
-          </view>
-          <text class="grade-text">{{ gradeText }}</text>
-          <text class="grade-percent">{{ gradePercent }}分</text>
-        </view>
-        <view class="result-footer">
-          <view class="btn-close" @click="closeResultModal">关闭</view>
-        </view>
-      </view>
-    </view>
-  </view>
+		<!-- 考试成绩弹窗 -->
+		<view v-if="showResultModal" class="result-modal-mask">
+			<view class="result-modal">
+				<view class="result-header">
+					<text class="result-title">考试完成</text>
+				</view>
+				<view class="result-body">
+					<view class="score-circle">
+						<text class="score">{{ lastExamRecord?.correctCount || 0 }}</text>
+						<text class="score-divider">/</text>
+						<text class="total">{{ lastExamRecord?.total || 0 }}</text>
+					</view>
+					<text class="grade-text">{{ gradeText }}</text>
+					<text class="grade-percent">{{ gradePercent }}分</text>
+				</view>
+				<view class="result-footer">
+					<view class="btn-close" @click="closeResultModal">关闭</view>
+				</view>
+			</view>
+		</view>
+	</view>
 </template>
 
 <script setup lang="uts">
-import { ref, computed, onUnmounted } from 'vue'
-import type { Specimen, SpecimenImage, ExamRecord } from '@/types/index.uts'
-import { useAppContext } from '@/context/AppContext.uts'
-import { getExamDuration } from '@/api/exam'
-import ImageViewer from '@/components/ImageViewer/index.uvue'
+	import { ref, computed, onUnmounted } from 'vue'
+	import type { ExamRecord } from '@/types/index.uts'
+	import { useAppContext } from '@/context/AppContext.uts'
+	import { getExamDuration, startExam, submitExam as submitExamApi, type ExamQuestion, type SubmitExamResponse } from '@/api/exam'
+	import ImageViewer from '@/components/ImageViewer/index.uvue'
 
-const context = useAppContext()
+	const context = useAppContext()
 
-const museumId = ref('')
-const categoryIds = ref<string[]>([])
-const examSpecimens = ref<Specimen[]>([])
-const answers = ref<string[]>([])
-const currentIndex = ref(0)
-const isExamStarted = ref(false)
-const showResultModal = ref(false)
-const lastExamRecord = ref<ExamRecord | null>(null)
+	const museumId = ref('')
+	const categoryIds = ref<string[]>([])
+	const examQuestions = ref<ExamQuestion[]>([])
+	const examId = ref('')
+	const answers = ref<string[]>([])
+	const currentIndex = ref(0)
+	const isExamStarted = ref(false)
+	const showResultModal = ref(false)
+	const lastExamRecord = ref<ExamRecord | null>(null)
 
-// 考试计时器状态
-const remaining = ref(0)
-const isRunning = ref(false)
-const formattedTime = ref('00:00')
-const isUrgent = ref(false)
-const remainingPercent = ref(100)
-let timerId: number | null = null
+	// 考试计时器状态
+	const remaining = ref(0)
+	const isRunning = ref(false)
+	const formattedTime = ref('00:00')
+	const isUrgent = ref(false)
+	const remainingPercent = ref(100)
+	let timerId : number | null = null
 
-// 初始化考试计时器
-async function initExamTimer() {
-  const duration = await getExamDuration()
-  remaining.value = duration
-  formattedTime.value = formatTimeValue(duration)
-  remainingPercent.value = 100
+	// 初始化考试计时器
+	async function initExamTimer() {
+		const duration = await getExamDuration()
+		remaining.value = duration
+		formattedTime.value = formatTimeValue(duration)
+		remainingPercent.value = 100
 
-  timerId = setInterval(() => {
-    if (remaining.value > 0) {
-      remaining.value--
-      formattedTime.value = formatTimeValue(remaining.value)
-      remainingPercent.value = Math.round((remaining.value / duration) * 100)
-      isUrgent.value = remaining.value <= 5 * 60
+		timerId = setInterval(() => {
+			if (remaining.value > 0) {
+				remaining.value--
+				formattedTime.value = formatTimeValue(remaining.value)
+				remainingPercent.value = Math.round((remaining.value / duration) * 100)
+				isUrgent.value = remaining.value <= 5 * 60
 
-      if (remaining.value === 0) {
-        clearInterval(timerId!)
-        timerId = null
-        autoSubmitExam()
-      }
-    }
-  }, 1000)
-}
+				if (remaining.value === 0) {
+					clearInterval(timerId!)
+					timerId = null
+					autoSubmitExam()
+				}
+			}
+		}, 1000)
+	}
 
-// 格式化时间为 MM:SS
-function formatTimeValue(seconds: number): string {
-  const minutes = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-}
+	// 格式化时间为 MM:SS
+	function formatTimeValue(seconds : number) : string {
+		const minutes = Math.floor(seconds / 60)
+		const secs = seconds % 60
+		return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+	}
 
-// 停止计时器
-function stopTimer() {
-  if (timerId !== null) {
-    clearInterval(timerId)
-    timerId = null
-  }
-  isRunning.value = false
-}
+	// 停止计时器
+	function stopTimer() {
+		if (timerId !== null) {
+			clearInterval(timerId)
+			timerId = null
+		}
+		isRunning.value = false
+	}
 
-const totalQuestions = computed(() => examSpecimens.value.length)
+	const totalQuestions = computed(() => examQuestions.value.length)
 
-const currentSpecimen = computed(() => examSpecimens.value[currentIndex.value])
+	const currentQuestion = computed(() => examQuestions.value[currentIndex.value])
 
-const approvedImage = computed(() => {
-  return currentSpecimen.value?.images.find(img => img.status === 'approved')
-})
+	const answer = computed({
+		get: () => answers.value[currentIndex.value] || '',
+		set: (val) => {
+			answers.value[currentIndex.value] = val
+		},
+	})
 
-const answer = computed({
-  get: () => answers.value[currentIndex.value] || '',
-  set: (val) => {
-    answers.value[currentIndex.value] = val
-  },
-})
+	// 评级文字
+	const gradeText = computed(() => {
+		const pct = gradePercent.value
+		if (pct >= 90) return '优秀'
+		if (pct >= 75) return '良好'
+		if (pct >= 60) return '及格'
+		return '不及格'
+	})
 
-// 评级文字
-const gradeText = computed(() => {
-  const pct = gradePercent.value
-  if (pct >= 90) return '优秀'
-  if (pct >= 75) return '良好'
-  if (pct >= 60) return '及格'
-  return '不及格'
-})
+	// 评级百分比
+	const gradePercent = computed(() => {
+		const record = lastExamRecord.value
+		if (!record || record.totalQuestions === 0) return 0
+		return record.score
+	})
 
-// 评级百分比
-const gradePercent = computed(() => {
-  const record = lastExamRecord.value
-  if (!record || record.totalQuestions === 0) return 0
-  return Math.round((record.score / record.totalQuestions) * 100)
-})
+	onLoad(async (options : any) => {
+		if (options) {
+			museumId.value = options.museumId || ''
+			const catIds = options.categoryIds || ''
+			categoryIds.value = catIds ? catIds.split(',').filter((s : string) => s) : []
 
-onLoad(async (options: any) => {
-  if (options) {
-    museumId.value = options.museumId || ''
-    const catIds = options.categoryIds || ''
-    categoryIds.value = catIds ? catIds.split(',').filter((s: string) => s) : []
+			uni.showLoading({ title: '加载题目...' })
+			try {
+				// 调用 API 获取考试题目
+				const res = await startExam(museumId.value, categoryIds.value)
+				examId.value = res.examId
+				examQuestions.value = res.questions
+				answers.value = new Array(res.questions.length).fill('')
+			} catch (err : any) {
+				uni.hideLoading()
+				uni.showToast({ title: err.message || '获取题目失败', icon: 'none' })
+				return
+			}
+			uni.hideLoading()
 
-    // 获取可用于考试的标本
-    const pool = context.getApprovedSpecimens(
-      museumId.value,
-      categoryIds.value.length > 0 ? categoryIds.value : undefined
-    )
+			// 初始化并启动考试计时器
+			await initExamTimer()
+			isExamStarted.value = true
+		}
+	})
 
-    // 随机抽取最多20个
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(20, pool.length))
-    examSpecimens.value = shuffled
-    answers.value = new Array(shuffled.length).fill('')
+	onUnmounted(() => {
+		// 清理计时器
+		stopTimer()
+	})
 
-    // 初始化并启动考试计时器
-    await initExamTimer()
-    isExamStarted.value = true
-  }
-})
+	function goPrev() {
+		if (currentIndex.value > 0) {
+			currentIndex.value--
+		}
+	}
 
-onUnmounted(() => {
-  // 清理计时器
-  stopTimer()
-})
+	function goNext() {
+		if (currentIndex.value < totalQuestions.value - 1) {
+			currentIndex.value++
+		}
+	}
 
-function goPrev() {
-  if (currentIndex.value > 0) {
-    currentIndex.value--
-  }
-}
+	function confirmSubmit() {
+		uni.showModal({
+			title: '确认',
+			content: '确认提交答案？',
+			success: (res) => {
+				if (res.confirm) {
+					submitExam()
+				}
+			},
+		})
+	}
 
-function goNext() {
-  if (currentIndex.value < totalQuestions.value - 1) {
-    currentIndex.value++
-  }
-}
+	// 倒计时结束自动提交
+	function autoSubmitExam() {
+		// 停止计时器
+		stopTimer()
+		// 提交考试（不再重复停止计时器）
+		doSubmitExam()
+	}
 
-function confirmSubmit() {
-  uni.showModal({
-    title: '确认',
-    content: '确认提交答案？',
-    success: (res) => {
-      if (res.confirm) {
-        submitExam()
-      }
-    },
-  })
-}
+	function doSubmitExam() {
+		uni.showLoading({ title: '提交中...' })
 
-// 倒计时结束自动提交
-function autoSubmitExam() {
-  // 停止计时器
-  stopTimer()
-  // 提交考试
-  submitExam()
-}
+		// 构建提交数据
+		const questions = examQuestions.value.map(q => ({
+			specimenId: q.specimenId,
+			imageId: q.imageId, // 题目中的 id 就是 imageId
+		}))
+		const answersData = examQuestions.value.map((q, i) => ({
+			imageId: q.imageId,
+			specimenId: q.specimenId,
+			userAnswer: answers.value[i]?.trim() || '',
+		}))
 
-function submitExam() {
-  const museum = context.museums.find(m => m.id === museumId.value)
-  const questions = examSpecimens.value.map((sp, i) => {
-    const img = sp.images.find(img => img.status === 'approved')
-    const userAnswer = answers.value[i]?.trim() || ''
-    return {
-      id: `q-${i}`,
-      specimenId: sp.id,
-      specimenName: sp.name,
-      imageUrl: img?.url || '',
-      correctAnswer: sp.name,
-      userAnswer,
-      isCorrect: userAnswer === sp.name,
-    }
-  })
+		submitExamApi(examId.value, questions, answersData, museumId.value)
+			.then((res : SubmitExamResponse) => {
+				uni.hideLoading()
+				// 使用服务端返回的成绩
+				const record : ExamRecord = {
+					id: examId.value,
+					userId: context.currentUser?.id || '',
+					userName: context.currentUser?.name || '',
+					museumId: museumId.value,
+					museumName: '',
+					categoryIds: categoryIds.value,
+					questions: [],
+					score: res.score,
+					correctCount: res.correctCount,
+					total: res.total,
+					submittedAt: new Date().toISOString(),
+				}
+				lastExamRecord.value = record
+				showResultModal.value = true
+			})
+			.catch((err : any) => {
+				uni.hideLoading()
+				uni.showToast({ title: err.message || '提交失败', icon: 'none' })
+			})
+	}
 
-  const score = questions.filter(q => q.isCorrect).length
-  const record: ExamRecord = {
-    id: `exam-${Date.now()}`,
-    userId: context.currentUser?.id || '',
-    userName: context.currentUser?.name || '',
-    museumId: museumId.value,
-    museumName: museum?.name || '',
-    categoryIds: categoryIds.value,
-    questions,
-    score,
-    totalQuestions: examSpecimens.value.length,
-    submittedAt: new Date().toISOString(),
-  }
+	function submitExam() {
+		// 停止计时器
+		stopTimer()
+		// 调用实际提交逻辑
+		doSubmitExam()
+	}
 
-  // 保存记录到 context
-  context.submitExam(record)
+	function closeResultModal() {
+		showResultModal.value = false
+		// 返回考试选择页
+		uni.reLaunch({
+			url: '/pages/exam/exam-select',
+		})
+	}
 
-  // 停止计时器
-  stopTimer()
+	function onFocus(e : any) {
+		// 聚焦时样式变化
+	}
 
-  // 显示成绩弹窗
-  lastExamRecord.value = record
-  showResultModal.value = true
-}
-
-function closeResultModal() {
-  showResultModal.value = false
-  // 返回考试选择页
-  uni.reLaunch({
-    url: '/pages/exam/exam-select',
-  })
-}
-
-function onFocus(e: any) {
-  // 聚焦时样式变化
-}
-
-function onBlur(e: any) {
-  // 失焦时样式变化
-}
+	function onBlur(e : any) {
+		// 失焦时样式变化
+	}
 </script>
 
 <style scoped>
-.exam-page {
-  min-height: 100vh;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-}
+	.exam-page {
+		min-height: 100vh;
+		background: #ffffff;
+		display: flex;
+		flex-direction: column;
+	}
 
-.progress-bar {
-  padding: 12px 16px;
-  background: #f8faf8;
-  border-bottom: 1px solid #eee;
-}
+	.progress-bar {
+		padding: 12px 16px;
+		background: #f8faf8;
+		border-bottom: 1px solid #eee;
+	}
 
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  flex-direction:row;
-}
+	.progress-info {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8px;
+		flex-direction: row;
+	}
 
-.progress-text {
-  font-size: 13px;
-  color: #888;
-}
+	.progress-text {
+		font-size: 13px;
+		color: #888;
+	}
 
-.progress-track {
-  height: 6px;
-  background: #eee;
-  border-radius: 3px;
-  overflow: hidden;
-}
+	.progress-track {
+		height: 6px;
+		background: #eee;
+		border-radius: 3px;
+		overflow: hidden;
+	}
 
-.progress-fill {
-  height: 100%;
-  background: #2d6a4f;
-  border-radius: 3px;
-  transition: width 0.3s;
-}
+	.progress-fill {
+		height: 100%;
+		background: #2d6a4f;
+		border-radius: 3px;
+		transition: width 0.3s;
+	}
 
-.image-area {
-  flex: 1;
-  background: #f0f4f0;
-  overflow: hidden;
-}
+	.image-area {
+		flex: 1;
+		background: #f0f4f0;
+		overflow: hidden;
+	}
 
-.placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48px;
-}
+	.placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 48px;
+	}
 
-.answer-area {
-  padding: 16px;
-}
+	.answer-area {
+		padding: 16px;
+	}
 
-.question-text {
-  display: block;
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 12px;
-}
+	.question-text {
+		display: block;
+		font-size: 14px;
+		color: #555;
+		margin-bottom: 12px;
+	}
 
-.answer-input {
-  width: 100%;
-  height: 48px;
-  background: #ffffff;
-  border: 2px solid #e0e0e0;
-  border-radius: 16px;
-  padding: 0 16px;
-  font-size: 16px;
-  box-sizing: border-box;
-}
+	.answer-input {
+		width: 100%;
+		height: 48px;
+		background: #ffffff;
+		border: 2px solid #e0e0e0;
+		border-radius: 16px;
+		padding: 0 16px;
+		font-size: 16px;
+		box-sizing: border-box;
+	}
 
-.bottom-nav {
-  display: flex;
-  gap: 12px;
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-  flex-direction: row;
-}
+	.bottom-nav {
+		display: flex;
+		gap: 12px;
+		padding: 12px 16px;
+		border-top: 1px solid #f0f0f0;
+		flex-direction: row;
+	}
 
-.nav-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 48px;
-  border-radius: 16px;
-  font-size: 14px;
-  flex-direction: row;
-  line-height: 48px;
-}
+	.nav-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		height: 48px;
+		border-radius: 16px;
+		font-size: 14px;
+		flex-direction: row;
+		line-height: 48px;
+	}
 
-.nav-btn.prev {
-  background: #f0f0f0;
-  color: #555;
-}
+	.nav-btn.prev {
+		background: #f0f0f0;
+		color: #555;
+	}
 
-.nav-btn.prev.disabled {
-  color: #bbb;
-}
+	.nav-btn.prev.disabled {
+		color: #bbb;
+	}
 
-.nav-btn.next {
-  background: #2d6a4f;
-  color: #ffffff;
-}
+	.nav-btn.next {
+		background: #2d6a4f;
+		color: #ffffff;
+	}
 
-.nav-btn.submit {
-  background: #ef4444;
-  color: #ffffff;
-  font-weight: 500;
-}
+	.nav-btn.submit {
+		background: #ef4444;
+		color: #ffffff;
+		font-weight: 500;
+	}
 
-.nav-icon {
-  line-height: 48px;
-  height: 18px;
-  width: 18px;
-}
+	.nav-icon {
+		line-height: 48px;
+		height: 18px;
+		width: 18px;
+	}
 
-.nav-text {
-  font-size: 14px;
-}
+	.nav-text {
+		font-size: 14px;
+	}
 
-/* 倒计时条样式 */
-.countdown-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: #e8f5e9;
-  flex-direction: row;
-}
+	/* 倒计时条样式 */
+	.countdown-bar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		background: #e8f5e9;
+		flex-direction: row;
+	}
 
-.countdown-bar.urgent {
-  background: #ffebee;
-}
+	.countdown-bar.urgent {
+		background: #ffebee;
+	}
 
-.countdown-icon {
-  font-size: 16px;
-}
+	.countdown-icon {
+		font-size: 16px;
+	}
 
-.countdown-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: #2d6a4f;
-  flex-shrink: 0;
-}
+	.countdown-text {
+		font-size: 13px;
+		font-weight: 500;
+		color: #2d6a4f;
+		flex-shrink: 0;
+	}
 
-.countdown-bar.urgent .countdown-text {
-  color: #ef4444;
-}
+	.countdown-bar.urgent .countdown-text {
+		color: #ef4444;
+	}
 
-.countdown-progress {
-  flex: 1;
-  height: 4px;
-  background: #c8e6c9;
-  border-radius: 2px;
-  overflow: hidden;
-}
+	.countdown-progress {
+		flex: 1;
+		height: 4px;
+		background: #c8e6c9;
+		border-radius: 2px;
+		overflow: hidden;
+	}
 
-.countdown-bar.urgent .countdown-progress {
-  background: #ffcdd2;
-}
+	.countdown-bar.urgent .countdown-progress {
+		background: #ffcdd2;
+	}
 
-.countdown-progress-fill {
-  height: 100%;
-  background: #2d6a4f;
-  border-radius: 2px;
-  transition: width 1s linear;
-}
+	.countdown-progress-fill {
+		height: 100%;
+		background: #2d6a4f;
+		border-radius: 2px;
+		transition: width 1s linear;
+	}
 
-.countdown-bar.urgent .countdown-progress-fill {
-  background: #ef4444;
-}
+	.countdown-bar.urgent .countdown-progress-fill {
+		background: #ef4444;
+	}
 
-/* 成绩弹窗样式 */
-.result-modal-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
+	/* 成绩弹窗样式 */
+	.result-modal-mask {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.6);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 999;
+	}
 
-.result-modal {
-  width: 80%;
-  background: #ffffff;
-  border-radius: 24px;
-  overflow: hidden;
-}
+	.result-modal {
+		width: 80%;
+		background: #ffffff;
+		border-radius: 24px;
+		overflow: hidden;
+	}
 
-.result-header {
-  background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
-  padding: 24px 16px;
-  text-align: center;
-}
+	.result-header {
+		background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
+		padding: 24px 16px;
+		text-align: center;
+	}
 
-.result-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #ffffff;
-}
+	.result-title {
+		font-size: 18px;
+		font-weight: 600;
+		color: #ffffff;
+	}
 
-.result-body {
-  padding: 32px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+	.result-body {
+		padding: 32px 16px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
 
-.score-circle {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 4px;
-  margin-bottom: 12px;
-  flex-direction: row;
-}
+	.score-circle {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 4px;
+		margin-bottom: 12px;
+		flex-direction: row;
+	}
 
-.score {
-  font-size: 48px;
-  font-weight: 700;
-  color: #2d6a4f;
-}
+	.score {
+		font-size: 48px;
+		font-weight: 700;
+		color: #2d6a4f;
+	}
 
-.score-divider {
-  font-size: 24px;
-  color: #888;
-}
+	.score-divider {
+		font-size: 24px;
+		color: #888;
+	}
 
-.total {
-  font-size: 24px;
-  color: #888;
-}
+	.total {
+		font-size: 24px;
+		color: #888;
+	}
 
-.grade-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
+	.grade-text {
+		font-size: 16px;
+		font-weight: 600;
+		color: #333;
+		margin-bottom: 4px;
+	}
 
-.grade-percent {
-  font-size: 14px;
-  color: #888;
-}
+	.grade-percent {
+		font-size: 14px;
+		color: #888;
+	}
 
-.result-footer {
-  padding: 16px;
-}
+	.result-footer {
+		padding: 16px;
+	}
 
-.btn-close {
-  height: 48px;
-  background: #2d6a4f;
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: row;
-}
+	.btn-close {
+		height: 48px;
+		background: #2d6a4f;
+		color: #ffffff;
+		font-size: 15px;
+		font-weight: 600;
+		border-radius: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-direction: row;
+	}
 </style>

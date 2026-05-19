@@ -98,15 +98,22 @@ export class WechatAuthService {
 
     return {
       token,
-      userId,
-      userType: appUser.userType,
-      realName: appUser.realName,
-      phone: appUser.phone,
-      institution: appUser.institution,
-      majorGrade: appUser.majorGrade,
-      studentNo: appUser.studentNo,
-      deptId: appUser.user.deptId,
-      deptName: appUser.user.dept?.deptName || '',
+      appUser: {
+        userId: appUser.userId,
+        userType: appUser.userType,
+        realName: appUser.realName,
+        phone: appUser.phone,
+        institution: appUser.institution,
+        majorGrade: appUser.majorGrade,
+        studentNo: appUser.studentNo,
+        contact: appUser.contact,
+        vipStatus: appUser.vipStatus,
+        regStatus: appUser.regStatus,
+        deptId: appUser.user.deptId,
+        deptName: appUser.user.dept?.deptName || '',
+        userName: appUser.user.userName,
+        nickName: appUser.user.nickName,
+      },
     };
   }
 

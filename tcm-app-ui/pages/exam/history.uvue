@@ -1,150 +1,151 @@
 <template>
-  <view class="history-page">
-    <!-- 记录列表 -->
-    <view class="record-list">
-      <view
-        v-for="record in myRecords"
-        :key="record.id"
-        class="record-card"
-        @click="goDetail(record)"
-      >
-        <view class="record-info">
-          <text class="museum-name">{{ record.museumName }}</text>
-          <text class="record-time">{{ formatTime(record.submittedAt) }}</text>
-        </view>
-        <view class="record-score">
-          <text class="score">{{ record.score }}</text>
-          <text class="total">/{{ record.totalQuestions }}</text>
-          <text class="percent">{{ getPercent(record) }}分</text>
-        </view>
-      </view>
+	<view class="history-page">
+		<!-- 记录列表 -->
+		<view class="record-list">
+			<view v-for="record in records" :key="record.examId" class="record-card" @click="goDetail(record)">
+				<view class="record-info">
+					<text class="museum-name">{{ record.museum.museumName }}</text>
+					<text class="record-time">{{ formatTime(record.examTime) }}</text>
+				</view>
+				<view class="record-score">
+					<text class="score">{{ record.correctCount }} <text
+							class="total">/ {{ record.totalQuestions }}</text></text>
+					<text class="percent">{{ record.score }}分</text>
+				</view>
+			</view>
 
-      <!-- 空状态 -->
-      <view v-if="myRecords.length === 0" class="empty-state">
-        <text class="empty-icon">📊</text>
-        <text class="empty-text">还没有考试记录</text>
-      </view>
-    </view>
+			<!-- 空状态 -->
+			<view v-if="records.length === 0 && !loading" class="empty-state">
+				<text class="empty-icon">📊</text>
+				<text class="empty-text">还没有考试记录</text>
+			</view>
+		</view>
 
-    <BottomTabBar activeTab="history" />
-  </view>
+		<BottomTabBar activeTab="history" />
+	</view>
 </template>
 
 <script setup lang="uts">
-import { computed, ref } from 'vue'
-import { useAppContext } from '@/context/AppContext.uts'
-import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+	import { ref, onMounted } from 'vue'
+	import { getExamRecordList, type ExamRecordData } from '@/api/exam'
+	import BottomTabBar from '@/components/BottomTabBar/index.uvue'
 
+	const records = ref<ExamRecordData[]>([])
+	const loading = ref(false)
 
-const mockRecords = ref([
-  { id: 'mock-1', museumId: 'museum-1', museumName: '中药标本馆', userId: 'user-1', score: 85, totalQuestions: 100, submittedAt: '2026-05-10T14:30:00' },
-  { id: 'mock-2', museumId: 'museum-2', museumName: '方剂标本馆', userId: 'user-1', score: 72, totalQuestions: 100, submittedAt: '2026-05-08T09:15:00' },
-  { id: 'mock-3', museumId: 'museum-1', museumName: '中药标本馆', userId: 'user-1', score: 93, totalQuestions: 100, submittedAt: '2026-05-05T16:45:00' },
-])
+	onMounted(() => {
+		loadRecords()
+	})
 
-const context = useAppContext()
+	async function loadRecords() {
+		loading.value = true
+		try {
+			const res = await getExamRecordList()		
+			records.value = res.rows
+		} catch (err : any) {
+			uni.showToast({ title: '获取考试记录失败', icon: 'none' })
+		} finally {
+			loading.value = false
+		}
+	}
 
-const myRecords = computed(() => {
-  if (mockRecords.value.length > 0) return mockRecords.value
-  if (!context.currentUser) return []
-  return context.getMyExamRecords(context.currentUser.id)
-})
+	function getPercent(record : { score : number; totalQuestions : number }) : number {
+		if (!record.totalQuestions) return 0
+		return Math.round((record.score / record.totalQuestions) * 100)
+	}
 
-function getPercent(record: { score: number; totalQuestions: number }): number {
-  return Math.round((record.score / record.totalQuestions) * 100)
-}
+	function formatTime(time : string) : string {
+		const date = new Date(time)
+		return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+	}
 
-function formatTime(time: string): string {
-  const date = new Date(time)
-  return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-}
-
-function goDetail(record: { id: string }) {
-  uni.navigateTo({
-    url: `/pages/exam/history-detail?recordId=${record.id}`,
-  })
-}
+	function goDetail(record : ExamRecordData) {
+		uni.navigateTo({
+			url: `/pages/exam/history-detail?examId=${record.examId}`,
+		})
+	}
 </script>
 
 <style scoped>
-.history-page {
-  min-height: 100vh;
-  background: #f8faf8;
-  padding-bottom: 60px;
-}
+	.history-page {
+		min-height: 100vh;
+		background: #f8faf8;
+		padding-bottom: 60px;
+	}
 
-.record-list {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+	.record-list {
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
 
-.record-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  flex-direction: row;
-}
+	.record-card {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: #ffffff;
+		border-radius: 16px;
+		padding: 16px;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+		flex-direction: row;
+	}
 
-.record-info {
-  flex: 1;
-    flex-direction: column;
-}
+	.record-info {
+		flex: 1;
+		flex-direction: column;
+	}
 
-.museum-name {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1a1a1a;
-  margin-bottom: 4px;
-}
+	.museum-name {
+		display: block;
+		font-size: 14px;
+		font-weight: 500;
+		color: #1a1a1a;
+		margin-bottom: 4px;
+	}
 
-.record-time {
-  display: block;
-  font-size: 12px;
-  color: #888;
-}
+	.record-time {
+		display: block;
+		font-size: 12px;
+		color: #888;
+	}
 
-.record-score {
-  text-align: right;
-}
+	.record-score {
+		text-align: right;
+	}
 
-.score {
-  font-size: 20px;
-  font-weight: 700;
-  color: #2d6a4f;
-}
+	.score {
+		font-size: 20px;
+		font-weight: 700;
+		color: #2d6a4f;
+	}
 
-.total {
-  font-size: 12px;
-  color: #888;
-}
+	.total {
+		font-size: 20px;
+		font-weight: 700;
+		color: #888;
+	}
 
-.percent {
-  display: block;
-  font-size: 12px;
-  color: #2d6a4f;
-}
+	.percent {
+		display: block;
+		font-size: 12px;
+		color: #2d6a4f;
+	}
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 64px 0;
-}
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 64px 0;
+	}
 
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
+	.empty-icon {
+		font-size: 48px;
+		margin-bottom: 12px;
+	}
 
-.empty-text {
-  font-size: 14px;
-  color: #aaa;
-}
+	.empty-text {
+		font-size: 14px;
+		color: #aaa;
+	}
 </style>

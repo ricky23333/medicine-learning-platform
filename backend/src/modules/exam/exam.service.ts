@@ -13,26 +13,27 @@ export class ExamService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sysConfigService: SysConfigService,
-  ) {}
+  ) { }
 
-  /* 开始考试 */
+  /* 开始考试 - 仅返回题目，不创建考试记录 */
   async startExam(userId: number, startExamDto: any) {
     const { museumId, categoryIds } = startExamDto;
+    const intCatIds = categoryIds.map((id) => Number(id));
 
     // 获取可用的标本图片（已审核的）
     const where: any = {
       status: '0',
-      images: { some: { auditStatus: '0' } },
+      images: { some: { auditStatus: '1' } },
     };
-    if (museumId) where.museumId = museumId;
-    if (categoryIds && categoryIds.length > 0) {
-      where.categoryId = { in: categoryIds };
+    if (museumId) where.museumId = Number(museumId);
+    if (intCatIds && intCatIds.length > 0) {
+      where.categoryId = { in: intCatIds };
     }
 
     const specimens = await this.prisma.specimen.findMany({
       where,
       include: {
-        images: { where: { auditStatus: '0' } },
+        images: { where: { auditStatus: '1' } },
       },
     });
 
@@ -52,7 +53,7 @@ export class ExamService {
     let excludedImageIds: number[] = [];
     if (museumId) {
       const lastExam = await this.prisma.exam.findFirst({
-        where: { userId, museumId, status: '1' },
+        where: { userId, museumId: Number(museumId), status: '1' },
         orderBy: { examTime: 'desc' },
         include: {
           questions: { select: { imageId: true } },
@@ -82,60 +83,81 @@ export class ExamService {
       selected = [...selected, ...otherImages.slice(0, needed)];
     }
 
+    // 获取选中图片的详情（缩略图、大图、标本名称作为答案）
+    const imageIds = selected.map((s) => s.imageId);
+    const images = await this.prisma.specimenImage.findMany({
+      where: { imageId: { in: imageIds } },
+      include: {
+        specimen: { select: { specimenName: true } },
+      },
+    });
+
+    // 构建题目详情列表（缩略图、大图、答案数组）
+    const questions = selected.map((item) => {
+      const img = images.find((i) => i.imageId === item.imageId);
+      return {
+        imageId: item.imageId,
+        specimenId: item.specimenId,
+        thumbnailUrl: img?.thumbnailUrl || img?.imageUrl || '',
+        imageUrl: img?.imageUrl || '',
+        // 答案数组：标本名称 + 可能的其他干扰项（这里暂时只返回正确名称）
+        answers: img?.specimen?.specimenName ? [img.specimen.specimenName] : [],
+      };
+    });
+
+    return { totalQuestions: selected.length, questions };
+  }
+
+  /* 提交考试 - 创建考试记录和题目，并计算分数 */
+  async submitExam(submitDto: any, userId: number) {
+    const { questions, answers, museumId } = submitDto;
+    // questions: [{imageId, specimenId}], answers: [{imageId, userAnswer}]
+
     // 创建考试记录
     const exam = await this.prisma.exam.create({
       data: {
         userId,
-        museumId,
-        totalQuestions: selected.length,
+        museumId: Number(museumId),
+        totalQuestions: questions.length,
         status: '0',
       },
     });
 
-    // 创建考试题目
-    await this.prisma.examQuestion.createMany({
-      data: selected.map((item, index) => ({
-        examId: exam.examId,
-        specimenId: item.specimenId,
-        imageId: item.imageId,
-        sort: index + 1,
-      })),
+    // 获取所有图片的标本信息用于批改
+    const imageIds = answers.map((a: any) => a.imageId);
+    const images = await this.prisma.specimenImage.findMany({
+      where: { imageId: { in: imageIds } },
+      include: { specimen: { select: { specimenName: true } } },
     });
 
-    return { examId: exam.examId, totalQuestions: selected.length };
-  }
-
-  /* 提交考试 */
-  async submitExam(examId: number, submitDto: any) {
-    const { answers } = submitDto; // answers: [{imageId, userAnswer}]
-
-    // 获取考试题目
-    const questions = await this.prisma.examQuestion.findMany({
-      where: { examId },
-      include: { specimen: true },
-    });
-
+    // 创建考试题目并批改
     let correctCount = 0;
-
-    // 更新每道题的答案
-    for (const question of questions) {
-      const answer = answers.find((a: any) => a.imageId === question.imageId);
-      const userAnswer = answer?.userAnswer || '';
-      // 简单的匹配逻辑：去掉空格后比较
-      const isCorrect =
-        userAnswer.trim() === question.specimen.specimenName.trim();
+    const questionData = answers.map((answer: any, index: number) => {
+      const img = images.find((i) => i.imageId === answer.imageId);
+      const correctAnswer = img?.specimen?.specimenName?.trim() || '';
+      const userAnswer = answer.userAnswer?.trim() || '';
+      const isCorrect = userAnswer === correctAnswer;
       if (isCorrect) correctCount++;
 
-      await this.prisma.examQuestion.update({
-        where: { id: question.id },
-        data: { userAnswer, isCorrect },
-      });
-    }
+      return {
+        examId: exam.examId,
+        specimenId: answer.specimenId,
+        imageId: answer.imageId,
+        userAnswer,
+        isCorrect,
+        sort: index + 1,
+      };
+    });
+
+    // 批量创建考试题目
+    await this.prisma.examQuestion.createMany({
+      data: questionData,
+    });
 
     // 更新考试记录
-    const score = Math.round((correctCount / questions.length) * 100);
+    const score = Math.round((correctCount / answers.length) * 100);
     await this.prisma.exam.update({
-      where: { examId },
+      where: { examId: exam.examId },
       data: {
         score,
         correctCount,
@@ -143,7 +165,7 @@ export class ExamService {
       },
     });
 
-    return { score, correctCount, total: questions.length };
+    return { examId: exam.examId, score, correctCount, total: answers.length };
   }
 
   /* 获取历史考试记录 */
@@ -166,6 +188,7 @@ export class ExamService {
   async getExamDetail(examId: number, userId: number) {
     const exam = await this.prisma.exam.findFirst({
       where: { examId, userId },
+      include: { museum: true },
     });
     if (!exam) throw new ApiException('考试记录不存在');
 

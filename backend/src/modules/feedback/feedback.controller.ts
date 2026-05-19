@@ -30,7 +30,6 @@ export class AppFeedbackController {
 
   /* 提交反馈建议 */
   @Post()
-  @Public()
   @ApiOperation({ summary: '提交反馈建议' })
   @ApiResponse({ status: 200, description: '提交成功' })
   async add(
