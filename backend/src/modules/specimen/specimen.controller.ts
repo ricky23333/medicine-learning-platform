@@ -32,7 +32,7 @@ import { User, UserEnum } from 'src/common/decorators/user.decorator';
 @ApiBearerAuth()
 @Controller('admin/specimen')
 export class SpecimenController {
-  constructor(private readonly specimenService: SpecimenService) {}
+  constructor(private readonly specimenService: SpecimenService) { }
 
   /* 新增标本 */
   @Post()
@@ -129,7 +129,7 @@ export class SpecimenController {
 @ApiTags('app')
 @Controller('app/specimen')
 export class AppSpecimenController {
-  constructor(private readonly specimenService: SpecimenService) {}
+  constructor(private readonly specimenService: SpecimenService) { }
 
   /* 分页查询标本（模糊搜索、分类筛选） */
   @Get('list')

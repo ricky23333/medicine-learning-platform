@@ -89,7 +89,7 @@
 				<!-- 标本馆列表 -->
 				<view v-else class="museum-list">
 					<view v-for="museum in museums" :key="museum.museumId" class="museum-card" @click="goCategories(museum)">
-						<text class="museum-icon">🏛️</text>
+						<text class="museum-icon">🌿</text>
 						<view class="museum-info">
 							<text class="museum-name">{{ museum.museumName }}</text>
 							<text class="museum-count">{{ getTotalSpecCount(museum) }}种标本 ·

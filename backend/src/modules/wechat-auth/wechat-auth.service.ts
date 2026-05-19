@@ -30,7 +30,7 @@ export class WechatAuthService {
     // 2. 根据 openid 查找用户
     let appUser = await this.prisma.appUser.findUnique({
       where: { openid },
-      include: { user: true },
+      include: { user: { include: { dept: true } } },
     });
 
     // 3. 如用户不存在，自动创建（待审核状态）
@@ -76,6 +76,12 @@ export class WechatAuthService {
       userId: appUser.userId,
       userType: appUser.userType,
       realName: appUser.realName,
+      phone: appUser.phone,
+      institution: appUser.institution,
+      majorGrade: appUser.majorGrade,
+      studentNo: appUser.studentNo,
+      deptId: appUser.user.deptId,
+      deptName: appUser.user.dept?.deptName || '',
     };
   }
 

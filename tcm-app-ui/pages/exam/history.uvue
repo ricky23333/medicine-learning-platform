@@ -1,11 +1,5 @@
 <template>
   <view class="history-page">
-    <!-- 导航栏 -->
-    <view class="navbar">
-      <text class="nav-back" @click="goBack">←</text>
-      <text class="nav-title">考试记录</text>
-    </view>
-
     <!-- 记录列表 -->
     <view class="record-list">
       <view
@@ -32,7 +26,6 @@
       </view>
     </view>
 
-    <!-- 底部导航 -->
     <BottomTabBar activeTab="history" />
   </view>
 </template>
@@ -57,17 +50,13 @@ const myRecords = computed(() => {
   return context.getMyExamRecords(context.currentUser.id)
 })
 
-function goBack() {
-  uni.switchTab({ url: '/pages/home/home' })
+function getPercent(record: { score: number; totalQuestions: number }): number {
+  return Math.round((record.score / record.totalQuestions) * 100)
 }
 
 function formatTime(time: string): string {
   const date = new Date(time)
   return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-}
-
-function getPercent(record: { score: number; totalQuestions: number }): number {
-  return Math.round((record.score / record.totalQuestions) * 100)
 }
 
 function goDetail(record: { id: string }) {
@@ -82,26 +71,6 @@ function goDetail(record: { id: string }) {
   min-height: 100vh;
   background: #f8faf8;
   padding-bottom: 60px;
-}
-
-.navbar {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  flex-direction: row;
-}
-
-.nav-back {
-  font-size: 20px;
-  color: #666;
-  margin-right: 12px;
-}
-
-.nav-title {
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .record-list {

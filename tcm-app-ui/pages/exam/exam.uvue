@@ -4,7 +4,6 @@
     <view class="progress-bar">
       <view class="progress-info">
         <text class="progress-text">第 {{ currentIndex + 1 }} / {{ totalQuestions }} 题</text>
-        <text class="quit-btn" @click="confirmQuit">放弃</text>
       </view>
       <view class="progress-track">
         <view class="progress-fill" :style="{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }"></view>
@@ -110,18 +109,6 @@ onLoad((options: any) => {
   }
 })
 
-function confirmQuit() {
-  uni.showModal({
-    title: '确认',
-    content: '确定放弃考试？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.navigateBack()
-      }
-    },
-  })
-}
-
 function goPrev() {
   if (currentIndex.value > 0) {
     currentIndex.value--
@@ -217,11 +204,6 @@ function onBlur(e: any) {
 .progress-text {
   font-size: 13px;
   color: #888;
-}
-
-.quit-btn {
-  font-size: 13px;
-  color: #ef4444;
 }
 
 .progress-track {

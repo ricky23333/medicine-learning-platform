@@ -101,8 +101,8 @@ export class SpecimenService {
   async listForApp(query: any) {
     const { museumId, categoryId, specimenName, skip = 0, take = 10 } = query;
     const where: any = { status: '0' };
-    if (museumId) where.museumId = museumId;
-    if (categoryId) where.categoryId = categoryId;
+    if (museumId) where.museumId = Number(museumId);
+    if (categoryId) where.categoryId = Number(categoryId);
     if (specimenName) where.specimenName = { contains: specimenName };
     const [rows, total] = await Promise.all([
       this.prisma.specimen.findMany({
@@ -316,7 +316,7 @@ export class SpecimenService {
       <svg width="${textWidth + padding * 2}" height="${watermarkHeight + padding * 2}">
         <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.3)"/>
         <text x="${padding}" y="${watermarkHeight / 2 + 8}"
-              font-family="Arial" font-size="16" fill="white">
+              font-family="WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" font-size="16" fill="white" text-anchor="start">
           ${text}
         </text>
       </svg>

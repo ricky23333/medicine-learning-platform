@@ -1,20 +1,12 @@
 <template>
   <view class="museums-page">
-    <!-- 导航栏 -->
-    <view class="navbar">
-      <text class="nav-back" @click="goBack">←</text>
-      <text class="nav-title">标本馆</text>
-    </view>
-
-    <!-- 加载中 -->
+    <!-- 标本馆列表 -->
     <view v-if="loading" class="empty-state">
       <text class="empty-text">加载中...</text>
     </view>
-    <!-- 无数据 -->
     <view v-else-if="museums.length === 0" class="empty-state">
       <text class="empty-text">暂无数据</text>
     </view>
-    <!-- 标本馆列表 -->
     <view v-else class="museum-list">
       <view
         v-for="museum in museums"
@@ -35,7 +27,6 @@
       </view>
     </view>
 
-    <!-- 底部导航 -->
     <BottomTabBar activeTab="browse" />
   </view>
 </template>
@@ -65,10 +56,6 @@ onMounted(() => {
   loadMuseums()
 })
 
-function goBack() {
-  uni.navigateBack()
-}
-
 function getTotalSpecCount(museum: Museum): number {
   return museum.categories.reduce((sum, c) => sum + c.specCount, 0)
 }
@@ -85,26 +72,6 @@ function goCategories(museum: Museum) {
   min-height: 100vh;
   background: #f8faf8;
   padding-bottom: 60px;
-}
-
-.navbar {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  flex-direction: row;
-}
-
-.nav-back {
-  font-size: 20px;
-  color: #666;
-  margin-right: 12px;
-}
-
-.nav-title {
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .museum-list {

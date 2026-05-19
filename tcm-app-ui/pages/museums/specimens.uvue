@@ -1,233 +1,224 @@
 <template>
-  <view class="specimens-page">
-    <!-- 导航栏 -->
-    <view class="navbar">
-      <text class="nav-back" @click="goBack">←</text>
-      <text class="nav-title">{{ categoryName }}</text>
-    </view>
+	<view class="specimens-page">
+		<!-- 导航栏 -->
+		<view class="navbar">
+			<text class="nav-back" @click="goBack">←</text>
+			<text class="nav-title">{{ categoryName }}</text>
+		</view>
 
-    <!-- 搜索框 -->
-    <view class="search-bar">
-      <input
-        v-model="searchQuery"
-        placeholder="搜索标本名称..."
-        class="search-input"
-      />
-    </view>
+		<!-- 搜索框 -->
+		<view class="search-bar">
+			<input v-model="searchQuery" placeholder="搜索标本名称..." class="search-input" />
+		</view>
 
-    <!-- 加载中 -->
-    <view v-if="loading" class="empty-state">
-      <text class="empty-text">加载中...</text>
-    </view>
-    <!-- 标本格子列表 -->
-    <view v-else class="specimen-grid">
-      <view
-        v-for="sp in filteredSpecimens"
-        :key="sp.specimenId"
-        class="specimen-card"
-        @click="goDetail(sp)"
-      >
-        <view class="image-wrapper">
-          <image v-if="sp.imgUrl" :src="sp.imgUrl" mode="aspectFill" class="specimen-image" />
-          <view v-else class="placeholder">🔬</view>
-        </view>
-        <view class="specimen-info">
-          <text class="specimen-name">{{ sp.specimenName }}</text>
-          <text v-if="sp.LatinName" class="specimen-latin">{{ sp.LatinName }}</text>
-        </view>
-      </view>
+		<!-- 加载中 -->
+		<view v-if="loading" class="empty-state">
+			<text class="empty-text">加载中...</text>
+		</view>
+		<!-- 标本格子列表 -->
+		<view v-else class="specimen-grid">
+			<view v-for="sp in filteredSpecimens" :key="sp.specimenId" class="specimen-card" @click="goDetail(sp)">
+				<view class="image-wrapper">
+					<image v-if="sp.imgUrl" :src="sp.imgUrl" mode="aspectFill" class="specimen-image" />
+					<view v-else class="placeholder">🔬</view>
+				</view>
+				<view class="specimen-info">
+					<text class="specimen-name">{{ sp.specimenName }}</text>
+					<text v-if="sp.LatinName" class="specimen-latin">{{ sp.LatinName }}</text>
+				</view>
+			</view>
 
-      <!-- 空状态 -->
-      <view v-if="filteredSpecimens.length === 0" class="empty-state">
-        <text class="empty-text">暂无标本</text>
-      </view>
-    </view>
+			<!-- 空状态 -->
+			<view v-if="filteredSpecimens.length === 0" class="empty-state">
+				<text class="empty-text">暂无标本</text>
+			</view>
+		</view>
 
-    <!-- 底部导航 -->
-    <BottomTabBar activeTab="browse" />
-  </view>
+		<!-- 底部导航 -->
+		<BottomTabBar activeTab="browse" />
+	</view>
 </template>
 
 <script setup lang="uts">
-import { ref, computed, onMounted } from 'vue'
-import BottomTabBar from '@/components/BottomTabBar/index.uvue'
-import { getSpecimenList, type SpecimenItem } from '@/utils/auth'
+	import { ref, computed, onMounted } from 'vue'
+	import BottomTabBar from '@/components/BottomTabBar/index.uvue'
+	import { getSpecimenList, type SpecimenItem } from '@/utils/auth'
 
-const categoryId = ref('')
-const museumId = ref('')
-const categoryName = ref('')
-const searchQuery = ref('')
-const specimens = ref<SpecimenItem[]>([])
-const loading = ref(false)
+	const categoryId = ref('')
+	const museumId = ref('')
+	const categoryName = ref('')
+	const searchQuery = ref('')
+	const specimens = ref<SpecimenItem[]>([])
+	const loading = ref(false)
 
-// 过滤后的标本
-const filteredSpecimens = computed(() => {
-  let list = specimens.value
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
-    list = list.filter(sp =>
-      sp.specimenName.toLowerCase().includes(q) ||
-      (sp.LatinName && sp.LatinName.toLowerCase().includes(q))
-    )
-  }
-  return list
-})
+	// 过滤后的标本
+	const filteredSpecimens = computed(() => {
+		let list = specimens.value
+		if (searchQuery.value) {
+			const q = searchQuery.value.toLowerCase()
+			list = list.filter(sp =>
+				sp.specimenName.toLowerCase().includes(q) ||
+				(sp.LatinName && sp.LatinName.toLowerCase().includes(q))
+			)
+		}
+		return list
+	})
 
-onLoad((options: any) => {
-  if (options) {
-    categoryId.value = options.categoryId || ''
-    museumId.value = options.museumId || ''
-    categoryName.value = decodeURIComponent(options.categoryName || '标本')
-  }
-})
+	onLoad((options : any) => {
+		if (options) {
+			categoryId.value = options.categoryId || ''
+			museumId.value = options.museumId || ''
+			categoryName.value = decodeURIComponent(options.categoryName || '标本')
+		}
+	})
 
-onMounted(async () => {
-  loading.value = true
-  try {
-    const res = await getSpecimenList(Number(categoryId.value), Number(museumId.value))
-    specimens.value = res.list
-  } catch (err: any) {
-    console.error('获取标本列表失败:', err)
-    uni.showToast({ title: '获取标本列表失败', icon: 'none' })
-  } finally {
-    loading.value = false
-  }
-})
+	onMounted(async () => {
+		loading.value = true
+		try {
+			const res = await getSpecimenList(Number(categoryId.value), Number(museumId.value))
+			specimens.value = res.rows
+		} catch (err : any) {
+			console.error('获取标本列表失败:', err)
+			uni.showToast({ title: '获取标本列表失败', icon: 'none' })
+		} finally {
+			loading.value = false
+		}
+	})
 
-function goBack() {
-  uni.navigateBack()
-}
+	function goBack() {
+		uni.navigateBack()
+	}
 
-function goDetail(sp: SpecimenItem) {
-  uni.navigateTo({
-    url: `/pages/museums/specimen-detail?specimenId=${sp.specimenId}&specimenName=${encodeURIComponent(sp.specimenName)}`,
-  })
-}
+	function goDetail(sp : SpecimenItem) {
+		uni.navigateTo({
+			url: `/pages/museums/specimen-detail?specimenId=${sp.specimenId}&specimenName=${encodeURIComponent(sp.specimenName)}`,
+		})
+	}
 </script>
 
 <style scoped>
-.specimens-page {
-  min-height: 100vh;
-  background: #f8faf8;
-  padding-bottom: 60px;
-}
+	.specimens-page {
+		min-height: 100vh;
+		background: #f8faf8;
+		padding-bottom: 60px;
+	}
 
-.navbar {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
-  flex-direction: row;
-}
+	.navbar {
+		display: flex;
+		align-items: center;
+		padding: 12px 16px;
+		background: #ffffff;
+		border-bottom: 1px solid #f0f0f0;
+		flex-direction: row;
+	}
 
-.nav-back {
-  font-size: 20px;
-  color: #666;
-  margin-right: 12px;
-}
+	.nav-back {
+		font-size: 20px;
+		color: #666;
+		margin-right: 12px;
+	}
 
-.nav-title {
-  font-size: 16px;
-  font-weight: 600;
-}
+	.nav-title {
+		font-size: 16px;
+		font-weight: 600;
+	}
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: #ffffff;
-  flex-direction: row;
-}
+	.search-bar {
+		display: flex;
+		align-items: center;
+		padding: 12px 16px;
+		background: #ffffff;
+		flex-direction: row;
+	}
 
-.search-icon {
-  font-size: 16px;
-  margin-right: 8px;
-}
+	.search-icon {
+		font-size: 16px;
+		margin-right: 8px;
+	}
 
-.search-input {
-  flex: 1;
-  height: 40px;
-  width:100%;
-  background: #f8faf8;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 0 12px;
-  font-size: 14px;
-}
+	.search-input {
+		flex: 1;
+		height: 40px;
+		width: 100%;
+		background: #f8faf8;
+		border: 1px solid #e0e0e0;
+		border-radius: 12px;
+		padding: 0 12px;
+		font-size: 14px;
+	}
 
-.specimen-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 16px;
-}
+	.specimen-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		padding: 16px;
+	}
 
-.specimen-card {
-  background: #ffffff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-}
+	.specimen-card {
+		background: #ffffff;
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+	}
 
-.image-wrapper {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: #f0f4f0;
-  overflow: hidden;
-}
+	.image-wrapper {
+		width: 100%;
+		aspect-ratio: 4 / 3;
+		background: #f0f4f0;
+		overflow: hidden;
+	}
 
-.specimen-image {
-  width: 100%;
-  height: 100%;
-}
+	.specimen-image {
+		width: 100%;
+		height: 100%;
+	}
 
-.placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-}
+	.placeholder {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 32px;
+	}
 
-.specimen-info {
-  padding: 12px;
-}
+	.specimen-info {
+		padding: 12px;
+	}
 
-.specimen-name {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 2px;
-}
+	.specimen-name {
+		display: block;
+		font-size: 14px;
+		font-weight: 600;
+		color: #1a1a1a;
+		margin-bottom: 2px;
+	}
 
-.specimen-latin {
-  display: block;
-  font-size: 11px;
-  color: #888;
-  font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+	.specimen-latin {
+		display: block;
+		font-size: 11px;
+		color: #888;
+		font-style: italic;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 48px 0;
-}
+	.empty-state {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 48px 0;
+	}
 
-.empty-text {
-  font-size: 14px;
-  color: #aaa;
-}
+	.empty-text {
+		font-size: 14px;
+		color: #aaa;
+	}
 
 	.search-icon {
 		width: 22px;
 		height: 22px;
-    position: absolute;
-    right: 16px;
+		position: absolute;
+		right: 16px;
 	}
 </style>
