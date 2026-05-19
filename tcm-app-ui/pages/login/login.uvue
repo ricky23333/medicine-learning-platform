@@ -468,18 +468,41 @@
 
 		uni.showLoading({ title: '加载学校...' })
 		try {
-			const list = await getSchoolList() as any[]
-			// 扁平化树结构，跳过顶层节点，从第二级开始展示
-			const flatList : any[] = []
-			list.forEach(root => {
-				if (root.children && root.children.length > 0) {
-					// 直接子节点作为 level=1（第二级）处理
-					root.children.forEach((child : any) => {
-						flattenSchool(child, 1, flatList)
+			// getSchoolList 返回的是扁平数据，直接是数组
+			const res = await getSchoolList() as DeptItem[]
+			// 构建树形结构
+			const treeMap = new Map<number | null, (DeptItem & { level: number; expanded?: boolean })[]>()
+			res.data.forEach(item => {
+				if (!treeMap.has(item.parentId)) {
+					treeMap.set(item.parentId, [])
+				}
+				treeMap.get(item.parentId)!.push({ ...item, level: 0, expanded: false })
+			})
+
+			// 从根节点（parentId 为 null 或 0）开始构建
+			const buildTree = (parentId: number | null, level: number): (DeptItem & { level: number; expanded?: boolean })[] => {
+				const children = treeMap.get(parentId) || []
+				return children.map(child => {
+					const childWithLevel = { ...child, level }
+					const subChildren = buildTree(child.deptId, level + 1)
+					if (subChildren.length > 0) {
+						childWithLevel.children = subChildren as any
+					}
+					return childWithLevel
+				})
+			}
+
+			const result = buildTree(null, 0)
+			// 扁平化显示（跳过顶层，从第二级开始）
+			const flatResult: (DeptItem & { level: number; expanded?: boolean })[] = []
+			result.forEach(root => {
+				if ((root as any).children && (root as any).children.length > 0) {
+					;(root as any).children.forEach((child: any) => {
+						flattenSchoolToView(child, 1, flatResult)
 					})
 				}
 			})
-			schoolTree.value = flatList
+			schoolTree.value = flatResult
 			uni.hideLoading()
 		} catch (err : any) {
 			uni.hideLoading()
@@ -487,18 +510,16 @@
 		}
 	}
 
-	// 递归扁平化学校树
-	function flattenSchool(school : any, level : number, result : any[]) {
-		// 添加当前节点
+	// 扁平化学校树用于显示
+	function flattenSchoolToView(school: any, level: number, result: any[]) {
 		result.push({
 			...school,
 			level,
 			expanded: false
 		})
-		// 递归处理子节点
 		if (school.children) {
-			school.children.forEach((child : any) => {
-				flattenSchool(child, level + 1, result)
+			school.children.forEach((child: any) => {
+				flattenSchoolToView(child, level + 1, result)
 			})
 		}
 	}

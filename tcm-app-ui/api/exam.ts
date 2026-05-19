@@ -14,7 +14,6 @@ const DEFAULT_EXAM_DURATION = 15 * 60
 export async function getExamDuration(): Promise<number> {
   try {
     const result = await getDictTypeList({ pageNum: 1, pageSize: 999 })
-    console.log(3333, result)
     const dictList: DictType[] = result.rows || []
 
     const durationValue = findDictValueByKey('global.exam.duration', dictList)
@@ -22,7 +21,7 @@ export async function getExamDuration(): Promise<number> {
     if (durationValue) {
       const parsed = parseInt(durationValue, 10)
       if (!isNaN(parsed) && parsed > 0) {
-        return parsed * 60 // 转换为秒（接口返回可能是分钟）
+        return parsed * 60 // 转换为秒（接口返回是分钟）
       }
     }
 

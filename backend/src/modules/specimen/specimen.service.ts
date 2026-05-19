@@ -112,7 +112,7 @@ export class SpecimenService {
         orderBy: { createTime: 'desc' },
         include: {
           images: {
-            where: { auditStatus: '0' },
+            where: { auditStatus: '1' },
             orderBy: [{ isCover: 'desc' }, { sort: 'asc' }],
           },
         },
@@ -130,7 +130,7 @@ export class SpecimenService {
         museum: true,
         category: true,
         images: {
-          where: isApp ? { auditStatus: '0' } : undefined,
+          where: isApp ? { auditStatus: '1' } : undefined,
           orderBy: [{ isCover: 'desc' }, { sort: 'asc' }],
         },
       },

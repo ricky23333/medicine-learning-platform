@@ -22,7 +22,8 @@ export interface DictData {
 export interface DictType {
   dictId: number
   dictName: string
-  dictType: string
+  configKey: string
+  configValue: string
   status: string
   createTime: string
   remark?: string
@@ -58,10 +59,5 @@ export function getDictDataByType(dictType: string): Promise<DictData[]> {
  * @returns 字典值字符串，如果未找到返回 null
  */
 export function findDictValueByKey(key: string, dictList: DictType[]): string | null {
-  const dict = dictList.find(d => d.dictType === key)
-  if (dict && dict.children && dict.children.length > 0) {
-    // 返回第一个字典数据的值
-    return dict.children[0].dictValue
-  }
-  return null
+  return dictList.find(d => d.configKey === key)?.configValue || null
 }
