@@ -42,8 +42,9 @@ const loading = ref(false)
 async function loadMuseums() {
   loading.value = true
   try {
-    const list = await getMuseumList()
-    museums.value = list
+    const res = await getMuseumList()
+ 
+    museums.value = res.data
   } catch (err: any) {
     console.error('获取标本馆列表失败:', err)
     uni.showToast({ title: '获取标本馆列表失败', icon: 'none' })

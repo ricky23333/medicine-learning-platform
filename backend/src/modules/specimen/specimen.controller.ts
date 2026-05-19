@@ -149,7 +149,7 @@ export class AppSpecimenController {
     @Param('specimenId') specimenId: number,
     @User(UserEnum.userId) userId?: number,
   ) {
-    const specimen = await this.specimenService.findById(specimenId);
+    const specimen = await this.specimenService.findById(specimenId, true);
     // 记录标本访问
     await this.specimenService.recordVisit(specimenId, userId);
     return AjaxResult.success(specimen);

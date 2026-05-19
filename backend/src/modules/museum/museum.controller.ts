@@ -100,7 +100,7 @@ export class AppMuseumController {
   @ApiOperation({ summary: '获取馆列表（带分类）' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async list() {
-    const data = await this.museumService.listWithCategories();
+    const data = await this.museumService.listWithCategoriesForApp();
     return AjaxResult.success(data);
   }
 }

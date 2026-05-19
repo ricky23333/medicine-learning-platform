@@ -123,13 +123,16 @@ export class SpecimenService {
   }
 
   /* 通过ID查询标本 */
-  async findById(specimenId: number) {
+  async findById(specimenId: number, isApp: boolean = false) {
     const specimen = await this.prisma.specimen.findUnique({
       where: { specimenId },
       include: {
         museum: true,
         category: true,
-        images: { orderBy: [{ isCover: 'desc' }, { sort: 'asc' }] },
+        images: {
+          where: isApp ? { auditStatus: '0' } : undefined,
+          orderBy: [{ isCover: 'desc' }, { sort: 'asc' }],
+        },
       },
     });
 

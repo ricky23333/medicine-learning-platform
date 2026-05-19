@@ -19,7 +19,7 @@
 		<view v-else class="specimen-grid">
 			<view v-for="sp in filteredSpecimens" :key="sp.specimenId" class="specimen-card" @click="goDetail(sp)">
 				<view class="image-wrapper">
-					<image v-if="sp.imgUrl" :src="sp.imgUrl" mode="aspectFill" class="specimen-image" />
+					<image v-if="sp.images &&sp.images.length>0" :src="sp.images[0].thumbnailUrl" mode="aspectFill" class="specimen-image" />
 					<view v-else class="placeholder">🔬</view>
 				</view>
 				<view class="specimen-info">

@@ -9,7 +9,7 @@
     <view class="content">
       <!-- 说明卡片 -->
       <view class="tips-card">
-        <text class="tips-text">📝 从选定的标本中随机抽取 <strong>20</strong> 张图片，仅展示图片，请填写标本名称。不计时，可随时提交。</text>
+        <text class="tips-text">📝 从选定的标本中随机抽取 <strong>20</strong> 张图片，仅展示图片，请填写标本名称。考试限时，请在规定时间内完成。</text>
       </view>
 
       <!-- 标本馆选择 -->
@@ -32,8 +32,26 @@
 
       <!-- 分类选择 -->
       <view v-if="selectedMuseum" class="section">
-        <text class="section-label">选择分类（不选默认全部）</text>
-        <view class="category-grid">
+        <text class="section-label">选择分类</text>
+        <!-- 全选/手动选择切换 -->
+        <view class="select-mode-toggle">
+          <view
+            class="toggle-btn"
+            :class="{ active: isSelectAll }"
+            @click="setSelectMode(true)"
+          >
+            <text class="toggle-text">全选</text>
+          </view>
+          <view
+            class="toggle-btn"
+            :class="{ active: !isSelectAll }"
+            @click="setSelectMode(false)"
+          >
+            <text class="toggle-text">手动选择</text>
+          </view>
+        </view>
+        <!-- 分类列表（仅手动选择模式展开） -->
+        <view v-if="!isSelectAll" class="category-grid">
           <view
             v-for="cat in selectedMuseum.categories"
             :key="cat.id"
@@ -46,6 +64,9 @@
             </view>
             <text class="cat-name">{{ cat.name }}</text>
           </view>
+        </view>
+        <view v-else class="select-all-hint">
+          <text class="hint-text">将使用该标本馆下所有分类的标本进行考试</text>
         </view>
       </view>
 
@@ -72,6 +93,8 @@ const context = useAppContext()
 
 const selectedMuseumId = ref('')
 const selectedCategoryIds = ref<string[]>([])
+// 是否全选模式（默认 true）
+const isSelectAll = ref(true)
 
 const museums = computed(() => context.getMuseums())
 
@@ -97,16 +120,31 @@ function toggleCategory(catId: string) {
   }
 }
 
+// 切换全选/手动选择模式
+function setSelectMode(isAll: boolean) {
+  isSelectAll.value = isAll
+  if (isAll) {
+    // 切换到全选模式时，清空已选分类
+    selectedCategoryIds.value = []
+  }
+}
+
 function startExam() {
   if (!selectedMuseumId.value) {
     uni.showToast({ title: '请先选择标本馆', icon: 'none' })
     return
   }
 
+  // 手动选择模式下，检查是否至少选择了一个分类
+  if (!isSelectAll.value && selectedCategoryIds.value.length === 0) {
+    uni.showToast({ title: '请至少选择一个分类', icon: 'none' })
+    return
+  }
+
   // 检查标本数量
   const pool = context.getApprovedSpecimens(
     selectedMuseumId.value,
-    selectedCategoryIds.value.length > 0 ? selectedCategoryIds.value : undefined
+    isSelectAll.value ? undefined : selectedCategoryIds.value
   )
 
   if (pool.length < 3) {
@@ -115,8 +153,10 @@ function startExam() {
   }
 
   // 跳转到考试页面
+  // categoryIds 为空表示全选
+  const categoryParam = isSelectAll.value ? '' : selectedCategoryIds.value.join(',')
   uni.navigateTo({
-    url: `/pages/exam/exam?museumId=${selectedMuseumId.value}&categoryIds=${selectedCategoryIds.value.join(',')}`,
+    url: `/pages/exam/exam?museumId=${selectedMuseumId.value}&categoryIds=${categoryParam}`,
   })
 }
 </script>
@@ -214,6 +254,50 @@ function startExam() {
 .check-icon {
   font-size: 16px;
   color: #2d6a4f;
+}
+
+.select-mode-toggle {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.toggle-btn {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border-radius: 12px;
+  flex-direction: row;
+}
+
+.toggle-btn.active {
+  background: #2d6a4f;
+}
+
+.toggle-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+.toggle-btn.active .toggle-text {
+  color: #ffffff;
+}
+
+.select-all-hint {
+  background: #f8f8f8;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.hint-text {
+  font-size: 12px;
+  color: #888;
 }
 
 .category-grid {

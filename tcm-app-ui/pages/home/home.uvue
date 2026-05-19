@@ -88,7 +88,8 @@
 				</view>
 				<!-- 标本馆列表 -->
 				<view v-else class="museum-list">
-					<view v-for="museum in museums" :key="museum.museumId" class="museum-card" @click="goCategories(museum)">
+					<view v-for="museum in museums" :key="museum.museumId" class="museum-card"
+						@click="goCategories(museum)">
 						<text class="museum-icon">🌿</text>
 						<view class="museum-info">
 							<text class="museum-name">{{ museum.museumName }}</text>
@@ -113,7 +114,7 @@
 	import { getMuseumList, type Museum } from '@/utils/auth'
 
 	const context = useAppContext()
-	const userName = computed(() =>uni.getStorageSync('realName')) 
+	const userName = computed(() => uni.getStorageSync('realName'))
 	const user = computed(() => context.currentUser)
 	// 标本馆数据（从API获取）
 	const museums = ref<Museum[]>([])
@@ -139,9 +140,9 @@
 	async function loadMuseums() {
 		loading.value = true
 		try {
-			const list = await getMuseumList()
-			museums.value = list
-		} catch (err: any) {
+			const res = await getMuseumList()
+			museums.value = res.data
+		} catch (err : any) {
 			console.error('获取标本馆列表失败:', err)
 			uni.showToast({ title: '获取标本馆列表失败', icon: 'none' })
 		} finally {
@@ -154,7 +155,7 @@
 	})
 
 	// 计算博物馆总标本数
-	function getTotalSpecCount(museum: Museum): number {
+	function getTotalSpecCount(museum : Museum) : number {
 		return museum.categories.reduce((sum, c) => sum + c.specCount, 0)
 	}
 

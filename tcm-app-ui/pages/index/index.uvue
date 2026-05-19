@@ -6,13 +6,15 @@
 
 <script setup lang="uts">
 onLoad(() => {
-  // 检查用户是否已同意协议
+  // 检查 token 是否存在且用户已同意协议
+  const token = uni.getStorageSync('token')
   const agreedToTerms = uni.getStorageSync('agreedToTerms')
-  if (agreedToTerms) {
-    // 已同意协议，跳转到首页
+
+  if (token && agreedToTerms) {
+    // token 存在且已同意协议，跳转到首页
     uni.reLaunch({ url: '/pages/home/home' })
   } else {
-    // 未同意协议，显示登录页（协议弹窗）
+    // token 不存在或未同意协议，显示登录页
     uni.redirectTo({ url: '/pages/login/login' })
   }
 })

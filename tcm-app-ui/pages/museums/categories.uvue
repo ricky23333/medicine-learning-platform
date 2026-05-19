@@ -56,8 +56,8 @@ onLoad((options: any) => {
 onMounted(async () => {
   loading.value = true
   try {
-    const list = await getMuseumList()
-    const museum = list.find(m => String(m.museumId) === String(museumId.value))
+    const res = await getMuseumList()
+    const museum = res.data.find(m => String(m.museumId) === String(museumId.value))
     if (museum) {
       categories.value = museum.categories
     }

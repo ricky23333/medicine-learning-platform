@@ -7,10 +7,18 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'nestjs-prisma';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { ApiException } from 'src/common/exceptions/api.exception';
 import * as bcrypt from 'bcryptjs';
+import {
+  USER_INFO_KEY,
+  USER_ONLINE_KEY,
+  USER_TOKEN_KEY,
+  USER_VERSION_KEY,
+} from 'src/common/contants/redis.contant';
 import { ReqWechatLoginDto, ReqWechatRegisterDto } from './dto/req-wechat-auth.dto';
 import { Payload } from '../login/login.interface';
+import Redis from 'ioredis';
 
 @Injectable()
 export class WechatAuthService {
@@ -18,7 +26,8 @@ export class WechatAuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) { }
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
 
   /* 微信登录 */
   async wechatLogin(dto: ReqWechatLoginDto) {
@@ -35,31 +44,7 @@ export class WechatAuthService {
 
     // 3. 如用户不存在，自动创建（待审核状态）
     if (!appUser) {
-      const salt = await bcrypt.genSalt();
-      const defaultPassword = await bcrypt.hash('888888', salt);
-
-      const user = await this.prisma.sysUser.create({
-        data: {
-          userName: `wechat_${openid.slice(-10)}`,
-          nickName: '微信用户',
-          password: defaultPassword,
-          status: '0',
-          delFlag: '0',
-        },
-      });
-
-      appUser = await this.prisma.appUser.create({
-        data: {
-          userId: user.userId,
-          openid,
-          realName: '微信用户',
-          phone: '',
-          institution: '',
-          userType: 'student',
-          regStatus: '0',
-          regApplyTime: new Date(),
-        },
-      });
+      throw new ApiException('该账号未注册, 请先注册', 403);
     }
 
     // 4. 检查用户是否通过审核
@@ -67,13 +52,53 @@ export class WechatAuthService {
       throw new ApiException('账号正在审核中，请耐心等待', 403);
     }
 
-    // 5. 生成JWT token
-    const payload: Payload = { userId: appUser.userId, pv: 1 };
-    const token = this.jwtService.sign(payload);
+    // 5. 检查用户状态
+    if (appUser.user.status !== '0' || appUser.user.delFlag !== '0') {
+      throw new ApiException('账号状态异常，请联系管理员', 403);
+    }
+
+    // 6. 生成JWT token
+    const userId = appUser.userId;
+    const payload: Payload = { userId, pv: 1 };
+    const expiresIn = this.configService.get<number>('expiresIn') || 60 * 60 * 24 * 7;
+    let token = this.jwtService.sign(payload);
+
+    // 7. 演示环境复用 token
+    if (this.configService.get<boolean>('isDemoEnvironment')) {
+      const existingToken = await this.redis.get(`${USER_TOKEN_KEY}:${userId}`);
+      if (existingToken) {
+        token = existingToken;
+      }
+    }
+
+    // 8. 存储token、版本号、在线用户信息到 Redis
+    const onlineObj = {
+      tokenId: `${USER_TOKEN_KEY}:${userId}`,
+      userName: appUser.user.userName,
+      deptName: appUser.user.dept?.deptName || '',
+      loginTime: new Date().toISOString(),
+      clientType: 'wechat',
+    };
+
+    await this.redis
+      .pipeline()
+      .set(`${USER_VERSION_KEY}:${userId}`, 1, 'EX', expiresIn)
+      .set(`${USER_TOKEN_KEY}:${userId}`, token, 'EX', expiresIn)
+      .set(`${USER_ONLINE_KEY}:${userId}`, JSON.stringify(onlineObj), 'EX', expiresIn)
+      .set(`${USER_INFO_KEY}:${userId}`, JSON.stringify({
+        userId: appUser.user.userId,
+        userName: appUser.user.userName,
+        nickName: appUser.user.nickName,
+        deptId: appUser.user.deptId,
+        deptName: appUser.user.dept?.deptName || '',
+        permissions: ['app:user'],
+        dataScope: { deptIds: undefined, userName: undefined, OR: undefined },
+      }), 'EX', expiresIn)
+      .exec();
 
     return {
       token,
-      userId: appUser.userId,
+      userId,
       userType: appUser.userType,
       realName: appUser.realName,
       phone: appUser.phone,
@@ -195,6 +220,23 @@ export class WechatAuthService {
       return data.openid;
     } catch (error) {
       throw new ApiException('微信服务调用失败，请稍后再试');
+    }
+  }
+
+  /* 微信用户退出登录 */
+  async logout(token: string) {
+    try {
+      const payload = this.jwtService.verify(token) as Payload;
+      const userId = payload.userId;
+      await this.redis
+        .pipeline()
+        .del(`${USER_TOKEN_KEY}:${userId}`)
+        .del(`${USER_VERSION_KEY}:${userId}`)
+        .del(`${USER_ONLINE_KEY}:${userId}`)
+        .del(`${USER_INFO_KEY}:${userId}`)
+        .exec();
+    } catch (error) {
+      // token 无效时直接忽略
     }
   }
 }

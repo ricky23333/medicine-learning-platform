@@ -10,6 +10,15 @@
       </view>
     </view>
 
+    <!-- 倒计时区域 -->
+    <view class="countdown-bar" :class="{ urgent: isUrgent }">
+      <text class="countdown-icon">⏱</text>
+      <text class="countdown-text">剩余时间：{{ formattedTime }}</text>
+      <view class="countdown-progress">
+        <view class="countdown-progress-fill" :style="{ width: `${remainingPercent}%` }"></view>
+      </view>
+    </view>
+
     <!-- 标本图片 -->
     <view class="image-area">
       <ImageViewer
@@ -58,13 +67,35 @@
         <text class="nav-text">提交答卷</text>
       </view>
     </view>
+
+    <!-- 考试成绩弹窗 -->
+    <view v-if="showResultModal" class="result-modal-mask">
+      <view class="result-modal">
+        <view class="result-header">
+          <text class="result-title">考试完成</text>
+        </view>
+        <view class="result-body">
+          <view class="score-circle">
+            <text class="score">{{ lastExamRecord?.score || 0 }}</text>
+            <text class="score-divider">/</text>
+            <text class="total">{{ lastExamRecord?.totalQuestions || 0 }}</text>
+          </view>
+          <text class="grade-text">{{ gradeText }}</text>
+          <text class="grade-percent">{{ gradePercent }}分</text>
+        </view>
+        <view class="result-footer">
+          <view class="btn-close" @click="closeResultModal">关闭</view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="uts">
-import { ref, computed } from 'vue'
-import type { Specimen, SpecimenImage } from '@/types/index.uts'
+import { ref, computed, onUnmounted } from 'vue'
+import type { Specimen, SpecimenImage, ExamRecord } from '@/types/index.uts'
 import { useAppContext } from '@/context/AppContext.uts'
+import { getExamDuration } from '@/api/exam'
 import ImageViewer from '@/components/ImageViewer/index.uvue'
 
 const context = useAppContext()
@@ -74,6 +105,56 @@ const categoryIds = ref<string[]>([])
 const examSpecimens = ref<Specimen[]>([])
 const answers = ref<string[]>([])
 const currentIndex = ref(0)
+const isExamStarted = ref(false)
+const showResultModal = ref(false)
+const lastExamRecord = ref<ExamRecord | null>(null)
+
+// 考试计时器状态
+const remaining = ref(0)
+const isRunning = ref(false)
+const formattedTime = ref('00:00')
+const isUrgent = ref(false)
+const remainingPercent = ref(100)
+let timerId: number | null = null
+
+// 初始化考试计时器
+async function initExamTimer() {
+  const duration = await getExamDuration()
+  remaining.value = duration
+  formattedTime.value = formatTimeValue(duration)
+  remainingPercent.value = 100
+
+  timerId = setInterval(() => {
+    if (remaining.value > 0) {
+      remaining.value--
+      formattedTime.value = formatTimeValue(remaining.value)
+      remainingPercent.value = Math.round((remaining.value / duration) * 100)
+      isUrgent.value = remaining.value <= 5 * 60
+
+      if (remaining.value === 0) {
+        clearInterval(timerId!)
+        timerId = null
+        autoSubmitExam()
+      }
+    }
+  }, 1000)
+}
+
+// 格式化时间为 MM:SS
+function formatTimeValue(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+// 停止计时器
+function stopTimer() {
+  if (timerId !== null) {
+    clearInterval(timerId)
+    timerId = null
+  }
+  isRunning.value = false
+}
 
 const totalQuestions = computed(() => examSpecimens.value.length)
 
@@ -90,7 +171,23 @@ const answer = computed({
   },
 })
 
-onLoad((options: any) => {
+// 评级文字
+const gradeText = computed(() => {
+  const pct = gradePercent.value
+  if (pct >= 90) return '优秀'
+  if (pct >= 75) return '良好'
+  if (pct >= 60) return '及格'
+  return '不及格'
+})
+
+// 评级百分比
+const gradePercent = computed(() => {
+  const record = lastExamRecord.value
+  if (!record || record.totalQuestions === 0) return 0
+  return Math.round((record.score / record.totalQuestions) * 100)
+})
+
+onLoad(async (options: any) => {
   if (options) {
     museumId.value = options.museumId || ''
     const catIds = options.categoryIds || ''
@@ -106,7 +203,16 @@ onLoad((options: any) => {
     const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, Math.min(20, pool.length))
     examSpecimens.value = shuffled
     answers.value = new Array(shuffled.length).fill('')
+
+    // 初始化并启动考试计时器
+    await initExamTimer()
+    isExamStarted.value = true
   }
+})
+
+onUnmounted(() => {
+  // 清理计时器
+  stopTimer()
 })
 
 function goPrev() {
@@ -133,6 +239,14 @@ function confirmSubmit() {
   })
 }
 
+// 倒计时结束自动提交
+function autoSubmitExam() {
+  // 停止计时器
+  stopTimer()
+  // 提交考试
+  submitExam()
+}
+
 function submitExam() {
   const museum = context.museums.find(m => m.id === museumId.value)
   const questions = examSpecimens.value.map((sp, i) => {
@@ -150,7 +264,8 @@ function submitExam() {
   })
 
   const score = questions.filter(q => q.isCorrect).length
-  const record = {
+  const record: ExamRecord = {
+    id: `exam-${Date.now()}`,
     userId: context.currentUser?.id || '',
     userName: context.currentUser?.name || '',
     museumId: museumId.value,
@@ -162,11 +277,22 @@ function submitExam() {
     submittedAt: new Date().toISOString(),
   }
 
+  // 保存记录到 context
   context.submitExam(record)
 
-  // 跳转到结果页
-  uni.navigateTo({
-    url: '/pages/exam/exam-result',
+  // 停止计时器
+  stopTimer()
+
+  // 显示成绩弹窗
+  lastExamRecord.value = record
+  showResultModal.value = true
+}
+
+function closeResultModal() {
+  showResultModal.value = false
+  // 返回考试选择页
+  uni.reLaunch({
+    url: '/pages/exam/exam-select',
   })
 }
 
@@ -306,5 +432,151 @@ function onBlur(e: any) {
 
 .nav-text {
   font-size: 14px;
+}
+
+/* 倒计时条样式 */
+.countdown-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #e8f5e9;
+  flex-direction: row;
+}
+
+.countdown-bar.urgent {
+  background: #ffebee;
+}
+
+.countdown-icon {
+  font-size: 16px;
+}
+
+.countdown-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #2d6a4f;
+  flex-shrink: 0;
+}
+
+.countdown-bar.urgent .countdown-text {
+  color: #ef4444;
+}
+
+.countdown-progress {
+  flex: 1;
+  height: 4px;
+  background: #c8e6c9;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.countdown-bar.urgent .countdown-progress {
+  background: #ffcdd2;
+}
+
+.countdown-progress-fill {
+  height: 100%;
+  background: #2d6a4f;
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.countdown-bar.urgent .countdown-progress-fill {
+  background: #ef4444;
+}
+
+/* 成绩弹窗样式 */
+.result-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.result-modal {
+  width: 80%;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.result-header {
+  background: linear-gradient(135deg, #1b3a2d, #2d6a4f);
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.result-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.result-body {
+  padding: 32px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.score-circle {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-direction: row;
+}
+
+.score {
+  font-size: 48px;
+  font-weight: 700;
+  color: #2d6a4f;
+}
+
+.score-divider {
+  font-size: 24px;
+  color: #888;
+}
+
+.total {
+  font-size: 24px;
+  color: #888;
+}
+
+.grade-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.grade-percent {
+  font-size: 14px;
+  color: #888;
+}
+
+.result-footer {
+  padding: 16px;
+}
+
+.btn-close {
+  height: 48px;
+  background: #2d6a4f;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
 }
 </style>

@@ -22,6 +22,7 @@ import { StatsModule } from './modules/stats/stats.module';
 import { AppUserModule } from './modules/app-user/app-user.module';
 import { VipModule } from './modules/vip/vip.module';
 import { WechatAuthModule } from './modules/wechat-auth/wechat-auth.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { WechatAuthModule } from './modules/wechat-auth/wechat-auth.module';
     AppUserModule,
     VipModule,
     WechatAuthModule,
+    FeedbackModule,
   ],
   controllers: [AppController],
 })

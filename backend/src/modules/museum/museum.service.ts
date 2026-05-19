@@ -74,6 +74,35 @@ export class MuseumService {
     }));
   }
 
+  /* 小程序端查询所有馆（带分类，仅返回已启用的馆） */
+  async listWithCategoriesForApp() {
+    const museums = await this.prisma.museum.findMany({
+      where: { status: '0', enabled: true },
+      orderBy: { sort: 'asc' },
+      include: {
+        categories: {
+          where: { status: '0' },
+          orderBy: { sort: 'asc' },
+          include: {
+            _count: {
+              select: { specimens: true },
+            },
+          },
+        },
+      },
+    });
+
+    // 转换 _count 为 specCount 字段
+    return museums.map((museum) => ({
+      ...museum,
+      categories: museum.categories.map((category) => ({
+        ...category,
+        specCount: category._count.specimens,
+        _count: undefined,
+      })),
+    }));
+  }
+
   /* 通过ID查询馆 */
   async findById(museumId: number) {
     return await this.prisma.museum.findUnique({

@@ -18,9 +18,9 @@ model SysWeb {
   sidebarLogo  Boolean?
   dynamicTitle Boolean?
   createBy     String    @unique @db.VarChar(64)
-  createTime   DateTime?
+  createTime   DateTime? @db.DateTime(0)
   updateBy     String?   @default("") @db.VarChar(64)
-  updateTime   DateTime?
+  updateTime   DateTime? @db.DateTime(0)
 
   @@map("sys_web")
 }
@@ -28,9 +28,9 @@ model SysWeb {
 model SysTable {
   tableId         String    @db.VarChar(100)
   createBy        String    @db.VarChar(64)
-  createTime      DateTime?
+  createTime      DateTime? @db.DateTime(0)
   updateBy        String?   @default("") @db.VarChar(64)
-  updateTime      DateTime?
+  updateTime      DateTime? @db.DateTime(0)
   tableJsonConfig String?   @db.Text
 
   @@id([tableId, createBy])
@@ -44,9 +44,9 @@ model SysConfig {
   configValue String?   @default("") @db.VarChar(500)
   configType  String?   @default("N") @db.Char(1)
   createBy    String?   @default("") @db.VarChar(64)
-  createTime  DateTime?
+  createTime  DateTime? @db.DateTime(0)
   updateBy    String?   @default("") @db.VarChar(64)
-  updateTime  DateTime?
+  updateTime  DateTime? @db.DateTime(0)
   remark      String?   @db.VarChar(500)
 
   @@map("sys_config")
@@ -56,8 +56,6 @@ model SysConfig {
 model SysDept {
   deptId     Int       @id @default(autoincrement())
   parentId   Int?
-  parentDept SysDept?  @relation("deptParentDept", fields: [parentId], references: [deptId])
-  childDept  SysDept[] @relation("deptParentDept")
   ancestors  String    @default("") @db.VarChar(50)
   deptName   String?   @default("") @db.VarChar(30)
   orderNum   Int?      @default(0)
@@ -67,12 +65,15 @@ model SysDept {
   status     String?   @default("0") @db.Char(1)
   delFlag    String?   @default("0") @db.Char(1)
   createBy   String?   @default("") @db.VarChar(64)
-  createTime DateTime?
+  createTime DateTime? @db.DateTime(0)
   updateBy   String?   @default("") @db.VarChar(64)
-  updateTime DateTime?
+  updateTime DateTime? @db.DateTime(0)
+  parentDept SysDept?  @relation("deptParentDept", fields: [parentId], references: [deptId])
+  childDept  SysDept[] @relation("deptParentDept")
   users      SysUser[]
   roles      SysRole[] @relation("sys_dept_to_sys_role")
 
+  @@index([parentId], map: "sys_dept_parentId_fkey")
   @@map("sys_dept")
 }
 
@@ -88,9 +89,9 @@ model SysDictData {
   isDefault   String?      @default("N") @db.Char(1)
   status      String?      @default("0") @db.Char(1)
   createBy    String?      @default("") @db.VarChar(64)
-  createTime  DateTime?
+  createTime  DateTime?    @db.DateTime(0)
   updateBy    String?      @default("") @db.VarChar(64)
-  updateTime  DateTime?
+  updateTime  DateTime?    @db.DateTime(0)
   remark      String?      @db.VarChar(500)
   dictTypeObj SysDictType? @relation(fields: [dictType], references: [dictType])
 
@@ -105,9 +106,9 @@ model SysDictType {
   dictType   String?       @unique(map: "dictType") @default("") @db.VarChar(100)
   status     String?       @default("0") @db.Char(1)
   createBy   String?       @default("") @db.VarChar(64)
-  createTime DateTime?
+  createTime DateTime?     @db.DateTime(0)
   updateBy   String?       @default("") @db.VarChar(64)
-  updateTime DateTime?
+  updateTime DateTime?     @db.DateTime(0)
   remark     String?       @db.VarChar(500)
   dictData   SysDictData[]
 
@@ -125,9 +126,9 @@ model SysJob {
   concurrent     String?   @default("1") @db.Char(1)
   status         String?   @default("0") @db.Char(1)
   createBy       String?   @default("") @db.VarChar(64)
-  createTime     DateTime?
+  createTime     DateTime? @db.DateTime(0)
   updateBy       String?   @default("") @db.VarChar(64)
-  updateTime     DateTime?
+  updateTime     DateTime? @db.DateTime(0)
   remark         String?   @default("") @db.VarChar(500)
 
   @@map("sys_job")
@@ -142,7 +143,7 @@ model SysJobLog {
   jobMessage    String?   @db.VarChar(500)
   status        String?   @default("0") @db.Char(1)
   exceptionInfo String?   @default("") @db.VarChar(2000)
-  createTime    DateTime?
+  createTime    DateTime? @db.DateTime(0)
 
   @@map("sys_job_log")
 }
@@ -157,7 +158,7 @@ model SysLoginInfor {
   os            String?   @default("") @db.VarChar(50)
   status        String?   @default("0") @db.Char(1)
   msg           String?   @default("") @db.VarChar(255)
-  loginTime     DateTime?
+  loginTime     DateTime? @db.DateTime(0)
 
   @@index([loginTime], map: "idxSysLogininforLt")
   @@index([status], map: "idxSysLogininforS")
@@ -169,8 +170,6 @@ model SysMenu {
   menuId     Int       @id @default(autoincrement())
   menuName   String    @db.VarChar(50)
   parentId   Int?
-  parentMenu SysMenu?  @relation("menuParentMenu", fields: [parentId], references: [menuId])
-  childMenu  SysMenu[] @relation("menuParentMenu")
   orderNum   Int?      @default(0)
   path       String?   @default("") @db.VarChar(200)
   component  String?   @db.VarChar(255)
@@ -183,12 +182,15 @@ model SysMenu {
   perms      String?   @db.VarChar(100)
   icon       String?   @default("#") @db.VarChar(100)
   createBy   String?   @default("") @db.VarChar(64)
-  createTime DateTime?
+  createTime DateTime? @db.DateTime(0)
   updateBy   String?   @default("") @db.VarChar(64)
-  updateTime DateTime?
+  updateTime DateTime? @db.DateTime(0)
   remark     String?   @default("") @db.VarChar(500)
+  parentMenu SysMenu?  @relation("menuParentMenu", fields: [parentId], references: [menuId])
+  childMenu  SysMenu[] @relation("menuParentMenu")
   roles      SysRole[] @relation("sys_menu_to_sys_role")
 
+  @@index([parentId], map: "sys_menu_parentId_fkey")
   @@map("sys_menu")
 }
 
@@ -197,12 +199,12 @@ model SysNotice {
   noticeId      Int       @id @default(autoincrement())
   noticeTitle   String    @db.VarChar(50)
   noticeType    String    @db.Char(1)
-  noticeContent Bytes?    @db.LongBlob
+  noticeContent Bytes?
   status        String?   @default("0") @db.Char(1)
   createBy      String?   @default("") @db.VarChar(64)
-  createTime    DateTime?
+  createTime    DateTime? @db.DateTime(0)
   updateBy      String?   @default("") @db.VarChar(64)
-  updateTime    DateTime?
+  updateTime    DateTime? @db.DateTime(0)
   remark        String?   @db.VarChar(255)
 
   @@map("sys_notice")
@@ -225,7 +227,7 @@ model SysOperLog {
   jsonResult    String?   @db.Text
   status        String?   @default("0") @db.Char(1)
   errorMsg      String?   @db.Text
-  operTime      DateTime?
+  operTime      DateTime? @db.DateTime(0)
   costTime      Int?      @default(0)
 
   @@index([businessType], map: "idxSysOperLogBt")
@@ -242,9 +244,9 @@ model SysPost {
   postSort   Int
   status     String    @db.Char(1)
   createBy   String?   @default("") @db.VarChar(64)
-  createTime DateTime?
+  createTime DateTime? @db.DateTime(0)
   updateBy   String?   @default("") @db.VarChar(64)
-  updateTime DateTime?
+  updateTime DateTime? @db.DateTime(0)
   remark     String?   @db.VarChar(500)
   users      SysUser[] @relation("sys_post_to_sys_user")
 
@@ -255,7 +257,7 @@ model SysPost {
 model SysRole {
   roleId            Int       @id @default(autoincrement())
   createBy          String?   @default("") @db.VarChar(64)
-  createTime        DateTime?
+  createTime        DateTime? @db.DateTime(0)
   dataScope         String?   @default("4") @db.Char(4)
   delFlag           String?   @default("0") @db.Char(1)
   deptCheckStrictly Boolean?  @default(true)
@@ -266,7 +268,7 @@ model SysRole {
   roleSort          Int
   status            String    @db.Char(1)
   updateBy          String?   @default("") @db.VarChar(64)
-  updateTime        DateTime?
+  updateTime        DateTime? @db.DateTime(0)
   depts             SysDept[] @relation("sys_dept_to_sys_role")
   menus             SysMenu[] @relation("sys_menu_to_sys_role")
   users             SysUser[] @relation("sys_role_to_sys_user")
@@ -280,11 +282,11 @@ model SysUser {
   userId      Int       @id @default(autoincrement())
   avatar      String?   @default("") @db.VarChar(100)
   createBy    String?   @default("") @db.VarChar(64)
-  createTime  DateTime?
+  createTime  DateTime? @db.DateTime(0)
   delFlag     String?   @default("0") @db.Char(1)
   deptId      Int?
   email       String?   @default("") @db.VarChar(50)
-  loginDate   DateTime?
+  loginDate   DateTime? @db.DateTime(0)
   loginIp     String?   @default("") @db.VarChar(128)
   nickName    String    @db.VarChar(30)
   password    String?   @default("") @db.VarChar(100)
@@ -293,37 +295,34 @@ model SysUser {
   sex         String?   @default("0") @db.Char(1)
   status      String?   @default("0") @db.Char(1)
   updateBy    String?   @default("") @db.VarChar(64)
-  updateTime  DateTime?
+  updateTime  DateTime? @db.DateTime(0)
   userName    String    @unique @db.VarChar(30)
   userType    String?   @default("00") @db.VarChar(2)
+  appUser     AppUser?
   dept        SysDept?  @relation(fields: [deptId], references: [deptId])
   posts       SysPost[] @relation("sys_post_to_sys_user")
   roles       SysRole[] @relation("sys_role_to_sys_user")
-  appUser     AppUser?
 
   @@index([deptId], map: "sys_user_deptId_fkey")
   @@map("sys_user")
 }
 
-// ============================================
-// 中药数字标本馆相关表
-// ============================================
-
 /// 馆/博物馆表
 model Museum {
-  museumId     Int        @id @default(autoincrement())
-  museumName   String     @db.VarChar(100)
-  museumCode   String     @unique @db.VarChar(50)
-  description  String?    @db.VarChar(500)
-  status       String     @default("0") @db.Char(1)
-  sort         Int        @default(0)
-  createBy     String     @default("") @db.VarChar(64)
-  createTime   DateTime?
-  updateBy     String?    @default("") @db.VarChar(64)
-  updateTime   DateTime?
-  categories   Category[]
-  specimens    Specimen[]
-  exams        Exam[]
+  museumId    Int        @id @default(autoincrement())
+  museumName  String     @db.VarChar(100)
+  museumCode  String     @unique @db.VarChar(50)
+  description String?    @db.VarChar(500)
+  status      String     @default("0") @db.Char(1)
+  enabled     Boolean    @default(true)
+  sort        Int        @default(0)
+  createBy    String     @default("") @db.VarChar(64)
+  createTime  DateTime?
+  updateBy    String?    @default("") @db.VarChar(64)
+  updateTime  DateTime?
+  categories  Category[]
+  exams       Exam[]
+  specimens   Specimen[]
 
   @@map("museum")
 }
@@ -332,39 +331,42 @@ model Museum {
 model Category {
   categoryId   Int        @id @default(autoincrement())
   museumId     Int
-  museum       Museum     @relation(fields: [museumId], references: [museumId])
   parentId     Int?
   categoryName String     @db.VarChar(50)
   categoryCode String     @db.VarChar(50)
-  description  String?    @db.VarChar(500)
   sort         Int        @default(0)
   status       String     @default("0") @db.Char(1)
   createBy     String     @default("") @db.VarChar(64)
   createTime   DateTime?
   updateBy     String?    @default("") @db.VarChar(64)
   updateTime   DateTime?
+  description  String?    @db.VarChar(500)
+  museum       Museum     @relation(fields: [museumId], references: [museumId])
   specimens    Specimen[]
 
+  @@index([museumId], map: "category_museumId_fkey")
   @@map("category")
 }
 
 /// 标本表
 model Specimen {
-  specimenId   Int            @id @default(autoincrement())
-  museumId     Int
-  museum       Museum         @relation(fields: [museumId], references: [museumId])
-  categoryId   Int
-  category     Category       @relation(fields: [categoryId], references: [categoryId])
-  specimenName String         @db.VarChar(100)
-  remark       String?        @db.Text
-  status       String         @default("0") @db.Char(1)
-  createBy     String         @default("") @db.VarChar(64)
-  createTime   DateTime?
-  updateBy     String?        @default("") @db.VarChar(64)
-  updateTime   DateTime?
-  images       SpecimenImage[]
+  specimenId    Int             @id @default(autoincrement())
+  museumId      Int
+  categoryId    Int
+  specimenName  String          @db.VarChar(100)
+  remark        String?         @db.Text
+  status        String          @default("0") @db.Char(1)
+  createBy      String          @default("") @db.VarChar(64)
+  createTime    DateTime?
+  updateBy      String?         @default("") @db.VarChar(64)
+  updateTime    DateTime?
   examQuestions ExamQuestion[]
+  category      Category        @relation(fields: [categoryId], references: [categoryId])
+  museum        Museum          @relation(fields: [museumId], references: [museumId])
+  images        SpecimenImage[]
 
+  @@index([categoryId], map: "specimen_categoryId_fkey")
+  @@index([museumId], map: "specimen_museumId_fkey")
   @@map("specimen")
 }
 
@@ -372,9 +374,7 @@ model Specimen {
 model SpecimenImage {
   imageId      Int       @id @default(autoincrement())
   specimenId   Int
-  specimen     Specimen  @relation(fields: [specimenId], references: [specimenId])
   imageUrl     String    @db.VarChar(255)
-  thumbnailUrl String?   @db.VarChar(255)
   isCover      Boolean   @default(false)
   sort         Int       @default(0)
   createBy     String    @default("") @db.VarChar(64)
@@ -383,32 +383,35 @@ model SpecimenImage {
   auditBy      String?   @db.VarChar(64)
   auditTime    DateTime?
   auditRemark  String?   @db.VarChar(255)
+  thumbnailUrl String?   @db.VarChar(255)
+  specimen     Specimen  @relation(fields: [specimenId], references: [specimenId])
 
+  @@index([specimenId], map: "specimen_image_specimenId_fkey")
   @@map("specimen_image")
 }
 
 /// 小程序用户扩展表
 model AppUser {
-  id           Int       @id @default(autoincrement())
-  userId       Int       @unique
-  user         SysUser   @relation(fields: [userId], references: [userId])
-  userType     String    @default("student") @db.VarChar(20)
-  realName     String    @db.VarChar(50)
-  phone        String    @db.VarChar(11)
-  openid       String?   @unique @db.VarChar(50)
-  institution  String    @db.VarChar(100)
-  majorGrade   String?   @db.VarChar(50)
-  studentNo    String?   @db.VarChar(30)
-  contact      String?   @db.VarChar(50)
-  vipStatus    String    @default("0") @db.Char(1)
-  vipApplyTime DateTime?
+  id             Int       @id @default(autoincrement())
+  userId         Int       @unique
+  userType       String    @default("student") @db.VarChar(20)
+  realName       String    @db.VarChar(50)
+  phone          String    @db.VarChar(11)
+  institution    String    @db.VarChar(100)
+  majorGrade     String?   @db.VarChar(50)
+  studentNo      String?   @db.VarChar(30)
+  contact        String?   @db.VarChar(50)
+  vipStatus      String    @default("0") @db.Char(1)
+  vipApplyTime   DateTime?
   vipApproveTime DateTime?
-  vipApproveBy String?   @db.VarChar(64)
-  regStatus    String    @default("0") @db.Char(1)
-  regApplyTime DateTime?
+  vipApproveBy   String?   @db.VarChar(64)
+  regStatus      String    @default("0") @db.Char(1)
+  regApplyTime   DateTime?
   regApproveTime DateTime?
-  regApproveBy String?   @db.VarChar(64)
-  createTime   DateTime?
+  regApproveBy   String?   @db.VarChar(64)
+  createTime     DateTime?
+  openid         String?   @unique @db.VarChar(50)
+  user           SysUser   @relation(fields: [userId], references: [userId])
 
   @@map("app_user")
 }
@@ -418,49 +421,72 @@ model Exam {
   examId         Int            @id @default(autoincrement())
   userId         Int
   museumId       Int?
-  museum         Museum?        @relation(fields: [museumId], references: [museumId])
   score          Int            @default(0)
   totalQuestions Int            @default(0)
   correctCount   Int            @default(0)
   examTime       DateTime       @default(now())
   status         String         @default("0") @db.Char(1)
+  museum         Museum?        @relation(fields: [museumId], references: [museumId])
   questions      ExamQuestion[]
 
+  @@index([museumId], map: "exam_museumId_fkey")
   @@map("exam")
 }
 
 /// 考试题目表
 model ExamQuestion {
-  id           Int       @id @default(autoincrement())
-  examId       Int
-  exam         Exam      @relation(fields: [examId], references: [examId])
-  specimenId   Int
-  specimen     Specimen  @relation(fields: [specimenId], references: [specimenId])
-  imageId      Int
-  userAnswer   String?   @db.VarChar(100)
-  isCorrect    Boolean   @default(false)
-  sort         Int
+  id         Int      @id @default(autoincrement())
+  examId     Int
+  specimenId Int
+  imageId    Int
+  userAnswer String?  @db.VarChar(100)
+  isCorrect  Boolean  @default(false)
+  sort       Int
+  exam       Exam     @relation(fields: [examId], references: [examId])
+  specimen   Specimen @relation(fields: [specimenId], references: [specimenId])
 
+  @@index([examId], map: "exam_question_examId_fkey")
+  @@index([specimenId], map: "exam_question_specimenId_fkey")
   @@map("exam_question")
 }
 
 /// 系统访问统计表
 model AppVisitLog {
-  id         Int       @id @default(autoincrement())
-  userId     Int?
-  ip         String?   @db.VarChar(50)
-  visitTime  DateTime  @default(now())
-  path       String?   @db.VarChar(255)
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  ip        String?  @db.VarChar(50)
+  visitTime DateTime @default(now())
+  path      String?  @db.VarChar(255)
 
   @@map("app_visit_log")
 }
 
 /// 标本访问记录表
 model SpecimenVisitLog {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   specimenId Int
   userId     Int?
-  visitTime  DateTime  @default(now())
+  visitTime  DateTime @default(now())
 
   @@map("specimen_visit_log")
+}
+
+/// 用户反馈建议表
+model AppFeedback {
+  id        Int       @id @default(autoincrement())
+  userId    Int?
+  userType  String?   @db.VarChar(20)   // 用户类型：student/teacher
+  content   String    @db.Text         // 反馈内容
+  contact   String?   @db.VarChar(100) // 联系方式
+  images    String?   @db.Text         // 图片JSON数组
+  status    String    @default("0")    @db.Char(1) // 处理状态：0待处理 1已处理
+  remark    String?   @db.VarChar(500) // 处理备注
+  handleBy  String?   @db.VarChar(64)  // 处理人
+  handleTime DateTime?                 // 处理时间
+  createBy  String    @default("")     @db.VarChar(64)
+  createTime DateTime?                @db.DateTime(0)
+  updateBy  String?   @default("")    @db.VarChar(64)
+  updateTime DateTime?
+
+  @@map("app_feedback")
 }
