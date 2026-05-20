@@ -1,7 +1,7 @@
 /**
  * 微信登录工具函数
  */
-import { request, get, post } from './request'
+import { request, get, post, put } from './request'
 
 // 微信登录凭证 code 有效期约5分钟
 export interface LoginCodeResult {
@@ -48,8 +48,37 @@ export interface LoginResponse {
 
 // 验证码响应
 export interface CaptchaResponse {
-	img : string
+	img : string  // 原始SVG字符串
 	uuid : string
+	imgDataUrl ?: string  // Base64 Data URL（前端转换后）
+}
+
+/**
+ * 将SVG转换为Base64 Data URL
+ * @param svg - SVG字符串
+ * @returns Base64 Data URL
+ */
+function convertSvgToDataUrl(svg : string) : string {
+	// 对SVG进行URL编码，处理特殊字符
+	const encoded = encodeURIComponent(svg)
+		.replace(/'/g, '%27')
+		.replace(/"/g, '%22')
+		.replace(/>/g, '%3E')
+		.replace(/</g, '%3C')
+	return `data:image/svg+xml;charset=utf-8,${encoded}`
+}
+
+/**
+ * 获取图片验证码
+ */
+export function getCaptcha() : Promise<CaptchaResponse> {
+	return get<CaptchaResponse>('/captchaImage').then(res => {
+		// 将SVG转换为Base64 Data URL，以便在image组件中显示
+		if (res.img && res.img.startsWith('<svg')) {
+			res.imgDataUrl = convertSvgToDataUrl(res.img)
+		}
+		return res
+	})
 }
 
 // 学校/部门数据类型
@@ -138,13 +167,6 @@ function buildDeptTree(deptList : DeptItem[]) : DeptItem[] {
 }
 
 /**
- * 获取图片验证码
- */
-export function getCaptcha() : Promise<CaptchaResponse> {
-	return get<CaptchaResponse>('/captchaImage')
-}
-
-/**
  * 账号密码登录
  * @param uuid - 验证码 UUID
  * @param code - 验证码
@@ -160,8 +182,8 @@ export function loginByPassword(uuid : string, code : string, username : string,
  * @param username - 用户名/手机号
  * @param password - 密码
  */
-export function simplifiedLogin(username : string, password : string) : Promise<{ token: string }> {
-	return post<{ token: string }>('/api/login', { username, password }, true)
+export function simplifiedLogin(username : string, password : string) : Promise<{ token : string }> {
+	return post<{ token : string }>('/api/login', { username, password }, true)
 }
 
 /**
@@ -201,31 +223,36 @@ export function getPhoneNumber(e : { detail : { errMsg : string; code ?: string;
 
 // 用户信息类型
 export interface UserInfo {
-	userId: number
-	userType: string
-	realName: string
-	nickname?: string
-	avatar?: string
-	phone?: string
-	deptName?: string
-	majorGrade?: string
-	studentNo?: string
-	vipStatus: string
+	userId : number
+	userType : string
+	realName : string
+	nickname ?: string
+	avatar ?: string
+	phone ?: string
+	deptName ?: string
+	majorGrade ?: string
+	studentNo ?: string
+	vipStatus : string
 }
 
 // 获取当前用户信息
-export function getUserInfo(): Promise<UserInfo> {
+export function getUserInfo() : Promise<UserInfo> {
 	return get<UserInfo>('/app/user/info')
 }
 
 // 提交意见反馈
-export function submitFeedback(content: string): Promise<{ success: boolean }> {
-	return post<{ success: boolean }>('/app/feedback', { content })
+export function submitFeedback(content : string) : Promise<{ success : boolean }> {
+	return post<{ success : boolean }>('/app/feedback', { content })
 }
 
 // 退出登录
-export function logout(): Promise<{ success: boolean }> {
-	return post<{ success: boolean }>('/app/auth/logout')
+export function logout() : Promise<{ success : boolean }> {
+	return post<{ success : boolean }>('/app/auth/logout')
+}
+
+// 修改密码
+export function updatePassword(oldPassword : string, newPassword : string) : Promise<{ success : boolean }> {
+	return put<{ success : boolean }>(`/system/user/profile/updatePwd?oldPassword=${oldPassword}&newPassword=${newPassword}`, {})
 }
 
 // 标本馆数据类型
@@ -318,21 +345,26 @@ export function submitRegistration(data : RegistrationData) : Promise<ApiRespons
 }
 
 /**
- * 账号密码注册
- * @param data - 注册表单数据
+ * 账号密码注册（带验证码）
+ * @param uuid - 验证码 UUID
+ * @param code - 验证码
+ * @param data - 注册数据
  */
-export function registerByPassword(data : {
-	username : string  // 手机号作为账号
+export function registerWithCaptcha(uuid : string, code : string, data : {
+	username : string
 	password : string
 	realName : string
 	userType : 'student' | 'teacher'
-	deptId : number  // 学校ID
-	majorGrade ?: string  // 专业年级（学生）
-	studentNo ?: string   // 学号（学生）
-	contact ?: string     // 联系方式（老师）
+	deptId : string
+	majorGrade ?: string
+	studentNo ?: string
+	contact ?: string
 }) : Promise<ApiResponse<{ userId : number }>> {
-	return post<ApiResponse<{ userId : number }>>('/app/auth/register', {
+	return post<ApiResponse<{ userId : number }>>('/app/user/register', {
+		uuid,
+		code,
 		username: data.username,
+		phone: data.phone,
 		password: data.password,
 		realName: data.realName,
 		userType: data.userType,

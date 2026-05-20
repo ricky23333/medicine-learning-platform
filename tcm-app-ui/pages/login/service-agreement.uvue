@@ -1,11 +1,5 @@
 <template>
 	<view class="page">
-		<!-- 导航栏 -->
-		<view class="navbar">
-			<text class="nav-back" @click="goBack">←</text>
-			<text class="nav-title">服务协议</text>
-		</view>
-
 		<!-- 内容区域 -->
 		<scroll-view scroll-y class="content">
 			<view class="article">

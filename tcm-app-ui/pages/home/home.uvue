@@ -8,7 +8,7 @@
 					<text class="user-name">{{ userName || "游客" }}</text>
 				</view>
 				<view class="avatar">
-					<text class="avatar-text">{{ user?.name?.[0] || "?" }}</text>
+					<image v-if="avatarUrl" :src="avatarUrl" class="avatar-img" mode="aspectFill" /><text v-else class="avatar-text">{{ nicknameInitial }}</text>
 				</view>
 			</view>
 
@@ -116,6 +116,12 @@
 	const context = useAppContext()
 	const userName = computed(() => uni.getStorageSync('realName'))
 	const user = computed(() => context.currentUser)
+	const avatarUrl = computed(() => uni.getStorageSync('avatar') as string)
+	const nickname = computed(() => uni.getStorageSync('nickname') as string)
+	const nicknameInitial = computed(() => {
+		const name = nickname.value || userName.value || ''
+		return name.charAt(0) || '?'
+	})
 	// 标本馆数据（从API获取）
 	const museums = ref<Museum[]>([])
 	const loading = ref(false)
@@ -233,6 +239,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		overflow: hidden;
+	}
+
+	.avatar-img {
+		width: 40px;
+		height: 40px;
+		border-radius: 20px;
 	}
 
 	.avatar-text {

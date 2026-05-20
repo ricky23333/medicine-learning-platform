@@ -5,27 +5,27 @@
 const API_BASE_URL = 'http://localhost:5880'
 
 interface RequestOptions {
-	url : string
-	method ?: 'GET' | 'POST' | 'PUT' | 'DELETE'
-	data ?: unknown
-	header ?: Record<string, string>
+	url: string
+	method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+	data?: unknown
+	header?: Record<string, string>
 	/** 跳过 token，默认 false（为 true 时请求不携带 Authorization） */
-	skipToken ?: boolean
+	skipToken?: boolean
 }
 
 interface ApiResponse<T> {
-	code : number
-	msg ?: string
-	data ?: T
+	code: number
+	msg?: string
+	data?: T
 }
 
-export function request<T>(options : RequestOptions) : Promise<T> {
+export function request<T>(options: RequestOptions): Promise<T> {
 	// 构建 Authorization header
 	const token = uni.getStorageSync('token') as string | undefined
 	const authValue = token ? `Bearer ${token}` : undefined
 
 	// 构建完整的 header
-	const header : Record<string, string> = {
+	const header: Record<string, string> = {
 		'Content-Type': 'application/json',
 	}
 
@@ -45,7 +45,7 @@ export function request<T>(options : RequestOptions) : Promise<T> {
 			method: options.method || 'GET',
 			data: options.data,
 			header,
-			success: (res : any) => {
+			success: (res: any) => {
 				if (res.statusCode === 200 || res.data.code === 200) {
 					const data = res.data as ApiResponse<T>
 					if (data.code === 200) {
@@ -75,14 +75,14 @@ export function request<T>(options : RequestOptions) : Promise<T> {
 	})
 }
 
-export const get = <T>(url : string, params ?: unknown, skipToken ?: boolean) =>
+export const get = <T>(url: string, params?: unknown, skipToken?: boolean) =>
 	request<T>({ url, method: 'GET', data: params, skipToken })
 
-export const post = <T>(url : string, data ?: unknown, skipToken ?: boolean) =>
+export const post = <T>(url: string, data?: unknown, skipToken?: boolean) =>
 	request<T>({ url, method: 'POST', data, skipToken })
 
-export const put = <T>(url : string, data ?: unknown, skipToken ?: boolean) =>
+export const put = <T>(url: string, data?: unknown, skipToken?: boolean) =>
 	request<T>({ url, method: 'PUT', data, skipToken })
 
-export const del = <T>(url : string, skipToken ?: boolean) =>
+export const del = <T>(url: string, skipToken?: boolean) =>
 	request<T>({ url, method: 'DELETE', skipToken })

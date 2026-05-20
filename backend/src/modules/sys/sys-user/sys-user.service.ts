@@ -40,7 +40,7 @@ export class SysUserService {
     private readonly sharedService: SharedService,
     @InjectRedis() private readonly redis: Redis,
     private readonly loginService: LoginService,
-  ) {}
+  ) { }
   /* 分页查询 */
   async list(getSysUserListDto: GetSysUserListDto, dataScope: DataScope) {
     const { skip, take, status, userName, deptId, phonenumber, params } =

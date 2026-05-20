@@ -14,8 +14,8 @@ export class AppUserService {
 
   /* 用户注册申请 */
   async register(registerDto: any) {
-    const { phone, userType, realName, deptId, majorGrade, studentNo, contact } = registerDto;
-
+    const { phone, userType, realName, deptId, majorGrade, studentNo, contact, password } = registerDto;
+    console.log(44444, registerDto)
     // 检查手机号是否已注册
     const existingUser = await this.prisma.sysUser.findFirst({
       where: { userName: phone },
@@ -24,9 +24,9 @@ export class AppUserService {
       throw new ApiException('该手机号已注册');
     }
 
-    // 创建 SysUser (默认密码 888888)
+    // 创建 SysUser (如果没填写密码，使用默认密码 888888)
     const salt = await bcrypt.genSalt();
-    const defaultPassword = await bcrypt.hash('888888', salt);
+    const defaultPassword = await bcrypt.hash(password || '888888', salt);
 
     const user = await this.prisma.sysUser.create({
       data: {
@@ -36,7 +36,7 @@ export class AppUserService {
         phonenumber: phone,
         status: '0',
         delFlag: '0',
-        deptId,
+        deptId: Number(deptId),
       },
     });
 
@@ -101,6 +101,13 @@ export class AppUserService {
             avatar: true,
             email: true,
             phonenumber: true,
+            deptId: true,
+            dept: {
+              select: {
+                deptId: true,
+                deptName: true,
+              },
+            },
           },
         },
       },
@@ -108,7 +115,10 @@ export class AppUserService {
     if (!appUser) {
       throw new ApiException('用户信息不存在');
     }
-    return appUser;
+    return {
+      ...appUser,
+      deptName: appUser.user?.dept?.deptName || '',
+    };
   }
 
   /* 更新用户信息 */

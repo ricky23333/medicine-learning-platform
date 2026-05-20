@@ -116,7 +116,7 @@
 		majorGrade.value = uni.getStorageSync('majorGrade') || ''
 		userType.value = uni.getStorageSync('userType') || ''
 		vipStatus.value = uni.getStorageSync('vipStatus') || ''
-		wxLogin.value = uni.getStorageSync('wxLogin') || true
+		wxLogin.value = uni.getStorageSync('wxLogin')	
 	}
 
 	// 是否显示VIP标签：教师且vipStatus为"2"

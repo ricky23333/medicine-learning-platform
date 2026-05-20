@@ -78,14 +78,61 @@
 					<!-- 密码 -->
 					<view class="form-item">
 						<text class="form-label">密码</text>
-						<input v-model="accountForm.password" type="password" placeholder="请输入密码" class="form-input" />
+						<view class="password-input-container">
+							<view class="password-mask-wrapper">
+								<!-- 遮罩层：显示 ***** -->
+								<view v-if="!showPassword && accountForm.password" class="password-mask">
+									{{ '●'.repeat(accountForm.password.length) }}
+								</view>
+								<!-- 实际输入框 -->
+								<input :value="accountForm.password" @input="onPasswordInput"
+									:type="showPassword ? 'text' : 'password'" placeholder="请输入密码"
+									class="form-input password-real-input"
+									:style="showPassword ? '' : 'color: transparent'" />
+							</view>
+							<view class="password-toggle-btn" @touchstart="showPassword = true"
+								@touchend="showPassword = false" @mousedown="showPassword = true"
+								@mouseup="showPassword = false">
+								<image class="toggle-icon"
+									:src="showPassword?'/static/icons/password-show.png':'/static/icons/password-hide.png'"
+									mode="aspectFit" />
+							</view>
+						</view>
 					</view>
 
 					<!-- 注册模式：确认密码 -->
 					<view v-if="currentTab === 'register'" class="form-item">
 						<text class="form-label">确认密码</text>
-						<input v-model="accountForm.confirmPassword" type="password" placeholder="请再次输入密码"
-							class="form-input" />
+						<view class="password-input-container">
+							<view class="password-mask-wrapper">
+								<!-- 遮罩层：显示 ***** -->
+								<view v-if="!showConfirmPassword && accountForm.confirmPassword" class="password-mask">
+									{{ '●'.repeat(accountForm.confirmPassword.length) }}
+								</view>
+								<!-- 实际输入框 -->
+								<input :value="accountForm.confirmPassword" @input="onConfirmPasswordInput"
+									:type="showConfirmPassword ? 'text' : 'password'" placeholder="请再次输入密码"
+									class="form-input password-real-input"
+									:style="showConfirmPassword ? '' : 'color: transparent'" />
+							</view>
+							<view class="password-toggle-btn" @touchstart="showConfirmPassword = true"
+								@touchend="showConfirmPassword = false" @mousedown="showConfirmPassword = true"
+								@mouseup="showConfirmPassword = false">
+								<image class="toggle-icon"
+									:src="showConfirmPassword?'/static/icons/password-show.png':'/static/icons/password-hide.png'"
+									mode="aspectFit" />
+							</view>
+						</view>
+					</view>
+
+					<!-- 验证码 -->
+					<view class="form-item captcha-item">
+						<text class="form-label">验证码</text>
+						<view class="captcha-input-wrapper">
+							<input v-model="captchaCode" placeholder="请输入验证码" class="form-input captcha-input"
+								type="text" />
+							<image :src="captchaImg" class="captcha-img" mode="aspectFit" @click="loadCaptcha" />
+						</view>
 					</view>
 
 					<!-- 协议勾选 -->
@@ -161,7 +208,8 @@
 					<template v-if="accountForm.userType === 'teacher'">
 						<view class="form-item">
 							<text class="form-label">联系方式 *</text>
-							<input v-model="accountForm.contact" type="tel" placeholder="请输入手机号" class="form-input" />
+							<input v-model="accountForm.contact" type="tel" placeholder="请输入邮箱等联系方式"
+								class="form-input" />
 						</view>
 					</template>
 
@@ -221,7 +269,7 @@
 
 <script setup lang="uts">
 	import { ref, reactive, onMounted } from 'vue'
-	import { wechatLoginByCode, wechatRegister, getSchoolList, registerByPassword, type DeptItem } from '../../utils/auth'
+	import { wechatLoginByCode, wechatRegister, getSchoolList, getUserInfo, registerByPassword, simplifiedLogin, getCaptcha, loginByPassword, registerWithCaptcha, type DeptItem } from '../../utils/auth'
 
 	// 当前Tab
 	const currentTab = ref<'login' | 'register'>('login')
@@ -243,11 +291,13 @@
 	const showWechatModal = ref(false)
 
 	function showWechatLogin() {
+		resetAccountForm()
 		currentTab.value = 'login'
 		showWechatModal.value = true
 	}
 
 	function showWechatRegister() {
+		resetAccountForm()
 		currentTab.value = 'register'
 		showWechatModal.value = true
 	}
@@ -307,6 +357,7 @@
 			const code = await getWxLoginCode() as string
 			uni.hideLoading()
 			// 保存code，弹出注册信息填写弹窗
+			resetRegisterInfoForm()
 			// 先加载学校列表
 			await loadSchoolList()
 			accountForm.wxCode = code
@@ -346,6 +397,42 @@
 	// ==================== 账号密码登录/注册 ====================
 	const showAccountModal = ref(false)
 	const submitting = ref(false)
+	const showPassword = ref(false)
+	const showConfirmPassword = ref(false)
+
+	// 验证码
+	const captchaImg = ref('')
+	const captchaUuid = ref('')
+	const captchaCode = ref('')
+
+	function onPasswordInput(e : any) {
+		accountForm.password = e.detail.value
+	}
+
+	function onConfirmPasswordInput(e : any) {
+		accountForm.confirmPassword = e.detail.value
+	}
+
+	function loadCaptcha() {
+		getCaptcha().then((res : any) => {
+			captchaUuid.value = res.uuid
+			// 优先使用 imgDataUrl（Base64 Data URL），如果不存在则使用原始 img
+			captchaImg.value = res.imgDataUrl || res.img
+		}).catch(() => {
+			uni.showToast({ title: '获取验证码失败', icon: 'none' })
+		})
+	}
+
+	// 重置账号表单
+	function resetAccountForm() {
+		accountForm.username = ''
+		accountForm.password = ''
+		accountForm.confirmPassword = ''
+		accountForm.agreed = false
+		captchaCode.value = ''
+		showPassword.value = false
+		showConfirmPassword.value = false
+	}
 
 	const accountForm = reactive({
 		username: '',
@@ -365,12 +452,16 @@
 	})
 
 	function showAccountLogin() {
+		resetAccountForm()
 		currentTab.value = 'login'
+		loadCaptcha()
 		showAccountModal.value = true
 	}
 
 	function showAccountRegister() {
+		resetAccountForm()
 		currentTab.value = 'register'
+		loadCaptcha()
 		showAccountModal.value = true
 	}
 
@@ -400,6 +491,12 @@
 			return
 		}
 
+		// 验证码校验（登录和注册都需要）
+		if (!captchaCode.value) {
+			uni.showToast({ title: '请输入验证码', icon: 'none' })
+			return
+		}
+
 		if (currentTab.value === 'register') {
 			if (!accountForm.confirmPassword) {
 				uni.showToast({ title: '请确认密码', icon: 'none' })
@@ -414,6 +511,7 @@
 				return
 			}
 			// 注册模式 - 弹出信息填写弹窗
+			resetRegisterInfoForm()
 			accountForm.phone = accountForm.username
 			// 清空微信code（账号注册不需要）
 			accountForm.wxCode = ''
@@ -431,31 +529,33 @@
 		uni.showLoading({ title: '登录中...' })
 
 		try {
-			// 简化登录（无验证码模式）
-			const res = await uni.request({
-				url: 'http://localhost:5880/api/login',
-				method: 'POST',
-				data: {
-					username: accountForm.username,
-					password: accountForm.password
-				},
-				header: { 'Content-Type': 'application/json' }
-			}) as any
-
+			const res = await loginByPassword(captchaUuid.value, captchaCode.value, accountForm.username, accountForm.password) as any
+			uni.setStorageSync('token', res.token)
+			const userInfoRes = await getUserInfo()
+			uni.setStorageSync('userId', userInfoRes.userId)
+			uni.setStorageSync('userType', userInfoRes.userType)
+			uni.setStorageSync('realName', userInfoRes.realName)
+			uni.setStorageSync('nickname', userInfoRes.nickname)
+			uni.setStorageSync('avatar', userInfoRes.avatar)
+			uni.setStorageSync('phone', userInfoRes.phone)
+			uni.setStorageSync('deptName', userInfoRes.deptName)
+			uni.setStorageSync('majorGrade', userInfoRes.majorGrade)
+			uni.setStorageSync('studentNo', userInfoRes.studentNo)
+			uni.setStorageSync('vipStatus', userInfoRes.vipStatus)
+			uni.setStorageSync('wxLogin', false)
 			uni.hideLoading()
-			if (res.data.code === 200) {
-				uni.setStorageSync('token', res.data.data.token)
-				uni.showToast({ title: '登录成功', icon: 'success' })
-				setTimeout(() => {
-					closeAccountModal()
-					uni.reLaunch({ url: '/pages/home/home' })
-				}, 1500)
-			} else {
-				uni.showToast({ title: res.data.msg || '登录失败', icon: 'none' })
-			}
+			uni.showToast({ title: '登录成功', icon: 'success' })
+			setTimeout(() => {
+				closeAccountModal()
+				uni.reLaunch({ url: '/pages/home/home' })
+			}, 1500)
 		} catch (err : any) {
 			uni.hideLoading()
 			uni.showToast({ title: err.message || '登录失败', icon: 'none' })
+			// 刷新验证码
+			loadCaptcha()
+			captchaCode.value = ''
+			submitting.value = false
 		} finally {
 			submitting.value = false
 		}
@@ -463,6 +563,19 @@
 
 	// ==================== 注册信息填写 ====================
 	const showRegisterInfoModal = ref(false)
+
+	// 重置注册信息表单
+	function resetRegisterInfoForm() {
+		accountForm.userType = 'student'
+		accountForm.deptId = 0
+		accountForm.deptName = ''
+		accountForm.realName = ''
+		accountForm.studentNo = ''
+		accountForm.majorGrade = ''
+		accountForm.contact = ''
+		accountForm.phone = ''
+		accountForm.wxCode = ''
+	}
 
 	function closeRegisterInfoModal() {
 		showRegisterInfoModal.value = false
@@ -570,11 +683,6 @@
 				uni.showToast({ title: '请输入联系方式', icon: 'none' })
 				return
 			}
-			// 验证手机号格式
-			if (!/^1[3-9]\d{9}$/.test(accountForm.contact)) {
-				uni.showToast({ title: '联系方式必须为手机号格式', icon: 'none' })
-				return
-			}
 		}
 
 		submitting.value = true
@@ -596,13 +704,13 @@
 				})
 			} else {
 				// 账号密码注册
-				await registerByPassword({
+				await registerWithCaptcha(captchaUuid.value, captchaCode.value, {
 					username: accountForm.username,
+					phone: accountForm.username,
 					password: accountForm.password,
 					realName: accountForm.realName,
 					userType: accountForm.userType,
 					deptId: accountForm.deptId.toString(),
-					institution: accountForm.deptId.toString(),
 					majorGrade: accountForm.userType === 'student' ? accountForm.majorGrade : undefined,
 					studentNo: accountForm.userType === 'student' ? accountForm.studentNo : undefined,
 					contact: accountForm.userType === 'teacher' ? accountForm.contact : undefined,
@@ -871,6 +979,111 @@
 		padding: 0 12px;
 		font-size: 14px;
 		box-sizing: border-box;
+	}
+
+	.password-input-container {
+		position: relative;
+		display: flex;
+		align-items: center;
+		height: 44px;
+		text-align: left;
+	}
+
+	.password-input-container .form-input {
+		padding-right: 44px;
+	}
+
+	.password-mask-wrapper {
+		position: relative;
+		width: 100%;
+		z-index: 1;
+		padding-right: 44px;
+		height: 44px;
+		text-align: left;
+		box-sizing: border-box;
+	}
+
+	.password-mask-wrapper .form-input {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 2;
+		padding-right: 44px;
+		background: transparent;
+		width: 100%;
+		height: 44px;
+	}
+
+	.password-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 44px;
+		text-align: left;
+		padding: 0 8px;
+		display: flex;
+		align-items: center;
+		font-size: 14px;
+		color: #333;
+		background: #f8f8f8;
+		pointer-events: none;
+		z-index: 1;
+		box-sizing: border-box;
+		border: 1.5px solid #e0e0e0;
+		border-radius: 10px;
+		flex-direction: row;
+	}
+
+	.password-real-input {
+		width: 100%;
+		height: 44px;
+		background: transparent;
+		position: relative;
+		z-index: 2;
+		padding-right: 44px;
+		box-sizing: border-box;
+	}
+
+	.password-toggle-btn {
+		position: absolute;
+		right: 8px;
+		width: 36px;
+		height: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		z-index: 10;
+	}
+
+	.toggle-icon {
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+	}
+
+	.captcha-item {
+		margin-bottom: 16px;
+	}
+
+	.captcha-input-wrapper {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+		flex-direction: row;
+	}
+
+	.captcha-input {
+		flex: 1;
+	}
+
+	.captcha-img {
+		width: 100px;
+		height: 44px;
+		border-radius: 8px;
+		background: #f0f0f0;
 	}
 
 	.agreement-check {
