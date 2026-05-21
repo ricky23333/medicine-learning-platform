@@ -43,12 +43,13 @@ export class SysUserService {
   ) { }
   /* 分页查询 */
   async list(getSysUserListDto: GetSysUserListDto, dataScope: DataScope) {
-    const { skip, take, status, userName, deptId, phonenumber, params } =
+    const { skip, take, status, userName, deptId, phonenumber, params, userType, majorGrade, studentNo } =
       getSysUserListDto;
     const contains = deptId ? `,${deptId},` : undefined;
     return await this.customPrisma.client.sysUser.findAndCount({
       include: {
         dept: true,
+        appUser: true,
       },
       where: {
         AND: {
@@ -68,6 +69,11 @@ export class SysUserService {
             ancestors: {
               contains,
             },
+          },
+          appUser: {
+            userType: userType || undefined,
+            majorGrade: majorGrade ? { contains: majorGrade } : undefined,
+            studentNo: studentNo ? { contains: studentNo } : undefined,
           },
           OR: dataScope.OR,
         },
@@ -190,16 +196,28 @@ export class SysUserService {
 
   /* 更新用户状态 */
   async changeStatus(changeStatusDto: ChangeStatusDto) {
-    const { userId, status } = changeStatusDto;
-    await this.prisma.sysUser.update({
+    const { userId, userIds, status } = changeStatusDto;
+
+    // 优先使用 userIds 批量更新，否则使用单个 userId
+    const ids = userIds?.length ? userIds : (userId ? [userId] : []);
+
+    if (ids.length === 0) {
+      throw new ApiException('用户ID不能为空');
+    }
+
+    await this.prisma.sysUser.updateMany({
       where: {
-        userId,
+        userId: { in: ids },
       },
       data: {
         status,
       },
     });
-    return await this.addPv(userId);
+
+    // 刷新版本号
+    for (const id of ids) {
+      await this.addPv(id);
+    }
   }
 
   /* 查询部门树 */

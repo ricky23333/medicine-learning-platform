@@ -76,6 +76,16 @@ export class MuseumController {
     await this.museumService.update(updateMuseumDto);
   }
 
+  /* 更新馆启用状态 */
+  @Put('enabled')
+  @Log({ title: '馆管理', businessType: BusinessTypeEnum.update })
+  @RequiresPermissions('admin:museum:edit')
+  @ApiOperation({ summary: '更新馆启用状态' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  async updateEnabled(@Body() updateMuseumEnabledDto: any) {
+    await this.museumService.updateEnabled(updateMuseumEnabledDto);
+  }
+
   /* 删除馆 */
   @Delete(':museumIds')
   @Log({ title: '馆管理', businessType: BusinessTypeEnum.delete })

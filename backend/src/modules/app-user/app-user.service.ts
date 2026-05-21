@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { ApiException } from 'src/common/exceptions/api.exception';
 import * as bcrypt from 'bcryptjs';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class AppUserService {
@@ -15,7 +16,7 @@ export class AppUserService {
   /* 用户注册申请 */
   async register(registerDto: any) {
     const { phone, userType, realName, deptId, majorGrade, studentNo, contact, password } = registerDto;
-    console.log(44444, registerDto)
+
     // 检查手机号是否已注册
     const existingUser = await this.prisma.sysUser.findFirst({
       where: { userName: phone },
@@ -37,6 +38,7 @@ export class AppUserService {
         status: '0',
         delFlag: '0',
         deptId: Number(deptId),
+        createTime: dayjs().format(),
       },
     });
 

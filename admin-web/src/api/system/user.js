@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import { parseStrEmpty } from "@/utils/mei-mei";
+import { parseStrEmpty } from '@/utils/mei-mei'
 
 // 查询用户列表
 export function listUser(query) {
@@ -58,9 +58,10 @@ export function resetUserPwd(userId, password) {
 }
 
 // 用户状态修改
-export function changeUserStatus(userId, status) {
+export function changeUserStatus(userId, status, userIds) {
   const data = {
     userId,
+    userIds,
     status
   }
   return request({
@@ -158,5 +159,32 @@ export function deleteTableConfig(params) {
     url: '/system/table',
     method: 'delete',
     params
+  })
+}
+
+// 升级用户为VIP
+export function upgradeToVip(userId) {
+  return request({
+    url: '/admin/appUser/vipAudit/approve',
+    method: 'post',
+    params: { userId }
+  })
+}
+
+// 批量启用用户
+export function enableUser(userIds) {
+  return request({
+    url: '/system/user/enable',
+    method: 'put',
+    data: userIds
+  })
+}
+
+// 批量停用用户
+export function disableUser(userIds) {
+  return request({
+    url: '/system/user/disable',
+    method: 'put',
+    data: userIds
   })
 }

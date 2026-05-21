@@ -53,9 +53,9 @@
               >
                 <span>布局设置</span>
               </el-dropdown-item>
-              <el-dropdown-item v-if="showRequestVIP" @click="handleRequestVIP">
+              <!-- <el-dropdown-item v-if="showRequestVIP" @click="handleRequestVIP">
                 <span>申请VIP教师</span>
-              </el-dropdown-item>
+              </el-dropdown-item> -->
               <el-dropdown-item divided command="logout">
                 <span>退出登录</span>
               </el-dropdown-item>

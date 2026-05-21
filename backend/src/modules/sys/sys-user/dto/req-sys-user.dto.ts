@@ -47,6 +47,18 @@ export class GetSysUserListDto extends PaginationDto {
   deptId?: number;
 
   @IsOptional()
+  @IsString()
+  userType?: string; // appUser用户类型
+
+  @IsOptional()
+  @IsString()
+  majorGrade?: string; // appUser专业年级（模糊搜索）
+
+  @IsOptional()
+  @IsString()
+  studentNo?: string; // appUser学号（模糊搜索）
+
+  @IsOptional()
   @IsObject()
   @Transform(({ value }) => transformDate(value))
   params: ParamsDto = {};
@@ -131,9 +143,16 @@ export class UpdateSysUserDto extends OmitType(AddSysUserDto, [
 
 /* 改变用户状态 */
 export class ChangeStatusDto {
-  /* 用户id */
+  /* 用户id（单个） */
+  @IsOptional()
   @IsNumber()
-  userId: number;
+  userId?: number;
+
+  /* 用户id数组（批量） */
+  @IsOptional()
+  @IsArray()
+  @Type()
+  userIds?: number[];
 
   /* 状态值 */
   @IsString()

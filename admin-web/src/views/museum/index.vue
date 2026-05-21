@@ -135,6 +135,9 @@
             placeholder="标本目录简介..."
           />
         </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch v-model="museumForm.enabled" :active-value="1" :inactive-value="0" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="museumDialogVisible = false">取消</el-button>
@@ -201,6 +204,7 @@
     getMuseumAll,
     addMuseum,
     updateMuseum,
+    updateMuseumEnabled,
     delMuseum,
     addCategory,
     updateCategory,
@@ -222,7 +226,8 @@
   const museumForm = reactive({
     // icon: '🌿',
     name: '',
-    description: ''
+    description: '',
+    enabled: 1
   })
   const museumRules = {
     name: [{ required: true, message: '请输入馆名称', trigger: 'blur' }]
@@ -297,15 +302,17 @@
     // museumForm.icon = '🌿'
     museumForm.name = ''
     museumForm.description = ''
+    museumForm.enabled = 1
     museumDialogVisible.value = true
   }
 
   // 打开编辑馆弹窗
   function openEditMuseum(museum: any) {
-    editMuseum.value = museum
+    editMuseum.value = museum  
     // museumForm.icon = museum.icon || '🌿'
     museumForm.name = museum.museumName
     museumForm.description = museum.description || ''
+    museumForm.enabled = museum.enabled === true ? 1 : 0
     museumDialogVisible.value = true
   }
 
@@ -322,12 +329,20 @@
           name: museumForm.name,
           description: museumForm.description
         })
+        // 如果启用状态发生变化，更新启用状态
+        if (editMuseum.value.enabled !== museumForm.enabled) {
+          await updateMuseumEnabled({
+            museumId: editMuseum.value.museumId,
+            enabled: museumForm.enabled
+          })
+        }
         ElMessage.success('修改成功')
       } else {
         await addMuseum({
           // icon: museumForm.icon,
           name: museumForm.name,
-          description: museumForm.description
+          description: museumForm.description,
+          enabled: museumForm.enabled
         })
         ElMessage.success('创建成功')
       }

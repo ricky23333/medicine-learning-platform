@@ -44,6 +44,15 @@ export function updateMuseum(data) {
   })
 }
 
+// 更新馆启用状态
+export function updateMuseumEnabled(data) {
+  return request({
+    url: '/admin/museum/enabled',
+    method: 'put',
+    data: data
+  })
+}
+
 // 删除馆
 export function delMuseum(museumIds) {
   return request({

@@ -128,6 +128,15 @@ export class MuseumService {
     });
   }
 
+  /* 更新馆启用状态 */
+  async updateEnabled(updateMuseumEnabledDto: any) {
+    const { museumId, enabled } = updateMuseumEnabledDto;
+    await this.prisma.museum.update({
+      where: { museumId },
+      data: { enabled: Boolean(enabled) },
+    });
+  }
+
   /* 删除馆 */
   async delete(museumIdArr: number[]) {
     await this.prisma.$transaction(async (prisma) => {

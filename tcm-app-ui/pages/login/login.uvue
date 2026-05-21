@@ -734,6 +734,8 @@
 	const showSchoolPicker = ref(false)
 
 	function goPage(page : string) {
+		uni.hideLoading()
+		submitting.value = false
 		let url = ''
 		switch (page) {
 			case 'service-agreement':
