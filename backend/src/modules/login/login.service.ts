@@ -58,8 +58,23 @@ export class LoginService {
   }
 
   /* 登录 */
-  async login(user: SysUser, req: Request) {
+  async login(user: SysUser, req: Request, isAdminLogin?: boolean) {
     const { userId } = user;
+
+    // 如果是后台管理系统登录，则检查权限
+    if (isAdminLogin) {
+      // 获取用户的完整信息（包括appUser）
+      const fullUser = await this.prisma.sysUser.findUnique({
+        where: { userId },
+        include: { appUser: true },
+      });
+      const isSuperAdmin = userId === 1;
+      const isVipTeacher = fullUser?.appUser?.userType === 'teacher' && fullUser?.appUser?.vipStatus === '2';
+      if (!isSuperAdmin && !isVipTeacher) {
+        throw new ApiException('无登录权限，请联系系统管理员', 402);
+      }
+    }
+
     const payload: Payload = { userId, pv: 1 };
     // 加载一遍用户信息
     await this.getInfo(userId);

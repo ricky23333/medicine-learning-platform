@@ -46,7 +46,7 @@ export class LoginController {
     @User() user: SysUser,
     @Req() req: Request,
   ): Promise<ResLoginDto> {
-    return await this.loginService.login(user, req);
+    return await this.loginService.login(user, req, reqLoginDto.isAdminLogin);
   }
 
   /* 获取用户信息 */

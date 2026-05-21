@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
 export class ReqLoginDto {
   /* uuid码 */
@@ -16,4 +16,9 @@ export class ReqLoginDto {
   /* 密码 */
   @IsString()
   password: string;
+
+  /* 是否后台管理系统登录 */
+  @IsOptional()
+  @IsBoolean()
+  isAdminLogin?: boolean;
 }

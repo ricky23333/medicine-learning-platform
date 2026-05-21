@@ -3,7 +3,8 @@
  * @Date: 2024-04-26
  * @Description: 小程序用户接口
  */
-import { Body, Controller, Get, Post, Put, Query, Param, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Query, Param, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AppUserService } from './app-user.service';
 import { PaginationPipe } from 'src/common/pipes/pagination.pipe';
@@ -25,7 +26,7 @@ import { ExportUniversityStatsDto, ExportUniversityDetailStatsDto } from './dto/
 @ApiTags('app')
 @Controller('app/user')
 export class AppUserController {
-  constructor(private readonly appUserService: AppUserService) {}
+  constructor(private readonly appUserService: AppUserService) { }
 
   /* 用户注册申请 */
   @Post('register')
@@ -52,7 +53,10 @@ export class AppUserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取个人信息' })
   @ApiResponse({ status: 200, description: '查询成功' })
-  async getInfo(@User(UserEnum.userId) userId: number) {
+  async getInfo(@User(UserEnum.userId) userId: number, @Req() request: Request) {
+    // 记录访问日志
+    const ip = request.ip || request.socket?.remoteAddress || '';
+    await this.appUserService.recordVisitLog(userId, ip, '/app/user/info');
     const result = await this.appUserService.getInfo(userId);
     return AjaxResult.success(result);
   }
@@ -79,7 +83,7 @@ export class AdminAppUserController {
   constructor(
     private readonly appUserService: AppUserService,
     private readonly excelService: ExcelService,
-  ) {}
+  ) { }
 
   /* 下载用户导入模板 */
   @Post('importTemplate')

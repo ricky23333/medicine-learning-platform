@@ -31,8 +31,9 @@ const useUserStore = defineStore('user', {
       const password = userInfo.password
       const code = userInfo.code
       const uuid = userInfo.uuid
+      const isAdminLogin = true
       return new Promise((resolve, reject) => {
-        login(username, password, code, uuid)
+        login(username, password, code, uuid, isAdminLogin)
           .then(res => {
             setToken(res.token)
             this.token = res.token

@@ -123,6 +123,18 @@ export class AppUserService {
     };
   }
 
+  /* 记录访问日志 */
+  async recordVisitLog(userId: number, ip: string, path: string) {
+    await this.prisma.appVisitLog.create({
+      data: {
+        userId,
+        ip: ip || '',
+        path,
+        visitTime: new Date(),
+      },
+    });
+  }
+
   /* 更新用户信息 */
   async updateProfile(userId: number, updateDto: any) {
     const { realName, institution, majorGrade, studentNo, contact } = updateDto;

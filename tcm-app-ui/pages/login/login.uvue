@@ -277,6 +277,51 @@
 	// 学校数据
 	const schoolTree = ref<(DeptItem & { level : number; expanded ?: boolean })[]>([])
 
+	// 页面加载时检查登录状态
+	onMounted(() => {
+		checkAutoLogin()
+	})
+
+	// 检查自动登录
+	async function checkAutoLogin() {
+		const token = uni.getStorageSync('token') as string
+		if (!token) return
+
+		try {
+			uni.showLoading({ title: '登录中...' })
+			const userInfo = await getUserInfo() as any
+			// 缓存用户信息
+			uni.setStorageSync('userId', userInfo.userId)
+			uni.setStorageSync('userType', userInfo.userType)
+			uni.setStorageSync('realName', userInfo.realName)
+			uni.setStorageSync('nickname', userInfo.nickname)
+			uni.setStorageSync('avatar', userInfo.avatar)
+			uni.setStorageSync('phone', userInfo.phone)
+			uni.setStorageSync('deptName', userInfo.deptName)
+			uni.setStorageSync('majorGrade', userInfo.majorGrade)
+			uni.setStorageSync('studentNo', userInfo.studentNo)
+			uni.setStorageSync('vipStatus', userInfo.vipStatus)
+			uni.hideLoading()
+			uni.showToast({ title: '自动登录成功', icon: 'success' })
+			setTimeout(() => {
+				uni.reLaunch({ url: '/pages/home/home' })
+			}, 1500)
+		} catch (err : any) {
+			uni.hideLoading()
+			// token无效，清除存储
+			clearUserStorage()
+			// 留在登录页让用户重新登录
+		}
+	}
+
+	// 清除用户存储
+	function clearUserStorage() {
+		const keys = ['token', 'userId', 'userType', 'realName', 'nickname', 'avatar', 'phone', 'deptName', 'majorGrade', 'studentNo', 'vipStatus', 'wxLogin']
+		keys.forEach(key => {
+			uni.removeStorageSync(key)
+		})
+	}
+
 	function switchTab(tab : 'login' | 'register') {
 		currentTab.value = tab
 	}
@@ -328,21 +373,8 @@
 			uni.hideLoading()
 			// 缓存用户信息
 			uni.setStorageSync('token', res.token)
-			uni.setStorageSync('userId', res.appUser.userId)
-			uni.setStorageSync('userType', res.appUser.userType)
-			uni.setStorageSync('realName', res.appUser.realName)
-			uni.setStorageSync('nickname', res.appUser.nickname)
-			uni.setStorageSync('avatar', res.appUser.avatar)
-			uni.setStorageSync('phone', res.appUser.phone)
-			uni.setStorageSync('deptName', res.appUser.deptName)
-			uni.setStorageSync('majorGrade', res.appUser.majorGrade)
-			uni.setStorageSync('studentNo', res.appUser.studentNo)
-			uni.setStorageSync('vipStatus', res.appUser.vipStatus)
 			uni.setStorageSync('wxLogin', true)
-			uni.showToast({ title: '登录成功', icon: 'success' })
-			setTimeout(() => {
-				uni.reLaunch({ url: '/pages/home/home' })
-			}, 1500)
+			checkAutoLogin()
 		} catch (err : any) {
 			uni.hideLoading()
 			uni.showToast({ title: err.message || '登录失败', icon: 'none' })
@@ -531,24 +563,9 @@
 		try {
 			const res = await loginByPassword(captchaUuid.value, captchaCode.value, accountForm.username, accountForm.password) as any
 			uni.setStorageSync('token', res.token)
-			const userInfoRes = await getUserInfo()
-			uni.setStorageSync('userId', userInfoRes.userId)
-			uni.setStorageSync('userType', userInfoRes.userType)
-			uni.setStorageSync('realName', userInfoRes.realName)
-			uni.setStorageSync('nickname', userInfoRes.nickname)
-			uni.setStorageSync('avatar', userInfoRes.avatar)
-			uni.setStorageSync('phone', userInfoRes.phone)
-			uni.setStorageSync('deptName', userInfoRes.deptName)
-			uni.setStorageSync('majorGrade', userInfoRes.majorGrade)
-			uni.setStorageSync('studentNo', userInfoRes.studentNo)
-			uni.setStorageSync('vipStatus', userInfoRes.vipStatus)
+			checkAutoLogin()
 			uni.setStorageSync('wxLogin', false)
 			uni.hideLoading()
-			uni.showToast({ title: '登录成功', icon: 'success' })
-			setTimeout(() => {
-				closeAccountModal()
-				uni.reLaunch({ url: '/pages/home/home' })
-			}, 1500)
 		} catch (err : any) {
 			uni.hideLoading()
 			uni.showToast({ title: err.message || '登录失败', icon: 'none' })

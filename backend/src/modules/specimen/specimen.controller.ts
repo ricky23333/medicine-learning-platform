@@ -142,7 +142,6 @@ export class AppSpecimenController {
 
   /* 获取标本详情 */
   @Get(':specimenId')
-  @Public()
   @ApiOperation({ summary: '获取标本详情' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async one(
