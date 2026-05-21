@@ -6,6 +6,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -78,5 +79,16 @@ export class AdminFeedbackController {
     @User(UserEnum.userName) handleBy?: string,
   ) {
     await this.feedbackService.update(updateAppFeedbackDto, handleBy);
+  }
+
+  /* 删除反馈 */
+  @Delete(':id')
+  @Log({ title: '反馈管理', businessType: BusinessTypeEnum.delete })
+  @RequiresPermissions('admin:feedback:remove')
+  @ApiOperation({ summary: '删除反馈' })
+  @ApiResponse({ status: 200, description: '删除成功' })
+  async delete(@Param('id') id: number) {
+    await this.feedbackService.delete(id);
+    return AjaxResult.success(null, '删除成功');
   }
 }

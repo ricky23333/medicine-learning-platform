@@ -34,6 +34,10 @@ export class GetAppFeedbackListDto extends PaginationDto {
   @IsOptional()
   @IsNumber()
   userId?: number;
+
+  @IsOptional()
+  @IsString()
+  nickname?: string;
 }
 
 /* 管理员处理反馈 */

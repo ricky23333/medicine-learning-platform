@@ -154,4 +154,89 @@ export class SysDeptService {
       });
     });
   }
+
+  /* 按部门统计用户数量（教师+学生） */
+  async getUserStatisticsByDept() {
+    // 获取所有部门
+    const depts = await this.prisma.sysDept.findMany({
+      where: { delFlag: '0' },
+      select: {
+        deptId: true,
+        parentId: true,
+        deptName: true,
+        ancestors: true,
+      },
+      orderBy: { orderNum: 'asc' },
+    });
+
+    if (depts.length === 0) {
+      return [];
+    }
+
+    // 统计每个部门的用户数量（区分教师和学生）
+    const userStats = await this.prisma.appUser.groupBy({
+      by: ['institution'],
+      where: {
+        institution: { not: '' },
+      },
+      _count: {
+        userId: true,
+      },
+    });
+
+    // 将 institution (deptId string) 映射到用户统计
+    const statsMap = new Map<string, { total: number; teacherCount: number; studentCount: number }>();
+    for (const stat of userStats) {
+      statsMap.set(stat.institution, { total: stat._count.userId, teacherCount: 0, studentCount: 0 });
+    }
+
+    // 分别统计教师和学生数量
+    const teacherStats = await this.prisma.appUser.groupBy({
+      by: ['institution'],
+      where: {
+        institution: { not: '' },
+        userType: 'teacher',
+      },
+      _count: { userId: true },
+    });
+
+    const studentStats = await this.prisma.appUser.groupBy({
+      by: ['institution'],
+      where: {
+        institution: { not: '' },
+        userType: 'student',
+      },
+      _count: { userId: true },
+    });
+
+    for (const stat of teacherStats) {
+      const existing = statsMap.get(stat.institution);
+      if (existing) {
+        existing.teacherCount = stat._count.userId;
+      }
+    }
+
+    for (const stat of studentStats) {
+      const existing = statsMap.get(stat.institution);
+      if (existing) {
+        existing.studentCount = stat._count.userId;
+      }
+    }
+
+    // 按部门组织统计数据
+    const result = depts.map((dept) => {
+      const deptIdStr = dept.deptId.toString();
+      const stats = statsMap.get(deptIdStr) || { total: 0, teacherCount: 0, studentCount: 0 };
+      return {
+        deptId: dept.deptId,
+        parentId: dept.parentId,
+        deptName: dept.deptName,
+        teacherCount: stats.teacherCount,
+        studentCount: stats.studentCount,
+        total: stats.total,
+      };
+    });
+
+    return result;
+  }
 }

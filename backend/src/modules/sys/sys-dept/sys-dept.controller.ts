@@ -17,6 +17,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SysDeptService } from './sys-dept.service';
 import { RepeatSubmit } from 'src/common/decorators/repeat-submit.decorator';
 import { RequiresPermissions } from 'src/common/decorators/requires-permissions.decorator';
@@ -102,5 +103,13 @@ export class SysDeptController {
   })
   async delete(@Param('deptIds') deptId: number) {
     await this.sysDeptService.delete(deptId);
+  }
+
+  /* 按部门统计用户数量（教师+学生） */
+  @Get('userStatistics')
+  @RequiresPermissions('system:dept:query')
+  @ApiOperation({ summary: '按部门统计用户数量（教师+学生）' })
+  async getUserStatistics() {
+    return await this.sysDeptService.getUserStatisticsByDept();
   }
 }
