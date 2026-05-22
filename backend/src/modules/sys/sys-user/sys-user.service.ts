@@ -315,12 +315,13 @@ export class SysUserService {
   /* 导入用户列表 */
   async importData(importSysUserDtoArr: ImportSysUserDto[], isUpdate: boolean) {
     return await this.prisma.$transaction(async (prisma) => {
+
       for (const item of importSysUserDtoArr) {
         // 加密密码
         const salt = await bcrypt.genSalt();
         item.password = await bcrypt.hash(item.password, salt);
-        item.createTime = dayjs().format();
         if (!isUpdate) {
+     
           const user = await prisma.sysUser.findUnique({
             where: {
               userName: item.userName,
@@ -330,17 +331,81 @@ export class SysUserService {
             throw new ApiException(
               '用户名：' + item.userName + ' 已经存在，请更换后再试。',
             );
-          await prisma.sysUser.create({
-            data: item,
+          // 创建 sysUser
+          const sysUser = await prisma.sysUser.create({
+            data: {
+              userName: item.userName,
+              password: item.password,
+              nickName: item.nickName,
+              deptId: item.deptId,
+              createTime: new Date(),
+            },
+          });
+      
+          // 创建 appUser
+          await prisma.appUser.create({
+            data: {
+              userId: sysUser.userId,
+              phone: item.phonenumber,
+              contact: item.contact,
+              userType: item.userType,
+              majorGrade: item.majorGrade,
+              studentNo: item.studentNo,
+              institution: String(item.deptId),
+              realName: item.nickName,
+              regStatus: '1',
+              regApplyTime: sysUser.createTime,
+            },
           });
         } else {
+       
+          const existingUser = await prisma.sysUser.findUnique({
+            where: { userName: item.userName },
+          });
+          // 更新 sysUser
           await prisma.sysUser.upsert({
             where: {
               userName: item.userName,
             },
-            update: item,
-            create: item,
+            update: {
+              nickName: item.nickName,
+              deptId: item.deptId,
+            },
+            create: {
+              userName: item.userName,
+              password: item.password,
+              nickName: item.nickName,
+              deptId: item.deptId,
+              createTime: new Date(),
+            },
           });
+          // 更新或创建 appUser
+          if (existingUser) {
+            await prisma.appUser.upsert({
+              where: { userId: existingUser.userId },
+              update: {
+                phone: item.phonenumber,
+                contact: item.contact,
+                userType: item.userType,
+                majorGrade: item.majorGrade,
+                studentNo: item.studentNo,
+                institution: String(item.deptId),
+                realName: item.nickName,
+              },
+              create: {
+                userId: existingUser.userId,
+                phone: item.phonenumber,
+                contact: item.contact,
+                userType: item.userType,
+                majorGrade: item.majorGrade,
+                studentNo: item.studentNo,
+                institution: String(item.deptId),
+                realName: item.nickName,
+                regStatus: '1',
+                regApplyTime: existingUser.createTime,
+              },
+            });
+          }
         }
       }
     });

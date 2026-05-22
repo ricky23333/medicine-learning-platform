@@ -78,3 +78,20 @@ export function deptList(params) {
     params
   })
 }
+
+// 获取各学校用户统计
+export function userStatistics() {
+  return request({
+    url: '/system/dept/userStatistics',
+    method: 'get'
+  })
+}
+
+// 导出用户统计
+export function exportUserStatistics() {
+  return request({
+    url: '/system/dept/exportUserStatistics',
+    method: 'post',
+    responseType: 'blob'
+  })
+}

@@ -18,11 +18,29 @@ export function getStatsVisitChart(days) {
   })
 }
 
-
 // 获取公共系统基础信息概览
 export function getPublicStats() {
   return request({
     url: '/public/stats/summary',
     method: 'get',
+  })
+}
+
+// 获取学校统计数据
+export function getSchoolStats(params) {
+  return request({
+    url: '/admin/stats/schoolStats',
+    method: 'get',
+    params
+  })
+}
+
+// 导出学生成绩
+export function exportStudentScores(data) {
+  return request({
+    url: '/admin/stats/exportStudentScores',
+    method: 'post',
+    data,
+    responseType: 'blob'
   })
 }

@@ -223,13 +223,6 @@ export class CancelAllDto {
 
 /* 导入模板 */
 export class ImportSysUserDto {
-  /* 用户昵称 */
-  @IsString()
-  @Excel({
-    name: '用户昵称',
-  })
-  nickName: string;
-
   /* 用户账号 */
   @IsString()
   @Excel({
@@ -253,12 +246,59 @@ export class ImportSysUserDto {
   @Type()
   deptId: number;
 
+  /* 用户昵称 */
+  @Excel({
+    name: '用户昵称',
+  })
+  @IsString()
+  nickName: string;
+
+  /* 手机号码 */
+  @Excel({
+    name: '手机号码',
+  })
+  @IsOptional()
+  @IsString()
+  phonenumber?: string;
+
+  /* 联系方式 */
+  @Excel({
+    name: '联系方式',
+  })
+  @IsOptional()
+  @IsString()
+  contact?: string;
+
+  /* 用户类型 */
+  @Excel({
+    name: '用户类型',
+  })
+  @IsOptional()
+  @IsString()
+  userType?: string;
+
+  /* 年级班级 */
+  @Excel({
+    name: '年级班级',
+  })
+  @IsOptional()
+  @IsString()
+  majorGrade?: string;
+
+  /* 学号 */
+  @Excel({
+    name: '学号',
+  })
+  @IsOptional()
+  @IsString()
+  studentNo?: string;
+
   createTime?: Date | string;
 }
 
 /* 导入 */
 export class UpdateSupportDto {
   @IsBoolean()
-  @Type()
+  @Transform(({ value }) => value === 'true' || value === true)
   updateSupport: boolean;
 }

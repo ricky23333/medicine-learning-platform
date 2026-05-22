@@ -19,24 +19,31 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SysDeptService } from './sys-dept.service';
+import { ExcelService } from 'src/modules/common/excel/excel.service';
+import { StreamableFile } from '@nestjs/common';
 import { RepeatSubmit } from 'src/common/decorators/repeat-submit.decorator';
 import { RequiresPermissions } from 'src/common/decorators/requires-permissions.decorator';
 import { CreateMessagePipe } from 'src/common/pipes/createmessage.pipe';
 import { BusinessTypeEnum, Log } from 'src/common/decorators/log.decorator';
 import { DataObj } from 'src/common/class/data-obj.class';
 import { UpdateMessagePipe } from 'src/common/pipes/updatemessage.pipe';
+import { Keep } from 'src/common/decorators/keep.decorator';
 import {
   AddSysDeptDto,
   GetSysDeptListDto,
   UpdateSysDeptDto,
 } from './dto/req-sys-dept.dto';
+import { ExportDeptUserStatisticsDto } from './dto/res-sys-dept.dto';
 import { User, UserEnum } from 'src/common/decorators/user.decorator';
 import { DataScope } from 'src/common/type/data-scope.type';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('system/dept')
 export class SysDeptController {
-  constructor(private readonly sysDeptService: SysDeptService) {}
+  constructor(
+    private readonly sysDeptService: SysDeptService,
+    private readonly excelService: ExcelService,
+  ) { }
 
   /* 公开接口：获取所有组织（id, parentId, deptName） */
   @Get('public/list')
@@ -74,6 +81,30 @@ export class SysDeptController {
     return await this.sysDeptService.listExclude(deptId);
   }
 
+  /* 按部门统计用户数量（教师+学生） */
+  @Get('userStatistics')
+  @RequiresPermissions('system:dept:query')
+  @ApiOperation({ summary: '按部门统计用户数量（教师+学生）' })
+  async getUserStatistics() {
+    return await this.sysDeptService.getUserStatisticsByDept();
+  }
+
+  /* 导出部门用户统计 */
+  @RepeatSubmit()
+  @Post('exportUserStatistics')
+  @RequiresPermissions('system:dept:export')
+  @Log({
+    title: '部门用户统计',
+    businessType: BusinessTypeEnum.export,
+  })
+  @Keep()
+  @ApiOperation({ summary: '导出部门用户统计Excel' })
+  async exportUserStatistics(): Promise<StreamableFile> {
+    const data = await this.sysDeptService.getUserStatisticsByDept();
+    const file = await this.excelService.export(ExportDeptUserStatisticsDto, data);
+    return new StreamableFile(file);
+  }
+
   /* 通过id查询 */
   @Get(':deptId')
   @RequiresPermissions('system:dept:query')
@@ -103,13 +134,5 @@ export class SysDeptController {
   })
   async delete(@Param('deptIds') deptId: number) {
     await this.sysDeptService.delete(deptId);
-  }
-
-  /* 按部门统计用户数量（教师+学生） */
-  @Get('userStatistics')
-  @RequiresPermissions('system:dept:query')
-  @ApiOperation({ summary: '按部门统计用户数量（教师+学生）' })
-  async getUserStatistics() {
-    return await this.sysDeptService.getUserStatisticsByDept();
   }
 }

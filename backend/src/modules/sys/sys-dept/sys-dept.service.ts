@@ -173,60 +173,63 @@ export class SysDeptService {
       return [];
     }
 
-    // 统计每个部门的用户数量（区分教师和学生）
-    const userStats = await this.prisma.appUser.groupBy({
-      by: ['institution'],
+    // 统计每个部门的用户数量（使用SysUser.deptId关联）
+    // 1. 获取每个部门的用户总数
+    const totalStats = await this.prisma.sysUser.groupBy({
+      by: ['deptId'],
       where: {
-        institution: { not: '' },
+        delFlag: '0',
+        deptId: { not: null },
       },
-      _count: {
-        userId: true,
+      _count: { userId: true },
+    });
+
+    // 2. 获取每个部门的教师和学生数量（通过AppUser.userType区分）
+    const usersWithType = await this.prisma.sysUser.findMany({
+      where: {
+        delFlag: '0',
+        deptId: { not: null },
+      },
+      select: {
+        deptId: true,
+        appUser: {
+          select: {
+            userType: true,
+          },
+        },
       },
     });
 
-    // 将 institution (deptId string) 映射到用户统计
-    const statsMap = new Map<string, { total: number; teacherCount: number; studentCount: number }>();
-    for (const stat of userStats) {
-      statsMap.set(stat.institution, { total: stat._count.userId, teacherCount: 0, studentCount: 0 });
+    // 构建统计Map
+    const statsMap = new Map<number, { total: number; teacherCount: number; studentCount: number }>();
+
+    // 初始化所有部门的统计
+    for (const dept of depts) {
+      statsMap.set(dept.deptId, { total: 0, teacherCount: 0, studentCount: 0 });
     }
 
-    // 分别统计教师和学生数量
-    const teacherStats = await this.prisma.appUser.groupBy({
-      by: ['institution'],
-      where: {
-        institution: { not: '' },
-        userType: 'teacher',
-      },
-      _count: { userId: true },
-    });
-
-    const studentStats = await this.prisma.appUser.groupBy({
-      by: ['institution'],
-      where: {
-        institution: { not: '' },
-        userType: 'student',
-      },
-      _count: { userId: true },
-    });
-
-    for (const stat of teacherStats) {
-      const existing = statsMap.get(stat.institution);
-      if (existing) {
-        existing.teacherCount = stat._count.userId;
+    // 填充总数
+    for (const stat of totalStats) {
+      if (stat.deptId && statsMap.has(stat.deptId)) {
+        statsMap.get(stat.deptId)!.total = stat._count.userId;
       }
     }
 
-    for (const stat of studentStats) {
-      const existing = statsMap.get(stat.institution);
-      if (existing) {
-        existing.studentCount = stat._count.userId;
+    // 填充教师和学生数量
+    for (const user of usersWithType) {
+      if (user.deptId && statsMap.has(user.deptId)) {
+        const userType = user.appUser?.userType;
+        if (userType === 'teacher') {
+          statsMap.get(user.deptId)!.teacherCount++;
+        } else if (userType === 'student') {
+          statsMap.get(user.deptId)!.studentCount++;
+        }
       }
     }
 
     // 按部门组织统计数据
     const result = depts.map((dept) => {
-      const deptIdStr = dept.deptId.toString();
-      const stats = statsMap.get(deptIdStr) || { total: 0, teacherCount: 0, studentCount: 0 };
+      const stats = statsMap.get(dept.deptId) || { total: 0, teacherCount: 0, studentCount: 0 };
       return {
         deptId: dept.deptId,
         parentId: dept.parentId,

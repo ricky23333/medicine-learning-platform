@@ -54,7 +54,7 @@ export class SysUserController {
   constructor(
     private readonly sysUserService: SysUserService,
     private readonly excelService: ExcelService,
-  ) {}
+  ) { }
   /* 新增 */
   @Post()
   @RepeatSubmit()
@@ -274,6 +274,7 @@ export class SysUserController {
       ImportSysUserDto,
       file,
     );
+
     await this.sysUserService.importData(data, updateSupportDto.updateSupport);
   }
 }

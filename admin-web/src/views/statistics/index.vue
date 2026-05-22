@@ -12,11 +12,22 @@
         <p class="page-desc">系统运行数据分析</p>
       </div>
       <div class="header-right">
-        <el-radio-group v-model="period" @change="handlePeriodChange">
-          <el-radio-button :value="7">近7天</el-radio-button>
-          <el-radio-button :value="14">近14天</el-radio-button>
-          <el-radio-button :value="30">近30天</el-radio-button>
-        </el-radio-group>
+        <el-select v-model="queryParams.deptId" placeholder="选择学校" clearable style="width: 180px; margin-right: 12px" @change="handleQuery">
+          <el-option label="全部学校" :value="undefined" />
+          <el-option v-for="dept in schoolOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+        </el-select>
+        <el-date-picker
+          v-model="dateRange"
+          value-format="YYYY-MM-DD"
+          type="daterange"
+          range-separator="-"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          :default-time="[new Date(2000, 1, 1, 0, 0, 0), new Date(2000, 1, 1, 23, 59, 59)]"
+          style="margin-right: 12px"
+          @change="handleDateChange"
+        />
+        <el-button type="primary" icon="Download" @click="handleExport">导出成绩</el-button>
       </div>
     </div>
 
@@ -24,9 +35,7 @@
     <div class="metrics-grid">
       <div v-for="m in metrics" :key="m.label" class="metric-card">
         <div class="metric-icon" :style="{ background: `${m.color}18` }">
-          <el-icon :color="m.color" :size="20"
-            ><component :is="m.icon"
-          /></el-icon>
+          <el-icon :color="m.color" :size="20"><component :is="m.icon" /></el-icon>
         </div>
         <div class="metric-value">{{ m.value }}</div>
         <div class="metric-label">{{ m.label }}</div>
@@ -34,418 +43,377 @@
       </div>
     </div>
 
-    <!-- 访问量趋势 -->
-    <div class="chart-card">
-      <div class="chart-title">访问量趋势（近{{ period }}天）</div>
-      <div ref="visitChartRef" class="chart-container"></div>
+    <!-- 图表区域 -->
+    <div class="charts-grid">
+      <!-- 访问量趋势 -->
+      <div class="chart-card">
+        <div class="chart-title">访问量趋势</div>
+        <div ref="visitChartRef" class="chart-container"></div>
+      </div>
+
+      <!-- 考试次数趋势 -->
+      <div class="chart-card">
+        <div class="chart-title">考试次数趋势</div>
+        <div ref="examChartRef" class="chart-container"></div>
+      </div>
     </div>
 
-    <!-- 下方两个图表 -->
+    <!-- 下方图表 -->
     <div class="charts-row">
       <!-- 考试成绩分布 -->
       <div class="chart-card">
         <div class="chart-title">考试成绩分布</div>
-        <div ref="examChartRef" class="chart-container"></div>
+        <div ref="scoreChartRef" class="chart-container"></div>
       </div>
 
-      <!-- 标本分类统计 -->
+      <!-- 用户构成饼图 -->
       <div class="chart-card">
-        <div class="chart-title">标本分类统计</div>
-        <div ref="categoryChartRef" class="chart-container"></div>
-      </div>
-    </div>
-
-    <!-- 各标本目录访问统计 -->
-    <div class="chart-card">
-      <div class="chart-title">各标本目录访问统计</div>
-      <div class="museum-stats">
-        <div v-for="m in museumStats" :key="m.name" class="museum-item">
-          <div class="museum-header">
-            <span class="museum-name">{{ m.name }}</span>
-            <div class="museum-meta">
-              <span>👁 {{ m.views.toLocaleString() }} 次访问</span>
-              <span>📝 {{ m.exams.toLocaleString() }} 次考试</span>
-            </div>
-          </div>
-          <div class="museum-progress">
-            <div class="progress-item">
-              <div class="progress-label">
-                <span>浏览量</span>
-                <span>{{ m.views.toLocaleString() }}</span>
-              </div>
-              <el-progress
-                :percentage="Math.min((m.views / maxViews) * 100, 100)"
-                :stroke-width="8"
-                :show-text="false"
-                color="#2d6a4f"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">
-                <span>考试次数</span>
-                <span>{{ m.exams.toLocaleString() }}</span>
-              </div>
-              <el-progress
-                :percentage="Math.min((m.exams / maxExams) * 100, 100)"
-                :stroke-width="8"
-                :show-text="false"
-                color="#52b788"
-              />
-            </div>
-          </div>
-        </div>
+        <div class="chart-title">用户构成</div>
+        <div ref="userPieChartRef" class="chart-container"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, markRaw } from "vue";
-import { ElMessage } from "element-plus";
-import { User } from "@element-plus/icons-vue";
-import * as echarts from "echarts";
-import { getStatsOverview, getStatsVisitChart } from "@/api/statistics.js";
+import { ref, reactive, onMounted, onUnmounted, markRaw, computed } from 'vue'
+import { ElMessage } from 'element-plus'
+import { User, View, Document, TrendCharts, Download } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import { getSchoolStats, exportStudentScores } from '@/api/statistics'
+import { listDept } from '@/api/system/dept'
+import dayjs from 'dayjs'
 
 // 类型定义
 interface Metric {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: any;
-  color: string;
-}
-
-interface MuseumStat {
-  name: string;
-  views: number;
-  exams: number;
+  label: string
+  value: string | number
+  sub?: string
+  icon: any
+  color: string
 }
 
 // 响应式数据
-const period = ref(30);
-const visitChartRef = ref<HTMLDivElement>();
-const examChartRef = ref<HTMLDivElement>();
-const categoryChartRef = ref<HTMLDivElement>();
-const visitChart = ref<echarts.ECharts>();
-const examChart = ref<echarts.ECharts>();
-const categoryChart = ref<echarts.ECharts>();
+const dateRange = ref<[string, string]>([])
+const queryParams = reactive({
+  deptId: undefined as number | undefined,
+  startDate: '',
+  endDate: ''
+})
+const schoolOptions = ref<any[]>([])
+
+const visitChartRef = ref<HTMLDivElement>()
+const examChartRef = ref<HTMLDivElement>()
+const scoreChartRef = ref<HTMLDivElement>()
+const userPieChartRef = ref<HTMLDivElement>()
+
+let visitChartInstance: echarts.ECharts | null = null
+let examChartInstance: echarts.ECharts | null = null
+let scoreChartInstance: echarts.ECharts | null = null
+let userPieChartInstance: echarts.ECharts | null = null
 
 const metrics = ref<Metric[]>([
-  {
-    label: "今日访问量",
-    value: 0,
-    sub: "较昨日 +0%",
-    icon: markRaw(User),
-    color: "#1b3a2d",
-  },
-  {
-    label: "总访问量",
-    value: 0,
-    sub: "累计",
-    icon: markRaw(User),
-    color: "#2d6a4f",
-  },
-  {
-    label: "活跃用户",
-    value: 0,
-    sub: "注册用户",
-    icon: markRaw(User),
-    color: "#40916c",
-  },
-  {
-    label: "考试总次数",
-    value: 0,
-    sub: "累计",
-    icon: markRaw(User),
-    color: "#52b788",
-  },
-]);
+  { label: '总考试次数', value: 0, sub: '累计', icon: markRaw(Document), color: '#1b3a2d' },
+  { label: '日均考试次数', value: 0, sub: '', icon: markRaw(TrendCharts), color: '#2d6a4f' },
+  { label: '总访问量', value: 0, sub: '累计', icon: markRaw(View), color: '#40916c' },
+  { label: '日均访问量', value: 0, sub: '', icon: markRaw(User), color: '#52b788' },
+  { label: '用户总数', value: 0, sub: '', icon: markRaw(User), color: '#74c69d' }
+])
 
-const museumStats = ref<MuseumStat[]>([
-  { name: "中药材（饮片）馆", views: 8234, exams: 1456 },
-  { name: "药用植物馆", views: 3122, exams: 436 },
-]);
+const chartData = reactive({
+  visitTrend: [] as any[],
+  examTrend: [] as any[],
+  scoreDistribution: [] as any[],
+  userComposition: { teachers: 0, students: 0 },
+  rawScoreDist: {
+    hundred: 0,
+    ninetyToHundred: 0,
+    eightyToNinety: 0,
+    seventyToEighty: 0,
+    sixtyToSeventy: 0,
+    fiftyToSixty: 0,
+    fortyToFifty: 0,
+    thirtyToForty: 0,
+    twentyToThirty: 0,
+    tenToTwenty: 0,
+    zeroToTen: 0
+  }
+})
 
-const maxViews = ref(8234);
-const maxExams = ref(1456);
-
-// 模拟考试分数分布数据
-const examScoreData = [
-  { score: "0-5", count: 8 },
-  { score: "6-10", count: 24 },
-  { score: "11-15", count: 67 },
-  { score: "16-18", count: 89 },
-  { score: "19-20", count: 43 },
-];
-
-// 模拟标本分类统计数据
-const categoryData = [
-  { name: "根茎类", count: 156 },
-  { name: "花叶类", count: 89 },
-  { name: "果实种子类", count: 134 },
-  { name: "皮类", count: 45 },
-  { name: "全草类", count: 78 },
-];
-
-// 初始化访问量图表
-function initVisitChart(data: any[]) {
-  if (!visitChartRef.value) return;
-  visitChart.value = markRaw(echarts.init(visitChartRef.value));
-
-  const option = {
-    tooltip: {
-      trigger: "axis",
-      backgroundColor: "#fff",
-      borderRadius: 8,
-      border: "1px solid #eee",
-      textStyle: { fontSize: 12 },
-    },
-    legend: {
-      data: ["访问次数", "访问用户数"],
-      icon: "circle",
-      itemWidth: 8,
-      itemHeight: 8,
-      textStyle: { fontSize: 12 },
-    },
-    grid: {
-      left: "3%",
-      right: "4%",
-      bottom: "3%",
-      top: "15%",
-      containLabel: true,
-    },
-    xAxis: {
-      type: "category",
-      boundaryGap: false,
-      data: data.map((d) => d.date),
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#f0f0f0" } },
-      axisLabel: { fontSize: 11, color: "#888" },
-    },
-    yAxis: {
-      type: "value",
-      axisTick: { show: false },
-      axisLine: { show: false },
-      axisLabel: { fontSize: 11, color: "#888" },
-      splitLine: { lineStyle: { color: "#f0f0f0" } },
-    },
-    series: [
-      {
-        name: "访问次数",
-        type: "line",
-        smooth: true,
-        symbol: "circle",
-        symbolSize: 6,
-        data: data.map((d) => d.count),
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0.05, color: "rgba(45, 106, 79, 0.3)" },
-            { offset: 0.95, color: "rgba(45, 106, 79, 0)" },
-          ]),
-        },
-        lineStyle: { color: "#2d6a4f", width: 2 },
-        itemStyle: { color: "#2d6a4f" },
-      },
-      {
-        name: "访问用户数",
-        type: "line",
-        smooth: true,
-        symbol: "circle",
-        symbolSize: 6,
-        data: data.map((d, i) => Math.floor(Math.random() * 50) + i * 2),
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0.05, color: "rgba(82, 183, 136, 0.3)" },
-            { offset: 0.95, color: "rgba(82, 183, 136, 0)" },
-          ]),
-        },
-        lineStyle: { color: "#52b788", width: 2 },
-        itemStyle: { color: "#52b788" },
-      },
-    ],
-  };
-
-  visitChart.value.setOption(option);
+// 设置默认时间范围为最近一个月
+function setDefaultDateRange() {
+  const end = dayjs().format('YYYY-MM-DD')
+  const start = dayjs().subtract(30, 'day').format('YYYY-MM-DD')
+  dateRange.value = [start, end]
+  queryParams.startDate = start
+  queryParams.endDate = end
 }
 
-// 初始化考试分布图表
-function initExamChart() {
-  if (!examChartRef.value) return;
-  examChart.value = markRaw(echarts.init(examChartRef.value));
-
-  const option = {
-    tooltip: {
-      trigger: "axis",
-      backgroundColor: "#fff",
-      borderRadius: 8,
-      fontSize: 12,
-    },
-    grid: {
-      left: "3%",
-      right: "4%",
-      bottom: "3%",
-      top: "10%",
-      containLabel: true,
-    },
-    xAxis: {
-      type: "category",
-      data: examScoreData.map((d) => d.score),
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#f0f0f0" } },
-      axisLabel: { fontSize: 12, color: "#888" },
-    },
-    yAxis: {
-      type: "value",
-      axisTick: { show: false },
-      axisLine: { show: false },
-      axisLabel: { fontSize: 12, color: "#888" },
-      splitLine: { lineStyle: { color: "#f0f0f0" } },
-    },
-    series: [
-      {
-        name: "考试人次",
-        type: "bar",
-        data: examScoreData.map((d) => d.count),
-        barWidth: 20,
-        itemStyle: {
-          color: "#52b788",
-          borderRadius: [4, 4, 0, 0],
-        },
-      },
-    ],
-  };
-
-  examChart.value.setOption(option);
+// 日期范围变化
+function handleDateChange(val: [string, string] | null) {
+  if (val) {
+    queryParams.startDate = val[0]
+    queryParams.endDate = val[1]
+  } else {
+    queryParams.startDate = ''
+    queryParams.endDate = ''
+  }
+  loadData()
 }
 
-// 初始化分类统计图表
-function initCategoryChart() {
-  if (!categoryChartRef.value) return;
-  categoryChart.value = markRaw(echarts.init(categoryChartRef.value));
-
-  const option = {
-    tooltip: {
-      trigger: "axis",
-      backgroundColor: "#fff",
-      borderRadius: 8,
-      fontSize: 12,
-    },
-    grid: {
-      left: "3%",
-      right: "8%",
-      bottom: "3%",
-      top: "10%",
-      containLabel: true,
-    },
-    xAxis: {
-      type: "value",
-      axisTick: { show: false },
-      axisLine: { show: false },
-      axisLabel: { fontSize: 11, color: "#888" },
-      splitLine: { lineStyle: { color: "#f0f0f0" } },
-    },
-    yAxis: {
-      type: "category",
-      data: categoryData.map((d) => d.name),
-      axisTick: { show: false },
-      axisLine: { show: false },
-      axisLabel: { fontSize: 11, color: "#555", width: 80 },
-    },
-    series: [
-      {
-        name: "标本数量",
-        type: "bar",
-        data: categoryData.map((d) => d.count),
-        barWidth: 16,
-        itemStyle: {
-          color: "#2d6a4f",
-          borderRadius: [0, 4, 4, 0],
-        },
-      },
-    ],
-  };
-
-  categoryChart.value.setOption(option);
+// 查询
+function handleQuery() {
+  loadData()
 }
 
-// 加载数据
-async function loadData() {
+// 加载学校列表
+async function loadSchools() {
   try {
-    // 加载系统概况
-    const overviewRes: any = await getStatsOverview();
-    if (overviewRes.code === 200) {
-      const data = overviewRes.data;
-      metrics.value[0].value = data.totalVisits || 0;
-      metrics.value[1].value = (data.totalVisits || 0).toLocaleString();
-      metrics.value[2].value = data.totalUsers || 0;
-      metrics.value[3].value = (data.totalExamCount || 0).toLocaleString();
-    }
-
-    // 加载访问趋势
-    const chartRes: any = await getStatsVisitChart(period.value);
-    if (chartRes.code === 200) {
-      const chartData = chartRes.data || [];
-      // 如果没有数据，生成模拟数据
-      if (chartData.length === 0) {
-        const now = new Date();
-        const mockData = [];
-        for (let i = period.value - 1; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          mockData.push({
-            date: date.toISOString().split("T")[0],
-            count: Math.floor(Math.random() * 100) + 50,
-          });
-        }
-        initVisitChart(mockData);
-      } else {
-        initVisitChart(chartData);
-      }
+    const res: any = await listDept({ type: 'school' })
+    if (res.code === 200 && res.data) {
+      schoolOptions.value = res.data
     }
   } catch (error) {
-    console.error("加载统计数据失败", error);
-    // 失败时生成模拟访问数据
-    const now = new Date();
-    const mockData = [];
-    for (let i = period.value - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      mockData.push({
-        date: date.toISOString().split("T")[0],
-        count: Math.floor(Math.random() * 100) + 50,
-      });
-    }
-    initVisitChart(mockData);
+    console.error('加载学校列表失败', error)
   }
 }
 
-// 切换时间周期
-function handlePeriodChange() {
-  loadData();
+// 加载统计数据
+async function loadData() {
+  try {
+    const res: any = await getSchoolStats(queryParams)
+    if (res.code === 200 && res.data) {
+      const dataList = res.data as any[]
+
+      // 汇总所有学校数据
+      let totalExams = 0
+      let totalVisits = 0
+      const allVisitDaily: any[] = []
+      const allExamDaily: any[] = []
+      let teachers = 0
+      let students = 0
+
+      dataList.forEach((data: any) => {
+        totalExams += data.totalExams || 0
+        totalVisits += data.totalVisits || 0
+        if (data.visitDailyData) allVisitDaily.push(...data.visitDailyData)
+        if (data.examDailyData) allExamDaily.push(...data.examDailyData)
+        if (data.userStats) {
+          teachers += data.userStats.teachers || 0
+          students += data.userStats.students || 0
+        }
+        if (data.scoreDistribution) {
+          const dist = data.scoreDistribution
+          chartData.rawScoreDist.hundred += dist.hundred || 0
+          chartData.rawScoreDist.ninetyToHundred += dist.ninetyToHundred || 0
+          chartData.rawScoreDist.eightyToNinety += dist.eightyToNinety || 0
+          chartData.rawScoreDist.seventyToEighty += dist.seventyToEighty || 0
+          chartData.rawScoreDist.sixtyToSeventy += dist.sixtyToSeventy || 0
+          chartData.rawScoreDist.fiftyToSixty += dist.fiftyToSixty || 0
+          chartData.rawScoreDist.fortyToFifty += dist.fortyToFifty || 0
+          chartData.rawScoreDist.thirtyToForty += dist.thirtyToForty || 0
+          chartData.rawScoreDist.twentyToThirty += dist.twentyToThirty || 0
+          chartData.rawScoreDist.tenToTwenty += dist.tenToTwenty || 0
+          chartData.rawScoreDist.zeroToTen += dist.zeroToTen || 0
+        }
+      })
+
+      // 计算日均（基于日期范围天数）
+      const start = dayjs(queryParams.startDate)
+      const end = dayjs(queryParams.endDate)
+      const days = end.diff(start, 'day') + 1 || 1
+      const avgDailyVisit = Math.round(totalVisits / days)
+      const avgDailyExam = Math.round(totalExams / days)
+
+      // 更新指标卡片
+      metrics.value[0].value = totalExams
+      metrics.value[1].value = avgDailyExam
+      metrics.value[2].value = totalVisits.toLocaleString()
+      metrics.value[3].value = avgDailyVisit
+      metrics.value[4].value = teachers + students
+
+      // 访问趋势数据（按日期排序）
+      chartData.visitTrend = allVisitDaily.sort((a, b) => a.date.localeCompare(b.date))
+      // 考试趋势数据
+      chartData.examTrend = allExamDaily.sort((a, b) => a.date.localeCompare(b.date))
+      // 用户构成
+      chartData.userComposition = { teachers, students }
+
+      updateCharts()
+    }
+  } catch (error) {
+    console.error('加载统计数据失败', error)
+  }
 }
 
-// 窗口 resize 处理
+// 更新所有图表
+function updateCharts() {
+  updateVisitChart()
+  updateExamChart()
+  updateScoreChart()
+  updateUserPieChart()
+}
+
+// 更新访问趋势图
+function updateVisitChart() {
+  if (!visitChartInstance || !visitChartRef.value) return
+
+  const option = {
+    tooltip: { trigger: 'axis', backgroundColor: '#fff', borderRadius: 8, border: '1px solid #eee', textStyle: { fontSize: 12 } },
+    legend: { data: ['访问量'], icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 12 } },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+    xAxis: { type: 'category', boundaryGap: false, data: chartData.visitTrend.map((d: any) => d.date), axisTick: { show: false }, axisLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 11, color: '#888' } },
+    yAxis: { type: 'value', axisTick: { show: false }, axisLine: { show: false }, axisLabel: { fontSize: 11, color: '#888' }, splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    series: [{
+      name: '访问量',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      data: chartData.visitTrend.map((d: any) => d.count),
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0.05, color: 'rgba(45, 106, 79, 0.3)' }, { offset: 0.95, color: 'rgba(45, 106, 79, 0)' }]) },
+      lineStyle: { color: '#2d6a4f', width: 2 },
+      itemStyle: { color: '#2d6a4f' }
+    }]
+  }
+
+  visitChartInstance.setOption(option)
+}
+
+// 更新考试趋势图
+function updateExamChart() {
+  if (!examChartInstance || !examChartRef.value) return
+
+  const option = {
+    tooltip: { trigger: 'axis', backgroundColor: '#fff', borderRadius: 8, border: '1px solid #eee', textStyle: { fontSize: 12 } },
+    legend: { data: ['考试次数'], icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 12 } },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+    xAxis: { type: 'category', boundaryGap: false, data: chartData.examTrend.map((d: any) => d.date), axisTick: { show: false }, axisLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 11, color: '#888' } },
+    yAxis: { type: 'value', axisTick: { show: false }, axisLine: { show: false }, axisLabel: { fontSize: 11, color: '#888' }, splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    series: [{
+      name: '考试次数',
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 6,
+      data: chartData.examTrend.map((d: any) => d.count),
+      areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0.05, color: 'rgba(82, 183, 136, 0.3)' }, { offset: 0.95, color: 'rgba(82, 183, 136, 0)' }]) },
+      lineStyle: { color: '#52b788', width: 2 },
+      itemStyle: { color: '#52b788' }
+    }]
+  }
+
+  examChartInstance.setOption(option)
+}
+
+// 更新成绩分布柱状图
+function updateScoreChart() {
+  if (!scoreChartInstance || !scoreChartRef.value) return
+
+  const dist = chartData.rawScoreDist
+  const option = {
+    tooltip: { trigger: 'axis', backgroundColor: '#fff', borderRadius: 8, fontSize: 12 },
+    legend: { data: ['人数'], icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 12 } },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: ['100', '90-99', '80-89', '70-79', '60-69', '50-59', '40-49', '30-39', '20-29', '10-19', '0-9'], axisTick: { show: false }, axisLine: { lineStyle: { color: '#f0f0f0' } }, axisLabel: { fontSize: 10, color: '#888' } },
+    yAxis: { type: 'value', axisTick: { show: false }, axisLine: { show: false }, axisLabel: { fontSize: 12, color: '#888' }, splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    series: [{
+      name: '人数',
+      type: 'bar',
+      data: [dist.hundred, dist.ninetyToHundred, dist.eightyToNinety, dist.seventyToEighty, dist.sixtyToSeventy, dist.fiftyToSixty, dist.fortyToFifty, dist.thirtyToForty, dist.twentyToThirty, dist.tenToTwenty, dist.zeroToTen],
+      barWidth: 20,
+      itemStyle: { color: '#52b788', borderRadius: [4, 4, 0, 0] }
+    }]
+  }
+
+  scoreChartInstance.setOption(option)
+}
+
+// 更新用户构成饼图
+function updateUserPieChart() {
+  if (!userPieChartInstance || !userPieChartRef.value) return
+
+  const option = {
+    tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
+    legend: { bottom: 0, textStyle: { fontSize: 12 } },
+    series: [{
+      name: '用户构成',
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '50%'],
+      data: [
+        { value: chartData.userComposition.students, name: '学生', itemStyle: { color: '#52b788' } },
+        { value: chartData.userComposition.teachers, name: '教师', itemStyle: { color: '#2d6a4f' } }
+      ],
+      label: { show: true, formatter: '{b}: {c}' },
+      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+    }]
+  }
+
+  userPieChartInstance.setOption(option)
+}
+
+// 导出成绩
+async function handleExport() {
+  try {
+    const res: any = await exportStudentScores({
+      deptId: queryParams.deptId,
+      startDate: queryParams.startDate,
+      endDate: queryParams.endDate
+    })
+    const blob = new Blob([res], { type: 'application/vnd.ms-excel' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '学生成绩统计_' + dayjs().format('YYYY-MM-DD') + '.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+  }
+}
+
+// 初始化图表
+function initCharts() {
+  if (visitChartRef.value) {
+    visitChartInstance = markRaw(echarts.init(visitChartRef.value, 'macarons'))
+  }
+  if (examChartRef.value) {
+    examChartInstance = markRaw(echarts.init(examChartRef.value, 'macarons'))
+  }
+  if (scoreChartRef.value) {
+    scoreChartInstance = markRaw(echarts.init(scoreChartRef.value, 'macarons'))
+  }
+  if (userPieChartRef.value) {
+    userPieChartInstance = markRaw(echarts.init(userPieChartRef.value, 'macarons'))
+  }
+}
+
+// 响应式
 function handleResize() {
-  visitChart.value?.resize();
-  examChart.value?.resize();
-  categoryChart.value?.resize();
+  visitChartInstance?.resize()
+  examChartInstance?.resize()
+  scoreChartInstance?.resize()
+  userPieChartInstance?.resize()
 }
 
 // 生命周期
 onMounted(() => {
-  initVisitChart([]);
-  initExamChart();
-  initCategoryChart();
-  loadData();
-  window.addEventListener("resize", handleResize);
-});
+  setDefaultDateRange()
+  initCharts()
+  loadSchools()
+  loadData()
+  window.addEventListener('resize', handleResize)
+})
 
 onUnmounted(() => {
-  window.removeEventListener("resize", handleResize);
-  visitChart.value?.dispose();
-  examChart.value?.dispose();
-  categoryChart.value?.dispose();
-});
+  window.removeEventListener('resize', handleResize)
+  visitChartInstance?.dispose()
+  examChartInstance?.dispose()
+  scoreChartInstance?.dispose()
+  userPieChartInstance?.dispose()
+})
 </script>
 
 <style scoped>
@@ -453,7 +421,6 @@ onUnmounted(() => {
   padding: 20px;
 }
 
-/* 页面头部 */
 .page-header {
   display: flex;
   align-items: center;
@@ -480,15 +447,26 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
 /* 统计卡片网格 */
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .metrics-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1000px) {
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -548,7 +526,19 @@ onUnmounted(() => {
 
 .chart-container {
   width: 100%;
-  height: 250px;
+  height: 280px;
+}
+
+/* 图表网格 */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.charts-grid .chart-card {
+  margin-bottom: 0;
 }
 
 /* 图表行 */
@@ -563,65 +553,9 @@ onUnmounted(() => {
 }
 
 @media (max-width: 1200px) {
+  .charts-grid,
   .charts-row {
     grid-template-columns: 1fr;
   }
-}
-
-/* 标本目录统计 */
-.museum-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.museum-item {
-  padding: 16px;
-  background: #f8faf8;
-  border-radius: 12px;
-}
-
-.museum-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.museum-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-.museum-meta {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: #888;
-}
-
-.museum-progress {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.progress-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #888;
-}
-
-:deep(.el-progress-bar__outer) {
-  border-radius: 4px;
-  background: #e8f5e9;
 }
 </style>

@@ -48,6 +48,15 @@
         <div ref="visitChartRef" style="height: 220px"></div>
       </div>
 
+      <!-- 学校用户统计图 -->
+      <div class="chart-card">
+        <div class="chart-title-row">
+          <h3 class="chart-title">学校用户统计</h3>
+          <el-button size="small" type="primary" plain icon="Download" @click="handleExport">导出</el-button>
+        </div>
+        <div ref="schoolUserChartRef" style="height: 220px"></div>
+      </div>
+
       <!-- 分类分布图 -->
       <div class="chart-card">
         <h3 class="chart-title">标本分类分布</h3>
@@ -132,6 +141,7 @@
 <script setup lang="ts">
   import { ref, reactive, onMounted, onUnmounted, markRaw, nextTick, computed } from 'vue'
   import { getCurrentInstance } from 'vue'
+  import { ElMessage } from 'element-plus'
   import * as echarts from 'echarts'
   import {
     Top,
@@ -142,7 +152,8 @@
     View,
     Files,
     Document,
-    UserFilled
+    UserFilled,
+    Download
   } from '@element-plus/icons-vue'
   import {
     getStatsOverview,
@@ -153,6 +164,7 @@
     getAppUserList
   } from '@/api/index'
   import { listSpecimen } from '@/api/specimen'
+  import { userStatistics, exportUserStatistics } from '@/api/system/dept'
 
   const { proxy } = getCurrentInstance()
 
@@ -170,6 +182,7 @@
   const visitChartData = ref<any[]>([])
   const categoryChartData = ref<any[]>([])
   const categoryLegend = ref<any[]>([])
+  const schoolUserData = ref<any[]>([])
 
   // 待处理数量
   const pendingCounts = reactive({
@@ -188,8 +201,10 @@
   // ECharts 实例
   let visitChartInstance: echarts.ECharts | null = null
   let categoryChartInstance: echarts.ECharts | null = null
+  let schoolUserChartInstance: echarts.ECharts | null = null
   const visitChartRef = ref<HTMLDivElement | null>(null)
   const categoryChartRef = ref<HTMLDivElement | null>(null)
+  const schoolUserChartRef = ref<HTMLDivElement | null>(null)
 
   // 指标卡片数据
   const statCards = computed(() => [
@@ -230,7 +245,7 @@
   // 待处理事项
   const pendingItems = computed(() => [
     { label: '注册申请审核', count: pendingCounts.registerAudit, color: '#3b82f6' },
-    { label: 'VIP申请审核', count: pendingCounts.vipAudit, color: '#8b5cf6' },
+    // { label: 'VIP申请审核', count: pendingCounts.vipAudit, color: '#8b5cf6' },
     { label: '图片上传审核', count: pendingCounts.imageAudit, color: '#f59e0b' }
   ])
 
@@ -369,6 +384,95 @@
     }
   }
 
+  // 加载学校用户统计
+  async function loadSchoolUserStats() {
+    try {
+      const res: any = await userStatistics()
+      if (res.code === 200 && res.data) {
+        schoolUserData.value = res.data
+        updateSchoolUserChart()
+      }
+    } catch (error) {
+      console.error('加载学校用户统计失败', error)
+    }
+  }
+
+  // 更新学校用户柱状图
+  function updateSchoolUserChart() {
+    if (!schoolUserChartInstance) return
+
+    const schools = schoolUserData.value.map((item: any) => item.deptName)
+    const teacherData = schoolUserData.value.map((item: any) => item.teacherCount)
+    const studentData = schoolUserData.value.map((item: any) => item.studentCount)
+
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' }
+      },
+      legend: {
+        data: ['教师', '学生'],
+        bottom: 0,
+        textStyle: { fontSize: 11 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '18%',
+        top: '8%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: schools,
+        axisLabel: { color: '#666', fontSize: 11, rotate: 15 },
+        axisLine: { lineStyle: { color: '#ddd' } }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { color: '#888', fontSize: 11 },
+        splitLine: { lineStyle: { color: '#f0f0f0' } }
+      },
+      series: [
+        {
+          name: '教师',
+          type: 'bar',
+          stack: 'total',
+          data: teacherData,
+          itemStyle: { color: '#2d6a4f' },
+          barWidth: 20
+        },
+        {
+          name: '学生',
+          type: 'bar',
+          stack: 'total',
+          data: studentData,
+          itemStyle: { color: '#95d5b2' },
+          barWidth: 20
+        }
+      ]
+    }
+
+    schoolUserChartInstance.setOption(option)
+  }
+
+  // 导出用户统计
+  async function handleExport() {
+    try {
+      const res: any = await exportUserStatistics()
+      const blob = new Blob([res], { type: 'application/vnd.ms-excel' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = '学校用户统计_' + new Date().toISOString().slice(0, 10) + '.xlsx'
+      link.click()
+      window.URL.revokeObjectURL(url)
+      ElMessage.success('导出成功')
+    } catch (error) {
+      ElMessage.error('导出失败')
+    }
+  }
+
   // 切换访问天数
   function changeVisitDays(days: number) {
     visitDays.value = days
@@ -465,12 +569,16 @@
     if (categoryChartRef.value) {
       categoryChartInstance = markRaw(echarts.init(categoryChartRef.value, 'macarons'))
     }
+    if (schoolUserChartRef.value) {
+      schoolUserChartInstance = markRaw(echarts.init(schoolUserChartRef.value, 'macarons'))
+    }
   }
 
   // 响应式调整
   function handleResize() {
     visitChartInstance?.resize()
     categoryChartInstance?.resize()
+    schoolUserChartInstance?.resize()
   }
 
   // 加载所有数据
@@ -481,7 +589,8 @@
         loadOverview(),
         loadVisitChart(),
         loadMuseumAndCategory(),
-        loadPendingCounts()
+        loadPendingCounts(),
+        loadSchoolUserStats()
       ])
     } finally {
       proxy.$modal.closeLoading()
@@ -498,6 +607,7 @@
   onUnmounted(() => {
     visitChartInstance?.dispose()
     categoryChartInstance?.dispose()
+    schoolUserChartInstance?.dispose()
     window.removeEventListener('resize', handleResize)
   })
 </script>
@@ -587,7 +697,7 @@
 
   @media (min-width: 1280px) {
     .charts-grid {
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 1.5fr 1fr 1fr;
     }
   }
 
@@ -603,6 +713,17 @@
     font-weight: 500;
     color: #374151;
     margin: 0 0 12px 0;
+  }
+
+  .chart-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .chart-title-row .chart-title {
+    margin: 0;
   }
 
   .chart-card-wide {
