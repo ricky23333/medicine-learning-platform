@@ -192,6 +192,13 @@ const parseTime = proxy.parseTime
 const expandedRowKeys = shallowRef([])
 const columns = ref([
   {
+    dataKey: 'deptId',
+    key: 'deptId',
+    title: '部门ID',
+    width: 100,
+    align: 'center'
+  },
+  {
     dataKey: 'deptName',
     key: 'deptName',
     title: '部门名称',

@@ -2,7 +2,7 @@
  * 请求封装工具
  */
 
-const API_BASE_URL = 'http://localhost:5880'
+const API_BASE_URL = 'https://dhtcm.cn/api'
 
 interface RequestOptions {
 	url: string
