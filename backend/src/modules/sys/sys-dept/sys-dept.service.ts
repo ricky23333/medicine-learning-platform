@@ -240,6 +240,6 @@ export class SysDeptService {
       };
     });
 
-    return result;
+    return result.filter((item) => item.deptId !== 100);
   }
 }

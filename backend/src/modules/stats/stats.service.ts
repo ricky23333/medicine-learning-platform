@@ -97,7 +97,7 @@ export class StatsService {
     const depts = await this.prisma.sysDept.findMany({
       where: deptWhere,
       select: { deptId: true, deptName: true },
-    });
+    }).then((list) => list.filter((d) => d.deptId !== 100));
 
     const results: SchoolStatsResponse[] = [];
 
