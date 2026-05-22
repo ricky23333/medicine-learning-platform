@@ -46,7 +46,6 @@ export class SpecimenController {
 
   /* 分页查询标本列表 */
   @Get('list')
-  @RequiresPermissions('admin:specimen:query')
   @ApiOperation({ summary: '分页查询标本列表' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async list(@Query(PaginationPipe) query: any) {
@@ -55,7 +54,6 @@ export class SpecimenController {
 
   /* 通过ID查询标本 */
   @Get(':specimenId')
-  @RequiresPermissions('admin:specimen:query')
   @ApiOperation({ summary: '通过ID查询标本' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async one(@Param('specimenId') specimenId: number) {
@@ -66,7 +64,6 @@ export class SpecimenController {
   /* 更新标本 */
   @Put()
   @Log({ title: '标本管理', businessType: BusinessTypeEnum.update })
-  @RequiresPermissions('admin:specimen:edit')
   @ApiOperation({ summary: '更新标本' })
   @ApiResponse({ status: 200, description: '更新成功' })
   async update(@Body() updateSpecimenDto: any) {
@@ -87,7 +84,6 @@ export class SpecimenController {
   /* 上传标本图片 */
   @Post('image')
   @Log({ title: '标本图片', businessType: BusinessTypeEnum.insert })
-  @RequiresPermissions('admin:specimen:image:add')
   @UseInterceptors(FileInterceptor('file', {
     storage: multer.memoryStorage(),
   }))

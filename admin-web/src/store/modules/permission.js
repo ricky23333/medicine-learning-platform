@@ -4,56 +4,68 @@ import { getRouters } from '@/api/menu'
 import Layout from '@/layout/index'
 import ParentView from '@/components/ParentView'
 import InnerLink from '@/layout/components/InnerLink'
+import useUserStore from '@/store/modules/user'
 
 // 匹配views里面所有的.vue文件
 const modules = import.meta.glob('./../../views/**/*.vue')
 
-const usePermissionStore = defineStore(
-  'permission',
-  {
-    state: () => ({
-      routes: [],
-      addRoutes: [],
-      defaultRoutes: [],
-      topbarRouters: [],
-      sidebarRouters: []
-    }),
-    actions: {
-      setRoutes(routes) {
-        this.addRoutes = routes
-        this.routes = constantRoutes.concat(routes)
-      },
-      setDefaultRoutes(routes) {
-        this.defaultRoutes = constantRoutes.concat(routes)
-      },
-      setTopbarRoutes(routes) {
-        this.topbarRouters = routes
-      },
-      setSidebarRouters(routes) {
-        this.sidebarRouters = routes
-      },
-      generateRoutes(roles) {
-        return new Promise(resolve => {
-          // 向后端请求路由数据
-          getRouters().then(res => {
-            const sdata = JSON.parse(JSON.stringify(res.data))
-            const rdata = JSON.parse(JSON.stringify(res.data))
-            const defaultData = JSON.parse(JSON.stringify(res.data))
-            const sidebarRoutes = filterAsyncRouter(sdata)
-            const rewriteRoutes = filterAsyncRouter(rdata, false, true)
-            const defaultRoutes = filterAsyncRouter(defaultData)
-            const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
-            asyncRoutes.forEach(route => { router.addRoute(route) })
-            this.setRoutes(rewriteRoutes)
-            this.setSidebarRouters(constantRoutes.concat(sidebarRoutes))
-            this.setDefaultRoutes(sidebarRoutes)
-            this.setTopbarRoutes(defaultRoutes)
-            resolve(rewriteRoutes)
+const usePermissionStore = defineStore('permission', {
+  state: () => ({
+    routes: [],
+    addRoutes: [],
+    defaultRoutes: [],
+    topbarRouters: [],
+    sidebarRouters: []
+  }),
+  actions: {
+    setRoutes(routes) {
+      this.addRoutes = routes
+      this.routes = constantRoutes.concat(routes)
+    },
+    setDefaultRoutes(routes) {
+      this.defaultRoutes = constantRoutes.concat(routes)
+    },
+    setTopbarRoutes(routes) {
+      this.topbarRouters = routes
+    },
+    setSidebarRouters(routes) {
+      this.sidebarRouters = routes
+    },
+    generateRoutes(roles) {
+      return new Promise(resolve => {
+        // 向后端请求路由数据
+        getRouters().then(res => {
+          const sdata = JSON.parse(JSON.stringify(res.data))
+          const rdata = JSON.parse(JSON.stringify(res.data))
+          const defaultData = JSON.parse(JSON.stringify(res.data))
+          const sidebarRoutes = filterAsyncRouter(sdata)
+          const rewriteRoutes = filterAsyncRouter(rdata, false, true)
+          const defaultRoutes = filterAsyncRouter(defaultData)
+          const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
+          asyncRoutes.forEach(route => {
+            router.addRoute(route)
           })
+
+          this.setRoutes(rewriteRoutes)
+          const appUser = useUserStore().appUser
+
+          const isVIP = appUser && appUser.userType === 'teacher' && appUser.vipStatus === '2'
+          let tempConstRoutes = constantRoutes
+          if (isVIP) {
+            tempConstRoutes = tempConstRoutes.filter(item => {
+              return item.path === '/museum' || item.path === '/specimen' || item.path === ''
+            })
+          }
+
+          this.setSidebarRouters(tempConstRoutes.concat(sidebarRoutes))
+          this.setDefaultRoutes(sidebarRoutes)
+          this.setTopbarRoutes(defaultRoutes)
+          resolve(rewriteRoutes)
         })
-      }
+      })
     }
-  })
+  }
+})
 
 // 遍历后台传来的路由字符串，转换为组件对象
 function filterAsyncRouter(asyncRouterMap, lastRouter = false, type = false) {
@@ -124,15 +136,15 @@ export function filterDynamicRoutes(routes) {
   return res
 }
 
-export const loadView = (view) => {
-  let res;
+export const loadView = view => {
+  let res
   for (const path in modules) {
-    const dir = path.split('views/')[1].split('.vue')[0];
+    const dir = path.split('views/')[1].split('.vue')[0]
     if (dir === view) {
-      res = () => modules[path]();
+      res = () => modules[path]()
     }
   }
-  return res;
+  return res
 }
 
 export default usePermissionStore

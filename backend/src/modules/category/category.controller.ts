@@ -24,12 +24,11 @@ import { DataObj } from 'src/common/class/data-obj.class';
 @ApiBearerAuth()
 @Controller('admin/category')
 export class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService) { }
 
   /* 新增分类 */
   @Post()
   @Log({ title: '分类管理', businessType: BusinessTypeEnum.insert })
-  @RequiresPermissions('admin:category:add')
   @ApiOperation({ summary: '新增分类' })
   @ApiResponse({ status: 200, description: '新增成功' })
   async add(@Body() createCategoryDto: any) {
@@ -38,7 +37,6 @@ export class CategoryController {
 
   /* 分页查询分类列表 */
   @Get('list')
-  @RequiresPermissions('admin:category:query')
   @ApiOperation({ summary: '分页查询分类列表' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async list(@Query(PaginationPipe) query: any) {
@@ -47,7 +45,6 @@ export class CategoryController {
 
   /* 通过ID查询分类 */
   @Get(':categoryId')
-  @RequiresPermissions('admin:category:query')
   @ApiOperation({ summary: '通过ID查询分类' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async one(@Param('categoryId') categoryId: number) {
@@ -58,7 +55,6 @@ export class CategoryController {
   /* 更新分类 */
   @Put()
   @Log({ title: '分类管理', businessType: BusinessTypeEnum.update })
-  @RequiresPermissions('admin:category:edit')
   @ApiOperation({ summary: '更新分类' })
   @ApiResponse({ status: 200, description: '更新成功' })
   async update(@Body() updateCategoryDto: any) {

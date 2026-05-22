@@ -5,6 +5,13 @@
 -->
 <template>
   <div class="index-container">
+    <!-- 无权限提示 -->
+    <div v-if="!isAdmin" class="no-permission">
+      <div class="no-permission-icon">🔒</div>
+      <div class="no-permission-text">当前用户无查看此数据权限</div>
+    </div>
+
+    <template v-else>
     <!-- 页面标题 -->
     <div class="index-header">
       <h1 class="text-gray-800">系统概况</h1>
@@ -135,6 +142,7 @@
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -165,6 +173,10 @@
   } from '@/api/index'
   import { listSpecimen } from '@/api/specimen'
   import { userStatistics, exportUserStatistics } from '@/api/system/dept'
+  import useUserStore from '@/store/modules/user'
+
+  const userStore = useUserStore()
+  const isAdmin = computed(() => userStore.roles?.includes('admin'))
 
   const { proxy } = getCurrentInstance()
 
@@ -942,5 +954,27 @@
 
   .text-gray-500 {
     color: #6b7280;
+  }
+
+  /* 无权限提示 */
+  .no-permission {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  .no-permission-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .no-permission-text {
+    font-size: 16px;
+    color: #666;
   }
 </style>

@@ -52,7 +52,6 @@ export class StatsController {
   @ApiOperation({ summary: '按学校和时间范围获取统计数据' })
   @ApiResponse({ status: 200, description: '查询成功' })
   async getSchoolStats(@Query() query: GetSchoolStatsDto) {
-    console.log(3333, query);
     const result = await this.statsService.getSchoolStats(query);
     return AjaxResult.success(result);
   }

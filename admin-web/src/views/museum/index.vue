@@ -11,7 +11,7 @@
         <h1 class="page-title">标本目录管理</h1>
         <p class="page-desc">管理标本目录及其二级分类</p>
       </div>
-      <el-button type="primary" @click="openAddMuseum">
+      <el-button v-if="!isVipTeacher" type="primary" @click="openAddMuseum">
         <el-icon><Plus /></el-icon>
         新增标本目录
       </el-button>
@@ -40,10 +40,10 @@
             <p class="museum-desc">{{ museum.description || '暂无描述' }}</p>
           </div>
           <div class="museum-actions" @click.stop>
-            <el-button text @click="openEditMuseum(museum)">
+            <el-button v-if="!isVipTeacher" text @click="openEditMuseum(museum)">
               <el-icon><Edit /></el-icon>
             </el-button>
-            <el-button text type="danger" @click="confirmDeleteMuseum(museum)">
+            <el-button v-if="!isVipTeacher" text type="danger" @click="confirmDeleteMuseum(museum)">
               <el-icon><Delete /></el-icon>
             </el-button>
             <el-icon class="expand-icon" :class="{ rotated: expandedMuseum === museum.museumId }">
@@ -84,6 +84,7 @@
                   <el-icon><Edit /></el-icon>
                 </el-button>
                 <el-button
+                  v-if="!isVipTeacher"
                   text
                   size="small"
                   type="danger"
@@ -197,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
+  import { ref, reactive, onMounted, computed } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Plus, Edit, Delete, Folder, FolderOpened, ArrowRight } from '@element-plus/icons-vue'
   import {
@@ -210,6 +211,14 @@
     updateCategory,
     delCategory
   } from '@/api/museum'
+  import useUserStore from '@/store/modules/user'
+
+  const userStore = useUserStore()
+  const isVipTeacher = computed(() => {
+    return userStore?.appUser &&
+      userStore.appUser.userType === 'teacher' &&
+      userStore.appUser.vipStatus === '2'
+  })
 
   const iconList = ['🌿', '🌱', '🍀', '🪴', '🌾', '🌸', '🍃', '🌲', '🌳', '🔬', '💊', '🧪']
 

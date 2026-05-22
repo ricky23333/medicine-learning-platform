@@ -279,16 +279,16 @@
       count: registerList.value.filter(r => r.regStatus === '0').length
     },
     {
-      key: 'vip' as TabKey,
-      label: 'VIP申请',
-      icon: markRaw(GoldMedal),
-      count: vipList.value.filter(v => v.vipStatus === '1').length
-    },
-    {
       key: 'images' as TabKey,
       label: '图片审核',
       icon: markRaw(Picture),
       count: pendingImages.value.length
+    },
+    {
+      key: 'vip' as TabKey,
+      label: 'VIP申请',
+      icon: markRaw(GoldMedal),
+      count: vipList.value.filter(v => v.vipStatus === '1').length
     }
   ])
 
