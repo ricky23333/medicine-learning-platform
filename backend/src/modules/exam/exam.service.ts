@@ -37,50 +37,70 @@ export class ExamService {
       },
     });
 
-    // 收集所有可用图片
-    const availableImages: any[] = [];
+    // 收集所有可用图片，按标本分组
+    const specimenImagesMap = new Map<number, any[]>();
     specimens.forEach((specimen) => {
       specimen.images.forEach((image) => {
-        availableImages.push({ specimenId: specimen.specimenId, imageId: image.imageId });
+        const list = specimenImagesMap.get(specimen.specimenId) || [];
+        list.push({ specimenId: specimen.specimenId, imageId: image.imageId });
+        specimenImagesMap.set(specimen.specimenId, list);
       });
     });
 
-    if (availableImages.length === 0) {
+    if (specimenImagesMap.size === 0) {
       throw new ApiException('没有可用的标本图片');
     }
 
-    // 查找当前用户当前museum上次的历史考试记录，避免重复题目
-    let excludedImageIds: number[] = [];
+    // 获取当前用户当前museum的历史考试记录中的标本，避免重复标本
+    let excludedSpecimenIds: number[] = [];
     if (museumId) {
       const lastExam = await this.prisma.exam.findFirst({
         where: { userId, museumId: Number(museumId), status: '1' },
         orderBy: { examTime: 'desc' },
         include: {
-          questions: { select: { imageId: true } },
+          questions: { select: { specimenId: true } },
         },
       });
       if (lastExam) {
-        excludedImageIds = lastExam.questions.map((q) => q.imageId);
+        excludedSpecimenIds = [...new Set(lastExam.questions.map((q) => q.specimenId))];
       }
     }
 
-    // 过滤掉上次考试的题目
-    const filteredImages = availableImages.filter(
-      (img) => !excludedImageIds.includes(img.imageId),
+    // 过滤掉上次考试的标本
+    const filteredSpecimenIds = [...specimenImagesMap.keys()].filter(
+      (id) => !excludedSpecimenIds.includes(id),
     );
 
-    // 随机打乱并取N张（优先从未考过的图片中选取，如果不够则补充已考过的）
+    // 随机打乱标本顺序，每个标本只选一张图片，确保题目来自不同标本
     const questionCount = Number(await this.sysConfigService.oneByconfigKey('global.exam.count')) || 20;
-    const shuffled = filteredImages.sort(() => Math.random() - 0.5);
-    let selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+    const shuffledSpecimenIds = filteredSpecimenIds.sort(() => Math.random() - 0.5);
+    const selected: any[] = [];
 
-    // 如果未考过的图片不足，从已考过的图片中补充
+    for (const specimenId of shuffledSpecimenIds) {
+      if (selected.length >= questionCount) break;
+      const images = specimenImagesMap.get(specimenId)!;
+      // 从每个标本的图片中随机选一张
+      const randomImage = images[Math.floor(Math.random() * images.length)];
+      selected.push(randomImage);
+    }
+
+    // 如果未考过的标本图片不足，从已考过的标本中补充
     if (selected.length < questionCount) {
-      const otherImages = availableImages
-        .filter((img) => !selected.some((s) => s.imageId === img.imageId))
-        .sort(() => Math.random() - 0.5);
-      const needed = questionCount - selected.length;
-      selected = [...selected, ...otherImages.slice(0, needed)];
+      const usedImageIds = selected.map((s) => s.imageId);
+      const otherSpecimenIds = [...specimenImagesMap.keys()].filter(
+        (id) => !selected.some((s) => s.specimenId === id),
+      );
+      const shuffledOther = otherSpecimenIds.sort(() => Math.random() - 0.5);
+      for (const specimenId of shuffledOther) {
+        if (selected.length >= questionCount) break;
+        const images = specimenImagesMap.get(specimenId)!.filter(
+          (img) => !usedImageIds.includes(img.imageId),
+        );
+        if (images.length > 0) {
+          const randomImage = images[Math.floor(Math.random() * images.length)];
+          selected.push(randomImage);
+        }
+      }
     }
 
     // 获取选中图片的详情（缩略图、大图、标本名称作为答案）

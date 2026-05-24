@@ -11,7 +11,7 @@
 				</view>
 			</view>
 			<view class="zoom-hint">
-				<image class="zoom-icon" src="/static/icons/zoom.png" mode="aspectFit" />
+				<text class="zoom-icon">🔍</text>
 			</view>
 		</view>
 
@@ -27,25 +27,36 @@
 		<view v-if="showPreview" class="preview-overlay" @click="closePreview">
 			<view class="preview-toolbar">
 				<view class="toolbar-btn" @click.stop="zoomIn">
-					<image class="toolbar-icon" src="/static/icons/plus.png" mode="aspectFit" />
+					<text class="toolbar-text">+</text>
 				</view>
 				<view class="toolbar-btn" @click.stop="zoomOut">
-					<image class="toolbar-icon" src="/static/icons/reduce.png" mode="aspectFit" />
+					<text class="toolbar-text">−</text>
 				</view>
-				<view class="toolbar-btn" @click.stop="resetZoom">
-					<image class="toolbar-icon" src="/static/icons/refresh.png" mode="aspectFit" />
+				<view class="toolbar-btn reset-btn" @click.stop="resetView">
+					<text class="toolbar-text">1x</text>
 				</view>
 				<view class="toolbar-btn" @click.stop="closePreview">
-					<image class="toolbar-icon" src="/static/icons/close.png" mode="aspectFit" />
+					<text class="toolbar-text close-icon">×</text>
 				</view>
 			</view>
-			<view class="preview-image-container" :style="{ transform: `scale(${scale})` }" @click.stop>
-				<image :src="currentSrc" mode="aspectFit" class="preview-image" />
-				<!-- 水印 -->
-				<view class="preview-watermark">
-					<view v-for="r in 5" :key="r">
-						<text v-for="c in 4" :key="c" class="watermark-text"
-							:style="{ top: `${(r-1) * 22 + 3}%`, left: `${(c-1) * 28 - 5}%` }">中药数字标本馆</text>
+			<view class="zoom-indicator">{{ Math.round(scale * 100) }}%</view>
+			<view class="preview-wrapper" @click.stop>
+				<view class="preview-image-container"
+					:style="{
+						transform: `scale(${scale}) translate(${offsetX / scale}px, ${offsetY / scale}px)`,
+						transition: isDragging ? 'none' : 'transform 0.2s'
+					}"
+					@touchstart="onTouchStart"
+					@touchmove="onTouchMove"
+					@touchend="onTouchEnd"
+					@click.stop>
+					<image :src="currentSrc" mode="aspectFit" class="preview-image" />
+					<!-- 水印 -->
+					<view class="preview-watermark">
+						<view v-for="r in 5" :key="r">
+							<text v-for="c in 4" :key="c" class="watermark-text"
+								:style="{ top: `${(r-1) * 22 + 3}%`, left: `${(c-1) * 28 - 5}%` }">中药数字标本馆</text>
+						</view>
 					</view>
 				</view>
 			</view>
@@ -69,6 +80,13 @@
 	const currentIndex = ref(0)
 	const showPreview = ref(false)
 	const scale = ref(1)
+	const offsetX = ref(0)
+	const offsetY = ref(0)
+
+	// 拖拽相关
+	const isDragging = ref(false)
+	const startX = ref(0)
+	const startY = ref(0)
 
 	// 当前显示的图片源
 	const currentSrc = computed(() => {
@@ -81,7 +99,7 @@
 	// 点击主图打开预览
 	function onPreview() {
 		showPreview.value = true
-		scale.value = 1
+		resetView()
 	}
 
 	// 关闭预览
@@ -104,9 +122,52 @@
 		scale.value = Math.max(scale.value - 0.3, 0.5)
 	}
 
-	// 重置缩放
-	function resetZoom() {
+	// 重置视图
+	function resetView() {
 		scale.value = 1
+		offsetX.value = 0
+		offsetY.value = 0
+	}
+
+	// 触摸开始
+	function onTouchStart(e : any) {
+		if (scale.value <= 1) return
+		isDragging.value = true
+		startX.value = e.touches[0].clientX
+		startY.value = e.touches[0].clientY
+	}
+
+	// 触摸移动
+	function onTouchMove(e : any) {
+		if (!isDragging.value || scale.value <= 1) return
+
+		const currentX = e.touches[0].clientX
+		const currentY = e.touches[0].clientY
+
+		// 计算手指移动量
+		const deltaX = currentX - startX.value
+		const deltaY = currentY - startY.value
+
+		// 更新起始位置（保持平滑拖拽）
+		startX.value = currentX
+		startY.value = currentY
+
+		// 应用移动量到偏移（考虑缩放因子）
+		let newOffsetX = offsetX.value + deltaX
+		let newOffsetY = offsetY.value + deltaY
+
+		// 计算允许的最大偏移范围
+		const maxOffsetX = 400 * (scale.value - 1)
+		const maxOffsetY = 400 * (scale.value - 1)
+
+		// 限制偏移在边界内
+		offsetX.value = Math.max(-maxOffsetX, Math.min(maxOffsetX, newOffsetX))
+		offsetY.value = Math.max(-maxOffsetY, Math.min(maxOffsetY, newOffsetY))
+	}
+
+	// 触摸结束
+	function onTouchEnd() {
+		isDragging.value = false
 	}
 </script>
 
@@ -120,7 +181,6 @@
 		width: 100%;
 		aspect-ratio: 4 / 3;
 		overflow: hidden;
-		cursor: zoom-in;
 	}
 
 	.image {
@@ -153,8 +213,6 @@
 
 	.zoom-icon {
 		font-size: 12px;
-		width: 12px;
-		height: 12px;
 	}
 
 	.thumbnail-list {
@@ -194,36 +252,78 @@
 		justify-content: center;
 	}
 
-	.preview-toolbar {
-		position: absolute;
-		top: 16px;
-		right: 16px;
-		display: flex;
-		gap: 8px;
-		z-index: 10000;
-	}
-
-	.toolbar-btn {
-		width: 40px;
-		height: 40px;
-		background: rgba(255, 255, 255, 0.2);
-		border-radius: 20px;
+	.preview-wrapper {
+		width: 90vw;
+		height: 85vh;
+		overflow: hidden;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.toolbar-icon {
-		font-size: 16px;
-		width: 16px;
-		height: 16px;
+	.preview-toolbar {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		display: flex;
+		gap: 12px;
+		z-index: 10000;
+	}
+
+	.toolbar-btn {
+		width: 48px;
+		height: 48px;
+		background: rgba(45, 106, 79, 0.9);
+		border-radius: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+	}
+
+	.toolbar-btn:active {
+		background: rgba(45, 106, 79, 1);
+		transform: scale(0.95);
+	}
+
+	.toolbar-text {
+		font-size: 24px;
+		font-weight: bold;
+		color: #ffffff;
+		line-height: 1;
+	}
+
+	.reset-btn .toolbar-text {
+		font-size: 14px;
+	}
+
+	.close-icon {
+		font-size: 28px;
+	}
+
+	.zoom-indicator {
+		position: absolute;
+		bottom: 30px;
+		left: 50%;
+		transform: translateX(-50%);
+		background: rgba(45, 106, 79, 0.9);
+		color: #ffffff;
+		padding: 8px 16px;
+		border-radius: 20px;
+		font-size: 14px;
+		font-weight: 500;
 	}
 
 	.preview-image-container {
 		width: 90vw;
 		height: 85vh;
-		transition: transform 0.2s;
 		position: relative;
+		cursor: grab;
+		transform-origin: center center;
+	}
+
+	.preview-image-container:active {
+		cursor: grabbing;
 	}
 
 	.preview-image {

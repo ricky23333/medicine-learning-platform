@@ -34,8 +34,8 @@ export class SpecimenService {
     const { museumId, categoryId, specimenName, status, skip = 0, take = 10 } =
       query;
     const where: any = {};
-    if (museumId) where.museumId = museumId;
-    if (categoryId) where.categoryId = categoryId;
+    if (museumId) where.museumId = Number(museumId);
+    if (categoryId) where.categoryId = Number(categoryId);
     if (specimenName) where.specimenName = { contains: specimenName };
     // if (status) where.status = status;
     const [rows, total] = await Promise.all([
@@ -185,17 +185,9 @@ export class SpecimenService {
 
   /* 更新标本 */
   async update(updateSpecimenDto: any) {
-    const { specimenId, specimenName, museumId, categoryId } =
+    const { remark, specimenId } =
       updateSpecimenDto;
-    const exist = await this.prisma.specimen.findFirst({
-      where: {
-        specimenId: { not: specimenId },
-        specimenName,
-        museumId,
-        categoryId,
-      },
-    });
-    if (exist) throw new ApiException('该分类下标本名称已存在');
+
     return await this.prisma.specimen.update({
       where: { specimenId },
       data: updateSpecimenDto,
@@ -375,6 +367,15 @@ export class SpecimenService {
         auditBy,
         auditTime: new Date(),
       },
+    });
+  }
+
+  /* 修改图片审核备注 */
+  async updateImageRemark(updateRemarkDto: { imageId: number; auditRemark: string }) {
+    const { imageId, auditRemark } = updateRemarkDto;
+    return await this.prisma.specimenImage.update({
+      where: { imageId },
+      data: { auditRemark },
     });
   }
 

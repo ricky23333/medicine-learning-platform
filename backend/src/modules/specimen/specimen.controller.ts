@@ -119,6 +119,15 @@ export class SpecimenController {
   async auditImage(@Body() auditDto: any) {
     await this.specimenService.auditImage(auditDto);
   }
+
+  /* 修改图片审核备注 */
+  @Put('image/remark')
+  @Log({ title: '修改图片审核备注', businessType: BusinessTypeEnum.update })
+  @ApiOperation({ summary: '修改图片审核备注' })
+  @ApiResponse({ status: 200, description: '修改成功' })
+  async updateImageRemark(@Body() updateRemarkDto: { imageId: number; auditRemark: string }) {
+    await this.specimenService.updateImageRemark(updateRemarkDto);
+  }
 }
 
 /* 小程序端标本接口 */

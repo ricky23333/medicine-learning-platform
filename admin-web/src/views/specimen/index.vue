@@ -17,95 +17,91 @@
       </el-button>
     </div>
 
-    <!-- 搜索筛选栏 -->
-    <div class="filter-bar">
-      <el-input
-        v-model="queryParams.specimenName"
-        placeholder="搜索标本名称..."
-        clearable
-        style="width: 240px"
-        @keyup.enter="handleQuery"
-      >
-        <template #prefix
-          ><el-icon><Search /></el-icon
-        ></template>
-      </el-input>
-      <el-select
-        v-model="queryParams.museumId"
-        placeholder="选择标本目录"
-        clearable
-        style="width: 200px"
-        @change="onMuseumChange"
-      >
-        <el-option
-          v-for="m in museumOptions"
-          :key="m.museumId"
-          :label="m.museumName"
-          :value="m.museumId"
+    <!-- 左右布局 -->
+    <div class="content-layout">
+      <!-- 左侧目录树 -->
+      <div class="left-panel">
+        <div class="panel-title">标本目录</div>
+        <el-tree-v2
+          ref="treeRef"
+          :data="treeData"
+          :props="{ label: 'name', children: 'children' }"
+          :height="400"
+          v-model:expanded-keys="defaultExpandedKeys"
+          current-node-key=""
+          highlight-current
+          :expand-on-click-node="false"
+          @node-click="onTreeNodeClick"
         />
-      </el-select>
-      <el-select
-        v-model="queryParams.categoryId"
-        placeholder="选择分类"
-        clearable
-        style="width: 200px"
-        :disabled="!queryParams.museumId"
-      >
-        <el-option
-          v-for="c in categoryOptions"
-          :key="c.categoryId"
-          :label="c.categoryName"
-          :value="c.categoryId"
-        />
-      </el-select>
-      <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
-      <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-    </div>
+      </div>
 
-    <!-- 标本卡片网格 -->
-    <div v-if="specimenList.length === 0 && !loading" class="empty-state">
-      <div class="empty-icon">🔬</div>
-      <p class="empty-text">暂无匹配标本</p>
-    </div>
-    <div v-else class="specimen-grid">
-      <div
-        v-for="item in specimenList"
-        :key="item.specimenId"
-        class="specimen-card"
-        @click="openDetail(item)"
-      >
-        <div class="card-image">
-          <img v-if="getCoverImage(item)" :src="getCoverImage(item)" :alt="item.specimenName" />
-          <div v-else class="image-placeholder">
-            <el-icon :size="32"><Picture /></el-icon>
-          </div>
-          <!-- 待审核图片数量徽章 -->
-          <div v-if="getPendingImages(item).length > 0" class="pending-badge">
-            <el-icon><Clock /></el-icon>
-            {{ getPendingImages(item).length }}待审
-          </div>
-          <!-- 已审核图片数量 -->
-          <div class="image-count-badge">{{ getApprovedImages(item).length }}张图</div>
+      <!-- 右侧标本列表 -->
+      <div class="right-panel">
+        <!-- 搜索栏 -->
+        <div class="search-bar" v-if="activeCategory">
+          <el-input
+            v-model="queryParams.specimenName"
+            placeholder="搜索标本名称"
+            clearable
+            style="width: 240px"
+            @keyup.enter="handleQuery"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
+          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </div>
-        <div class="card-body">
-          <div class="specimen-name">{{ item.specimenName }}</div>
-          <div class="specimen-latin" v-if="item.latinName">{{ item.latinName }}</div>
-          <div class="specimen-tags">
-            <span class="tag-museum">{{ item.museum?.museumName || '-' }}</span>
-            <span class="tag-category">{{ item.category?.categoryName || '-' }}</span>
-          </div>
+        <!-- 标本卡片网格 -->
+        <div v-if="!activeCategory" class="empty-state">
+          <div class="empty-icon">🔬</div>
+          <p class="empty-text">请从左侧选择一个分类</p>
         </div>
+        <template v-else>
+          <div class="section-header">
+            <span class="section-title">{{ selectedNodeName }}</span>
+            <span class="section-count">({{ total }}个标本)</span>
+          </div>
+          <div v-if="specimenList.length === 0 && !loading" class="empty-state">
+            <div class="empty-icon">🔬</div>
+            <p class="empty-text">该分类下暂无标本</p>
+          </div>
+          <div v-else class="specimen-grid">
+            <div
+              v-for="item in specimenList"
+              :key="item.specimenId"
+              class="specimen-card"
+              @click="openDetail(item)"
+            >
+              <div class="card-image">
+                <img
+                  v-if="getCoverImage(item)"
+                  :src="getCoverImage(item)"
+                  :alt="item.specimenName"
+                />
+                <div v-else class="image-placeholder">
+                  <el-icon :size="32"><Picture /></el-icon>
+                </div>
+                <div class="image-count-badge">{{ getApprovedImages(item).length }}张图</div>
+              </div>
+              <div class="card-body">
+                <div class="specimen-name">{{ item.specimenName }}</div>
+                <div class="specimen-latin" v-if="item.latinName">{{ item.latinName }}</div>
+              </div>
+            </div>
+          </div>
+          <!-- 分页 -->
+          <pagination
+            v-if="total > 0"
+            :total="total"
+            v-model:page="queryParams.pageNum"
+            v-model:limit="queryParams.pageSize"
+            @pagination="loadSpecimensByCategory"
+          />
+        </template>
       </div>
     </div>
-
-    <!-- 分页 -->
-    <pagination
-      v-if="total > 0"
-      :total="total"
-      v-model:page="queryParams.pageNum"
-      v-model:limit="queryParams.pageSize"
-      @pagination="getList"
-    />
 
     <!-- ========== 标本详情弹窗 ========== -->
     <el-dialog
@@ -118,12 +114,18 @@
         <!-- 左侧：图片管理 -->
         <div class="detail-images">
           <div class="section-label">图片管理</div>
-          <div v-if="currentSpecimen?.images?.length === 0" class="images-empty">
+          <div v-if="!currentSpecimen?.images?.length" class="images-empty">
             <el-icon :size="32"><Picture /></el-icon>
             <p>暂无图片</p>
           </div>
           <div v-else class="image-list">
-            <div v-for="img in currentSpecimen?.images" :key="img.imageId" class="image-item">
+            <div
+              v-for="img in currentSpecimen?.images"
+              :key="img.imageId"
+              class="image-item"
+              :class="{ selected: selectedImageId === img.imageId }"
+              @click="selectImage(img)"
+            >
               <el-image
                 :src="img.imageUrl"
                 :preview-src-list="currentSpecimen?.images?.map(i => i.imageUrl)"
@@ -142,23 +144,43 @@
                     >已拒绝</el-tag
                   >
                 </div>
+                <div class="image-remark">
+                  <span class="remark-label">备注：</span>
+                  <span v-if="editingImageId !== img.imageId">{{ img.auditRemark || '-' }}</span>
+                  <el-input
+                    v-else
+                    v-model="editRemark"
+                    size="small"
+                    style="width: 120px"
+                    @click.stop
+                    @keyup.enter="saveImageRemark(img)"
+                    @blur="saveImageRemark(img)"
+                  />
+                </div>
               </div>
               <div class="image-actions" v-if="canDeleteImage(img)">
                 <template v-if="img.auditStatus === '0' && isAdmin">
-                  <el-button size="small" type="success" @click="auditImage(img, '1')"
+                  <el-button size="small" type="success" @click.stop="auditImage(img, '1')"
                     >通过</el-button
                   >
-                  <el-button size="small" type="danger" plain @click="auditImage(img, '2')"
+                  <el-button size="small" type="danger" plain @click.stop="auditImage(img, '2')"
                     >拒绝</el-button
                   >
                 </template>
-                <el-button size="small" type="danger" plain @click="confirmDeleteImage(img)">
+                <el-button
+                  v-if="canEditImageRemark() && editingImageId !== img.imageId"
+                  size="small"
+                  plain
+                  @click.stop="startEditRemark(img)"
+                >
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button size="small" type="danger" plain @click.stop="confirmDeleteImage(img)">
                   <el-icon><Delete /></el-icon>
                 </el-button>
               </div>
             </div>
           </div>
-          <!-- 上传按钮 -->
           <el-button class="upload-btn" type="success" plain @click="triggerUpload">
             <el-icon><Plus /></el-icon>
             上传图片
@@ -189,7 +211,33 @@
           </div>
           <div class="info-row">
             <span class="info-label">备注信息</span>
-            <div class="info-remark">{{ currentSpecimen?.remark || '暂无备注' }}</div>
+            <div class="info-remark" v-if="!editingSpecimenRemark">
+              <span>{{ currentSpecimen?.remark || '暂无备注' }}</span>
+              <el-button
+                v-if="canEditImageRemark()"
+                link
+                type="primary"
+                size="small"
+                style="margin-left: 8px"
+                @click="startEditSpecimenRemark"
+              >
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+            </div>
+            <div v-else class="remark-edit">
+              <el-input
+                v-model="specimenRemarkText"
+                type="textarea"
+                :rows="3"
+                placeholder="请输入备注信息"
+                style="margin-bottom: 8px"
+              />
+              <div class="remark-edit-actions">
+                <el-button size="small" type="primary" @click="saveSpecimenRemark">保存</el-button>
+                <el-button size="small" @click="cancelEditSpecimenRemark">取消</el-button>
+              </div>
+            </div>
           </div>
           <div class="info-row" v-if="currentSpecimen?.createTime">
             <span class="info-label">创建时间</span>
@@ -254,13 +302,6 @@
         <el-form-item label="标本名称" prop="specimenName">
           <el-input v-model="form.specimenName" placeholder="如：人参" />
         </el-form-item>
-        <!-- <el-form-item label="拉丁学名" prop="latinName">
-          <el-input
-            v-model="form.latinName"
-            placeholder="如：Panax ginseng C. A. Mey."
-            style="font-style: italic"
-          />
-        </el-form-item> -->
         <el-form-item label="备注信息" prop="remark">
           <el-input
             v-model="form.remark"
@@ -279,9 +320,20 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, computed, onMounted } from 'vue'
+  import { ref, reactive, computed, onMounted, nextTick } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
-  import { Plus, Search, Delete, Picture, Clock } from '@element-plus/icons-vue'
+  import {
+    Plus,
+    Delete,
+    Picture,
+    Clock,
+    ArrowRight,
+    FolderOpened,
+    Check,
+    Folder,
+    Search,
+    Edit
+  } from '@element-plus/icons-vue'
   import {
     listSpecimen,
     getSpecimen,
@@ -290,22 +342,25 @@
     delSpecimen,
     uploadSpecimenImage,
     delSpecimenImage,
-    auditSpecimenImage
+    auditSpecimenImage,
+    updateImageRemark
   } from '@/api/specimen'
   import { getMuseumAll } from '@/api/museum'
   import { listCategory } from '@/api/museum'
   import useUserStore from '@/store/modules/user'
 
   const userStore = useUserStore()
-  const isAdmin = computed(() => {
-    return userStore.roles?.includes('admin')
-  })
+  const isAdmin = computed(() => userStore.roles?.includes('admin'))
+  const isVipTeacher = computed(() => userStore.appUser?.userType === 'teacher' && userStore.appUser?.vipStatus === '2')
 
-  // 判断当前用户是否可以删除某张图片（管理员或创建者本人）
   function canDeleteImage(img: any) {
     if (isAdmin.value) return true
     if (!img.createBy || !userStore.userId) return false
     return String(userStore.userId) === String(img.createBy)
+  }
+
+  function canEditImageRemark() {
+    return isAdmin.value || isVipTeacher.value
   }
 
   // ========== 数据 ==========
@@ -313,7 +368,6 @@
   const specimenList = ref<any[]>([])
   const total = ref(0)
   const museumOptions = ref<any[]>([])
-  const categoryOptions = ref<any[]>([])
   const formCategoryOptions = ref<any[]>([])
 
   // 查询参数
@@ -325,9 +379,22 @@
     categoryId: undefined as number | undefined
   })
 
+  // 树形选择器
+  const treeRef = ref()
+  const treeData = ref<any[]>([])
+  const defaultExpandedKeys = ref<any[]>([])
+  const activeCategory = ref<string | null>(null)
+  const selectedNodeName = ref<string>('')
+  const currentMuseumId = ref<string | null>(null)
+
   // 详情弹窗
   const detailVisible = ref(false)
   const currentSpecimen = ref<any>(null)
+  const selectedImageId = ref<string | null>(null)
+  const editingImageId = ref<string | null>(null)
+  const editRemark = ref('')
+  const editingSpecimenRemark = ref(false)
+  const specimenRemarkText = ref('')
 
   // 表单弹窗
   const formVisible = ref(false)
@@ -351,8 +418,62 @@
 
   // ========== 方法 ==========
 
-  // 获取标本列表
-  async function getList() {
+  // 获取标本目录树
+  async function loadMuseumTree() {
+    try {
+      const res: any = await getMuseumAll()
+      if (res.code === 200 && res.data) {
+        museumOptions.value = res.data
+        // 构建el-tree-v2需要的树形结构
+        treeData.value = res.data.map((museum: any) => ({
+          id: museum.museumId,
+          name: museum.museumName,
+          type: 'museum',
+          children: (museum.categories || []).map((cat: any) => ({
+            id: museum.museumId + '_' + cat.categoryId,
+            categoryId: cat.categoryId,
+            name: cat.categoryName,
+            type: 'category',
+            museumId: museum.museumId,
+            museumName: museum.museumName
+          }))
+        }))
+
+        // 默认展开第一个根节点并选中第一个分类
+        if (treeData.value.length > 0) {
+          const firstMuseum = treeData.value[0]
+          defaultExpandedKeys.value = [firstMuseum.id]
+          if (firstMuseum.children && firstMuseum.children.length > 0) {
+            const firstCategory = firstMuseum.children[0]
+            nextTick(() => {
+              treeRef.value?.setExpandedKeys(defaultExpandedKeys.value)
+              treeRef.value?.setCurrentKey(firstCategory.id)
+              onTreeNodeClick(firstCategory)
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.error('加载标本目录失败', error)
+    }
+  }
+
+  // 树节点点击
+  function onTreeNodeClick(data: any) {
+    if (data.type === 'category') {
+      activeCategory.value = String(data.categoryId)
+      selectedNodeName.value = data.museumName + ' / ' + data.name
+      currentMuseumId.value = String(data.museumId)
+      queryParams.categoryId = data.categoryId
+      queryParams.museumId = data.museumId
+      queryParams.pageNum = 1
+      loadSpecimensByCategory()
+    }
+  }
+
+  // 根据分类加载标本
+  async function loadSpecimensByCategory() {
+    if (!queryParams.categoryId) return
     loading.value = true
     try {
       const res: any = await listSpecimen(queryParams)
@@ -367,54 +488,23 @@
     }
   }
 
-  // 获取标本目录列表
-  async function loadMuseums() {
-    try {
-      const res: any = await getMuseumAll()
-      if (res.code === 200 && res.data) {
-        museumOptions.value = res.data
-      }
-    } catch (error) {
-      console.error('加载标本目录失败', error)
-    }
-  }
-
-  // 获取分类列表
-  async function loadCategories(museumId?: number) {
-    try {
-      const res: any = await listCategory({ museumId })
-      if (res.code === 200) {
-        categoryOptions.value = res.rows || []
-      }
-    } catch (error) {
-      console.error('加载分类失败', error)
-    }
+  // 获取博物馆下标本总数
+  function getMuseumSpecimenCount(museum: any) {
+    if (!museum.categories) return 0
+    return museum.categories.reduce((sum: number, cat: any) => sum + (cat.specCount || 0), 0)
   }
 
   // 搜索
   function handleQuery() {
     queryParams.pageNum = 1
-    getList()
+    loadSpecimensByCategory()
   }
 
   // 重置搜索
   function resetQuery() {
     queryParams.specimenName = ''
-    queryParams.museumId = undefined
-    queryParams.categoryId = undefined
     queryParams.pageNum = 1
-    categoryOptions.value = []
-    getList()
-  }
-
-  // 标本目录选择变化
-  function onMuseumChange(museumId: number | undefined) {
-    queryParams.categoryId = undefined
-    if (museumId) {
-      loadCategories(museumId)
-    } else {
-      categoryOptions.value = []
-    }
+    loadSpecimensByCategory()
   }
 
   // 表单中标本目录变化
@@ -431,12 +521,14 @@
   // 打开新增标本弹窗
   function openAddSpecimen() {
     editSpecimen.value = null
-    form.museumId = undefined
-    form.categoryId = undefined
+    form.museumId = currentMuseumId.value ? Number(currentMuseumId.value) : undefined
+    form.categoryId = activeCategory.value ? Number(activeCategory.value) : undefined
     form.specimenName = ''
     form.latinName = ''
     form.remark = ''
-    formCategoryOptions.value = []
+    if (form.museumId) {
+      onFormMuseumChange(form.museumId)
+    }
     formVisible.value = true
   }
 
@@ -466,7 +558,8 @@
         ElMessage.success('创建成功')
       }
       formVisible.value = false
-      getList()
+      loadMuseumTree()
+      loadSpecimensByCategory()
     } catch (error: any) {
       ElMessage.error(error?.message || '操作失败')
     }
@@ -485,7 +578,8 @@
           await delSpecimen(currentSpecimen.value.specimenId)
           ElMessage.success('删除成功')
           detailVisible.value = false
-          getList()
+          loadMuseumTree()
+          loadSpecimensByCategory()
         } catch (error: any) {
           ElMessage.error(error?.message || '删除失败')
         }
@@ -506,12 +600,6 @@
     return item.images.filter((img: any) => img.auditStatus === '1')
   }
 
-  // 获取待审核图片
-  function getPendingImages(item: any) {
-    if (!item.images) return []
-    return item.images.filter((img: any) => img.auditStatus === '0')
-  }
-
   // 触发上传
   function triggerUpload() {
     fileInputRef.value?.click()
@@ -523,16 +611,14 @@
     const file = target.files?.[0]
     if (!file || !currentSpecimen.value) return
 
-    // 限制文件大小为25MB
     const maxSize = 25 * 1024 * 1024
     if (file.size > maxSize) {
       ElMessage.error('文件大小不能超过25MB')
-      target.value = '' // 清空input
+      target.value = ''
       return
     }
 
     try {
-      // 使用 FormData 上传文件
       const formData = new FormData()
       formData.append('file', file)
       formData.append('specimenId', String(currentSpecimen.value.specimenId))
@@ -541,13 +627,12 @@
 
       await uploadSpecimenImage(formData)
       ElMessage.success('上传成功')
-      // 刷新详情
       openDetail(currentSpecimen.value)
-      getList()
+      loadSpecimensByCategory()
     } catch (error: any) {
       ElMessage.error(error?.message || '上传失败')
     }
-    target.value = '' // 清空input
+    target.value = ''
   }
 
   // 审核图片
@@ -555,11 +640,10 @@
     try {
       await auditSpecimenImage({ imageId: img.imageId, auditStatus })
       ElMessage.success(auditStatus === '1' ? '已通过' : '已拒绝')
-      // 刷新详情
       if (currentSpecimen.value) {
         openDetail(currentSpecimen.value)
       }
-      getList()
+      loadSpecimensByCategory()
     } catch (error: any) {
       ElMessage.error(error?.message || '操作失败')
     }
@@ -572,11 +656,10 @@
         try {
           await delSpecimenImage(img.imageId)
           ElMessage.success('删除成功')
-          // 刷新详情
           if (currentSpecimen.value) {
             openDetail(currentSpecimen.value)
           }
-          getList()
+          loadSpecimensByCategory()
         } catch (error: any) {
           ElMessage.error(error?.message || '删除失败')
         }
@@ -584,10 +667,64 @@
       .catch(() => {})
   }
 
+  // 选择图片
+  function selectImage(img: any) {
+    selectedImageId.value = img.imageId
+  }
+
+  // 开始编辑备注
+  function startEditRemark(img: any) {
+    editingImageId.value = img.imageId
+    editRemark.value = img.auditRemark || ''
+  }
+
+  // 保存图片备注
+  async function saveImageRemark(img: any) {
+    if (editingImageId.value !== img.imageId) return
+    try {
+      await updateImageRemark({ imageId: img.imageId, auditRemark: editRemark.value })
+      ElMessage.success('修改成功')
+      editingImageId.value = null
+      if (currentSpecimen.value) {
+        openDetail(currentSpecimen.value)
+      }
+    } catch (error: any) {
+      ElMessage.error(error?.message || '修改失败')
+    }
+  }
+
+  // 开始编辑标本备注
+  function startEditSpecimenRemark() {
+    specimenRemarkText.value = currentSpecimen.value?.remark || ''
+    editingSpecimenRemark.value = true
+  }
+
+  // 取消编辑标本备注
+  function cancelEditSpecimenRemark() {
+    editingSpecimenRemark.value = false
+    specimenRemarkText.value = ''
+  }
+
+  // 保存标本备注
+  async function saveSpecimenRemark() {
+    if (!currentSpecimen.value) return
+    try {
+      await updateSpecimen({
+        specimenId: currentSpecimen.value.specimenId,
+        remark: specimenRemarkText.value
+      })
+      ElMessage.success('修改成功')
+      editingSpecimenRemark.value = false
+      openDetail(currentSpecimen.value)
+      loadSpecimensByCategory()
+    } catch (error: any) {
+      ElMessage.error(error?.message || '修改失败')
+    }
+  }
+
   // ========== 生命周期 ==========
   onMounted(() => {
-    getList()
-    loadMuseums()
+    loadMuseumTree()
   })
 </script>
 
@@ -619,24 +756,63 @@
     color: #6b7280;
   }
 
-  /* 搜索筛选栏 */
-  .filter-bar {
+  /* 左右布局 */
+  .content-layout {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 16px;
+    gap: 20px;
+    height: calc(100vh - 180px);
+  }
+
+  .left-panel {
+    width: 280px;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .right-panel {
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .section-count {
+    font-size: 13px;
+    color: #888;
   }
 
   /* 空状态 */
   .empty-state {
     text-align: center;
-    padding: 60px 0;
-    background: #fff;
-    border-radius: 16px;
+    padding: 80px 0;
   }
 
   .empty-icon {
@@ -650,10 +826,20 @@
     margin: 0;
   }
 
+  /* 搜索栏 */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
   /* 标本卡片网格 */
   .specimen-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
   }
@@ -683,11 +869,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s;
-  }
-
-  .specimen-card:hover .card-image img {
-    transform: scale(1.05);
   }
 
   .image-placeholder {
@@ -699,19 +880,221 @@
     color: #d0d0d0;
   }
 
-  .pending-badge {
+  .image-count-badge {
     position: absolute;
     top: 8px;
-    right: 8px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    left: 8px;
     padding: 2px 8px;
     border-radius: 20px;
-    background: rgba(245, 158, 11, 0.9);
+    background: rgba(0, 0, 0, 0.4);
     color: #fff;
     font-size: 11px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .specimen-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .specimen-latin {
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .museum-row.expanded {
+    background: #e8f5e9;
+  }
+
+  .row-icon {
+    color: #2d6a4f;
+    font-size: 18px;
+  }
+
+  .row-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  .row-count {
+    font-size: 12px;
+    color: #888;
+  }
+
+  .expand-icon {
+    margin-left: auto;
+    transition: transform 0.2s;
+    color: #888;
+  }
+
+  .expand-icon.expanded {
+    transform: rotate(90deg);
+  }
+
+  /* 分类列表 */
+  .category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 36px;
+    margin-top: 4px;
+  }
+
+  .category-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .category-row:hover {
+    background: #f0f4f0;
+  }
+
+  .category-row.active {
+    background: #e8f5e9;
+  }
+
+  .category-row .row-icon {
+    color: #40916c;
+    font-size: 16px;
+  }
+
+  .category-row .row-name {
+    font-size: 13px;
     font-weight: 500;
+    color: #333;
+  }
+
+  .category-row .row-count {
+    font-size: 11px;
+  }
+
+  .check-icon {
+    margin-left: auto;
+    color: #2d6a4f;
+  }
+
+  .empty-categories {
+    padding: 12px;
+    text-align: center;
+    color: #aaa;
+    font-size: 13px;
+  }
+
+  .category-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #555;
+  }
+
+  .category-name {
+    font-size: 14px;
+  }
+
+  .category-count {
+    font-size: 12px;
+    color: #888;
+  }
+
+  .check-icon {
+    color: #2d6a4f;
+  }
+
+  /* 标本区域 */
+  .specimen-section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+  }
+
+  .section-header {
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  /* 空状态 */
+  .empty-state {
+    text-align: center;
+    padding: 60px 0;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .empty-text {
+    font-size: 14px;
+    color: #aaa;
+    margin: 0;
+  }
+
+  /* 标本卡片网格 */
+  .specimen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .specimen-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s;
+  }
+
+  .specimen-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+  }
+
+  .card-image {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #f8f9fa;
+    overflow: hidden;
+  }
+
+  .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d0d0d0;
   }
 
   .image-count-badge {
@@ -751,17 +1134,7 @@
 
   .specimen-tags {
     display: flex;
-    flex-wrap: wrap;
     gap: 4px;
-  }
-
-  .tag-museum {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 20px;
-    background: #c7f0c7;
-    color: #2d6a4f;
-    font-size: 11px;
   }
 
   .tag-category {
@@ -787,7 +1160,6 @@
     margin-bottom: 12px;
   }
 
-  /* 左侧图片区域 */
   .detail-images {
     border-right: 1px solid #f0f0f0;
     padding-right: 24px;
@@ -825,6 +1197,18 @@
     padding: 10px;
     background: #f8f9fa;
     border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .image-item:hover {
+    background: #f0f4f0;
+  }
+
+  .image-item.selected {
+    border-color: #2d6a4f;
+    background: #e8f5e9;
   }
 
   .image-thumb {
@@ -853,17 +1237,26 @@
     margin-top: 4px;
   }
 
+  .image-remark {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #555;
+  }
+
+  .remark-label {
+    color: #888;
+  }
+
   .image-actions {
     display: flex;
     flex-direction: column;
     gap: 4px;
     justify-content: flex-end;
     align-items: flex-end;
-    align-content: flex-end;
+  }
 
-    button {
-      width: 60px;
-    }
+  .image-actions button {
+    width: 60px;
   }
 
   .upload-btn {
@@ -872,7 +1265,6 @@
     border-style: dashed;
   }
 
-  /* 右侧信息区域 */
   .detail-info {
     padding-left: 0;
   }
@@ -904,6 +1296,18 @@
     padding: 10px;
     background: #f8faf8;
     border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .remark-edit {
+    width: 100%;
+  }
+
+  .remark-edit-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
   }
 
   .dialog-footer {

@@ -70,3 +70,12 @@ export function auditSpecimenImage(data) {
     data: data
   })
 }
+
+// 修改图片备注
+export function updateImageRemark(data) {
+  return request({
+    url: '/admin/specimen/image/remark',
+    method: 'put',
+    data: data
+  })
+}
