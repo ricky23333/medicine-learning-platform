@@ -304,37 +304,51 @@ export class SpecimenService {
     const imageMetadata = await image.metadata();
     const imageWidth = imageMetadata.width || 800;
     const imageHeight = imageMetadata.height || 600;
-    // 读取Logo图片
+
+    // 计算缩放因子：基于图片尺寸，基准为1000px，动态调整水印大小
+    const scaleFactor = Math.max(1, Math.min(imageWidth, imageHeight) / 400);
+
+    // 读取Logo图片，按缩放因子等比缩放
     const logoPath = require('path').resolve(__dirname, '../../../src/asset/logo.png');
 
     if (!fs.existsSync(logoPath)) {
       throw new Error(`Logo file NOT FOUND at: ${logoPath}`);
     }
+
+    // Logo目标宽度 = 基准50px * 缩放因子，最小50px，最大1500px
+    const targetLogoWidth = Math.min(1500, Math.max(75, Math.floor(100 * scaleFactor)));
     const logoBuffer = await sharp(logoPath)
-      .resize(Math.floor(imageWidth * 0.15), null, { withoutEnlargement: true })
+      .resize(targetLogoWidth, null, { withoutEnlargement: true })
+      .ensureAlpha()
+      .modulate({ brightness: 1, saturation: 1 })
       .toBuffer();
-    const logoMetadata = await sharp(logoBuffer).metadata();
-    const logoWidth = logoMetadata.width || 100;
-    const logoHeight = logoMetadata.height || 100;
 
     // 计算Logo居中位置
+    const logoMetadata = await sharp(logoBuffer).metadata();
+    const logoWidth = logoMetadata.width || targetLogoWidth;
+    const logoHeight = logoMetadata.height || Math.floor(logoWidth * 0.5);
     const centerX = Math.floor((imageWidth - logoWidth) / 2);
     const centerTopY = Math.floor((imageHeight - logoHeight) / 5);
-    // 创建文字水印
-    const textWidth = text.length * 15;
-    const padding = 2;
-    const watermarkHeight = 15;
+
+    // 创建文字水印，按缩放因子调整大小
+    // 基准字体24px * 缩放因子，最小24px，最大256px
+    const fontSize = Math.min(256, Math.max(18, Math.floor(18 * scaleFactor)));
+    const textWidth = text.length * fontSize;
+    const watermarkHeight = fontSize;
+    const padding = Math.floor(4 * scaleFactor);
+
     const svgWatermark = `
       <svg width="${textWidth + padding * 2}" height="${watermarkHeight + padding * 2}">
         <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.3)"/>
-        <text x="${padding}" y="${watermarkHeight / 2 + 8}"
-              font-family="WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" font-size="16" fill="white" text-anchor="start">
+        <text x="${padding}" y="${watermarkHeight / 2 + fontSize * 0.35}"
+              font-family="WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" font-size="${fontSize}" fill="white" text-anchor="start">
           ${text}
         </text>
       </svg>
     `;
     const textWatermarkBuffer = Buffer.from(svgWatermark);
-    // 合成Logo水印（居中）和文字水印（右下角）
+
+    // 合成Logo水印（居中，60%透明度）和文字水印（右下角）
     return await image
       .composite([
         { input: logoBuffer, left: centerX, top: centerTopY },

@@ -3,7 +3,7 @@
 		<!-- 顶部区域 -->
 		<view class="header">
 			<view class="logo-container">
-				<view class="logo">🌿</view>
+				<image class="logo" src='/static/logo-big.png'></image>
 				<h1 class="title">TCM数字标本学习助手</h1>
 				<p class="subtitle">高校师生中药学习平台</p>
 			</view>
@@ -794,11 +794,11 @@
 	}
 
 	.logo {
-		width: 64px;
-		height: 64px;
+		width: 96px;
+		height: 96px;
 		border-radius: 16px;
-		background: rgba(82, 183, 136, 0.2);
-		border: 1.5px solid rgba(82, 183, 136, 0.4);
+		/* background: rgba(82, 183, 136, 0.2); */
+		/* border: 1.5px solid rgba(82, 183, 136, 0.4); */
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -915,7 +915,7 @@
 		border-radius: 20px;
 		width: 100%;
 		max-width: 340px;
-		overflow: hidden;
+		overflow: hidden;	
 	}
 
 	.modal-header {
@@ -976,6 +976,7 @@
 	.account-modal,
 	.register-modal {
 		max-width: 360px;
+		min-height: 570px;
 	}
 
 	.form-item {
