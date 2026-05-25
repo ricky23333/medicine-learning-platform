@@ -375,7 +375,7 @@
   // 查询参数
   const queryParams = reactive({
     pageNum: 1,
-    pageSize: 12,
+    pageSize: 15,
     specimenName: '',
     museumId: undefined as number | undefined,
     categoryId: undefined as number | undefined
