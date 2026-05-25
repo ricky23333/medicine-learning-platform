@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'nestjs-prisma';
 import { ApiException } from 'src/common/exceptions/api.exception';
 import sharp from 'sharp';
+const fs = require('fs');
 
 @Injectable()
 export class SpecimenService {
@@ -297,16 +298,32 @@ export class SpecimenService {
     });
   }
 
-  /* 添加文字水印 */
+  /* 添加文字水印和Logo水印 */
   private async addWatermark(buffer: Buffer, text: string): Promise<Buffer> {
     const image = sharp(buffer);
+    const imageMetadata = await image.metadata();
+    const imageWidth = imageMetadata.width || 800;
+    const imageHeight = imageMetadata.height || 600;
+    // 读取Logo图片
+    const logoPath = require('path').resolve(__dirname, '../../../src/asset/logo.png');
 
-    // 创建水印文字图片
-    const textWidth = text.length * 15; // 估算文字宽度
+    if (!fs.existsSync(logoPath)) {
+      throw new Error(`Logo file NOT FOUND at: ${logoPath}`);
+    }
+    const logoBuffer = await sharp(logoPath)
+      .resize(Math.floor(imageWidth * 0.15), null, { withoutEnlargement: true })
+      .toBuffer();
+    const logoMetadata = await sharp(logoBuffer).metadata();
+    const logoWidth = logoMetadata.width || 100;
+    const logoHeight = logoMetadata.height || 100;
+
+    // 计算Logo居中位置
+    const centerX = Math.floor((imageWidth - logoWidth) / 2);
+    const centerTopY = Math.floor((imageHeight - logoHeight) / 5);
+    // 创建文字水印
+    const textWidth = text.length * 15;
     const padding = 2;
     const watermarkHeight = 15;
-
-    // 创建水印 SVG
     const svgWatermark = `
       <svg width="${textWidth + padding * 2}" height="${watermarkHeight + padding * 2}">
         <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.3)"/>
@@ -316,16 +333,12 @@ export class SpecimenService {
         </text>
       </svg>
     `;
-
-    const watermarkBuffer = Buffer.from(svgWatermark);
-
-    // 合成水印（右下角）
+    const textWatermarkBuffer = Buffer.from(svgWatermark);
+    // 合成Logo水印（居中）和文字水印（右下角）
     return await image
       .composite([
-        {
-          input: watermarkBuffer,
-          gravity: 'southeast',
-        },
+        { input: logoBuffer, left: centerX, top: centerTopY },
+        { input: textWatermarkBuffer, gravity: 'southeast' },
       ])
       .toBuffer();
   }

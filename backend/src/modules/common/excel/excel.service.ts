@@ -34,6 +34,47 @@ export class ExcelService {
     return new Uint8Array(fileBuffer);
   }
 
+  /* 导出学生成绩（动态列） */
+  async exportStudentScores(list: any[]) {
+    // 动态构建表头和数据
+    const headers = ['学号', '姓名', '专业班级', '考试次数', '平均成绩'];
+    const maxExamCount = Math.max(5, ...list.map((l) => l.examCount || 0));
+
+    // 生成动态表头：考试1时间、考试1成绩、考试1标本目录...
+    for (let i = 1; i <= maxExamCount; i++) {
+      headers.push(`考试${i}时间`, `考试${i}成绩`, `考试${i}标本目录`);
+    }
+
+    // 构建数据
+    const data = [headers];
+    for (const item of list) {
+      const row = [
+        item.studentNo || '',
+        item.realName || '',
+        item.majorGrade || '',
+        item.examCount || 0,
+        item.avgScore || 0,
+      ];
+      for (let i = 1; i <= maxExamCount; i++) {
+        row.push(
+          item[`exam${i}Time`] || '',
+          item[`exam${i}Score`] ?? '',
+          item[`exam${i}MuseumName`] || '',
+        );
+      }
+      data.push(row);
+    }
+
+    const fileBuffer = xlsx.build([
+      {
+        name: 'sheet1',
+        data,
+        options: {},
+      },
+    ]);
+    return new Uint8Array(fileBuffer);
+  }
+
   /* 导入 */
   async import<TModel>(
     model: new (...args: any[]) => TModel,
@@ -145,6 +186,10 @@ export class ExcelService {
         if (option.defaultValue) {
           dataItem = dataItem ?? option.defaultValue;
         }
+        // 处理空值
+        if (dataItem === null || dataItem === undefined) {
+          dataItem = '';
+        }
         switch (option.t) {
           case ColumnTypeEnum.boolean:
             dataItem = Boolean(dataItem);
@@ -157,6 +202,10 @@ export class ExcelService {
             break;
           default:
             break;
+        }
+        // 如果转换后是 undefined，转为空字符串
+        if (dataItem === undefined) {
+          dataItem = '';
         }
         return dataItem;
       });

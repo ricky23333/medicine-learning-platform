@@ -243,12 +243,8 @@ export class StatsService {
           status: '1',
         },
         orderBy: { examTime: 'desc' },
+        include: { museum: true },
       });
-
-      // 构建考试记录字符串
-      const examRecords = exams
-        .map((e) => `${dayjs(e.examTime).utc().format('YYYY-MM-DD')}: ${e.score}分`)
-        .join('; ');
 
       // 计算平均成绩
       const avgScore =
@@ -256,14 +252,26 @@ export class StatsService {
           ? Math.round(exams.reduce((sum, e) => sum + e.score, 0) / exams.length)
           : 0;
 
-      results.push({
+      // 构建每次考试的数据
+      const examResult: ExportStudentScoreDto = {
         studentNo: appUser.studentNo || '',
         realName: appUser.realName || '',
         majorGrade: appUser.majorGrade || '',
         examCount: exams.length,
         avgScore,
-        examRecords,
-      });
+      };
+
+      // 填充每次考试的详细记录（最多5次）
+      for (let i = 0; i < 5; i++) {
+        const exam = exams[i];
+        if (exam) {
+          examResult[`exam${i + 1}Time`] = dayjs(exam.examTime).utc().format('YYYY-MM-DD');
+          examResult[`exam${i + 1}Score`] = exam.score;
+          examResult[`exam${i + 1}MuseumName`] = exam.museum?.museumName || '';
+        }
+      }
+
+      results.push(examResult);
     }
 
     return results;

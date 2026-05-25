@@ -58,6 +58,49 @@ export class ExportStudentScoreDto {
   @Excel({ name: '平均成绩', sort: 5, t: ColumnTypeEnum.number })
   avgScore: number;
 
-  @Excel({ name: '考试记录', sort: 6, t: ColumnTypeEnum.string })
-  examRecords: string;
+  // 动态考试记录字段 - 每次考试拆分为：时间、成绩、标本目录
+  @Excel({ name: '考试1时间', sort: 6, t: ColumnTypeEnum.string })
+  exam1Time?: string;
+
+  @Excel({ name: '考试1成绩', sort: 7, t: ColumnTypeEnum.number })
+  exam1Score?: number;
+
+  @Excel({ name: '考试1标本目录', sort: 8, t: ColumnTypeEnum.string })
+  exam1MuseumName?: string;
+
+  @Excel({ name: '考试2时间', sort: 9, t: ColumnTypeEnum.string })
+  exam2Time?: string;
+
+  @Excel({ name: '考试2成绩', sort: 10, t: ColumnTypeEnum.number })
+  exam2Score?: number;
+
+  @Excel({ name: '考试2标本目录', sort: 11, t: ColumnTypeEnum.string })
+  exam2MuseumName?: string;
+
+  @Excel({ name: '考试3时间', sort: 12, t: ColumnTypeEnum.string })
+  exam3Time?: string;
+
+  @Excel({ name: '考试3成绩', sort: 13, t: ColumnTypeEnum.number })
+  exam3Score?: number;
+
+  @Excel({ name: '考试3标本目录', sort: 14, t: ColumnTypeEnum.string })
+  exam3MuseumName?: string;
+
+  @Excel({ name: '考试4时间', sort: 15, t: ColumnTypeEnum.string })
+  exam4Time?: string;
+
+  @Excel({ name: '考试4成绩', sort: 16, t: ColumnTypeEnum.number })
+  exam4Score?: number;
+
+  @Excel({ name: '考试4标本目录', sort: 17, t: ColumnTypeEnum.string })
+  exam4MuseumName?: string;
+
+  @Excel({ name: '考试5时间', sort: 18, t: ColumnTypeEnum.string })
+  exam5Time?: string;
+
+  @Excel({ name: '考试5成绩', sort: 19, t: ColumnTypeEnum.number })
+  exam5Score?: number;
+
+  @Excel({ name: '考试5标本目录', sort: 20, t: ColumnTypeEnum.string })
+  exam5MuseumName?: string;
 }

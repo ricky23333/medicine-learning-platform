@@ -66,7 +66,7 @@ export class StatsController {
   @ApiResponse({ status: 200, description: '导出成功' })
   async exportStudentScores(@Query() query: ExportStudentScoresDto): Promise<StreamableFile> {
     const data = await this.statsService.exportStudentScores(query);
-    const file = await this.excelService.export(ExportStudentScoreDto, data);
+    const file = await this.excelService.exportStudentScores(data);
     return new StreamableFile(file);
   }
 }
