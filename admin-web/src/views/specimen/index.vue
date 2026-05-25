@@ -127,7 +127,7 @@
               @click="selectImage(img)"
             >
               <el-image
-                :src="img.imageUrl"
+                :src="img.thumbnailUrl || img.imageUrl"
                 :preview-src-list="currentSpecimen?.images?.map(i => i.imageUrl)"
                 fit="cover"
                 class="image-thumb"
@@ -351,7 +351,9 @@
 
   const userStore = useUserStore()
   const isAdmin = computed(() => userStore.roles?.includes('admin'))
-  const isVipTeacher = computed(() => userStore.appUser?.userType === 'teacher' && userStore.appUser?.vipStatus === '2')
+  const isVipTeacher = computed(
+    () => userStore.appUser?.userType === 'teacher' && userStore.appUser?.vipStatus === '2'
+  )
 
   function canDeleteImage(img: any) {
     if (isAdmin.value) return true
@@ -591,7 +593,7 @@
   function getCoverImage(item: any) {
     if (!item.images || item.images.length === 0) return null
     const approved = item.images.find((img: any) => img.auditStatus === '1')
-    return approved?.imageUrl || item.images[0]?.imageUrl || null
+    return approved?.thumbnailUrl || approved?.imageUrl || item.images[0]?.imageUrl || null
   }
 
   // 获取已审核图片
