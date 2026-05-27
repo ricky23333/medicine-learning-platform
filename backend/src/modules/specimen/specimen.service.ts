@@ -236,10 +236,10 @@ export class SpecimenService {
       .resize(400, null, { withoutEnlargement: true })
       .toBuffer();
 
-    // 缩略图也添加水印
-    if (enableWatermark && watermarkText) {
-      thumbnailBuffer = await this.addWatermark(thumbnailBuffer, watermarkText);
-    }
+    // // 缩略图也添加水印
+    // if (enableWatermark && watermarkText) {
+    //   thumbnailBuffer = await this.addWatermark(thumbnailBuffer, watermarkText);
+    // }
 
     // 上传到COS
     const bucket = process.env.TENCENT_COS_BUCKET;
