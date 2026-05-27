@@ -306,7 +306,7 @@ export class SpecimenService {
     const imageHeight = imageMetadata.height || 600;
 
     // 计算缩放因子：基于图片尺寸，基准为1000px，动态调整水印大小
-    const scaleFactor = Math.max(1, Math.min(imageWidth, imageHeight) / 400);
+    const scaleFactor = Math.max(1, Math.min(imageWidth, imageHeight) / 200);
 
     // 读取Logo图片，按缩放因子等比缩放
     const logoPath = require('path').resolve(__dirname, '../../../src/asset/logo.png');
@@ -316,7 +316,7 @@ export class SpecimenService {
     }
 
     // Logo目标宽度 = 基准50px * 缩放因子，最小50px，最大1500px
-    const targetLogoWidth = Math.min(1500, Math.max(75, Math.floor(100 * scaleFactor)));
+    const targetLogoWidth = Math.min(5000, Math.max(75, Math.floor(100 * scaleFactor)));
     const logoBuffer = await sharp(logoPath)
       .resize(targetLogoWidth, null, { withoutEnlargement: true })
       .ensureAlpha()
@@ -332,16 +332,17 @@ export class SpecimenService {
 
     // 创建文字水印，按缩放因子调整大小
     // 基准字体24px * 缩放因子，最小24px，最大256px
-    const fontSize = Math.min(256, Math.max(18, Math.floor(18 * scaleFactor)));
-    const textWidth = text.length * fontSize;
+    const fontSize = Math.min(256, Math.max(18, Math.floor(9 * scaleFactor)));
+    const textWidth = text.length * fontSize * 1;
     const watermarkHeight = fontSize;
     const padding = Math.floor(4 * scaleFactor);
+    const strokeWidth = 2;
 
     const svgWatermark = `
       <svg width="${textWidth + padding * 2}" height="${watermarkHeight + padding * 2}">
-        <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.3)"/>
         <text x="${padding}" y="${watermarkHeight / 2 + fontSize * 0.35}"
-              font-family="WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" font-size="${fontSize}" fill="white" text-anchor="start">
+              font-family="WenQuanYi Micro Hei, Noto Sans CJK SC, sans-serif" font-size="${fontSize}"
+              fill="rgba(0,0,0,0.9)" stroke="white" stroke-width="${strokeWidth}" stroke-linejoin="round">
           ${text}
         </text>
       </svg>

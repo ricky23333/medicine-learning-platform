@@ -279,6 +279,24 @@ export function getMuseumList() : Promise<MuseumListResponse> {
 	return get<MuseumListResponse>('/app/museum/list')
 }
 
+// 考试历史记录
+export interface ExamRecord {
+	examId : number
+	examName : string
+	score : number
+	totalScore : number
+	completedAt : string
+}
+
+export type ExamHistoryResponse = ExamRecord[]
+
+/**
+ * 获取考试历史记录
+ */
+export function getExamHistory() : Promise<ExamHistoryResponse> {
+	return get<ExamHistoryResponse>('/app/exam/history')
+}
+
 // 标本数据类型
 export interface SpecimenItem {
 	specimenId : number

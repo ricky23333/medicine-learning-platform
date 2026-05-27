@@ -111,7 +111,7 @@
 	import { computed, onMounted, ref } from 'vue'
 	import { useAppContext } from '@/context/AppContext.uts'
 	import BottomTabBar from '@/components/BottomTabBar/index.uvue'
-	import { getMuseumList, type Museum } from '@/utils/auth'
+	import { getMuseumList, getExamHistory, type Museum, type ExamRecord } from '@/utils/auth'
 
 	const context = useAppContext()
 	const userName = computed(() => uni.getStorageSync('realName'))
@@ -126,6 +126,10 @@
 	const museums = ref<Museum[]>([])
 	const loading = ref(false)
 
+	// 考试记录数据
+	const examHistory = ref<ExamRecord[]>([])
+	const examCount = computed(() => examHistory.value.length)
+
 	// 计算总标本数（从API数据）
 	const totalSpecimens = computed(() => {
 		return museums.value.reduce((sum, m) => {
@@ -136,11 +140,15 @@
 	// 计算标本馆数量
 	const museumCount = computed(() => museums.value.length)
 
-	// 计算我的考试次数
-	const examCount = computed(() => {
-		if (!user.value) return 0
-		return context.getMyExamRecords(user.value.id).length
-	})
+	// 获取考试历史
+	async function loadExamHistory() {
+		try {
+			const res = await getExamHistory()
+			examHistory.value = res.rows || []
+		} catch (err : any) {
+			console.error('获取考试记录失败:', err)
+		}
+	}
 
 	// 获取标本馆列表
 	async function loadMuseums() {
@@ -158,6 +166,7 @@
 
 	onMounted(() => {
 		loadMuseums()
+		loadExamHistory()
 	})
 
 	// 计算博物馆总标本数
