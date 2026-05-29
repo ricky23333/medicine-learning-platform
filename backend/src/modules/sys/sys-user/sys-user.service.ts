@@ -315,7 +315,7 @@ export class SysUserService {
   /* 导入用户列表 */
   async importData(importSysUserDtoArr: ImportSysUserDto[], isUpdate: boolean) {
     // 获取默认密码
-    const defaultPassword = process.env.DEFAULT_USER_PASSWORD || '123456';
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD || '888888';
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
