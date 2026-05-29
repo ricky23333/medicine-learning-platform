@@ -1,76 +1,70 @@
-import { AddSysUserDto } from './req-sys-user.dto';
 import { ColumnTypeEnum } from 'src/modules/common/excel/excel.enum';
 import { Excel } from 'src/modules/common/excel/excel.decorator';
 import { IsOptional, IsString } from 'class-validator';
 
 export class ExportSysUserDto {
-  /* 用户账号 */
-  @Excel({ name: '用户账号' })
+  /* 院校 */
+  @Excel({
+    name: '院校',
+    formatter: (value: any, row: any) => row.dept?.deptName || '',
+  })
   @IsString()
-  userName: string;
+  institution: string;
 
-  /* 用户昵称 */
-  @Excel({ name: '用户昵称' })
+  /* 专业 */
+  @Excel({
+    name: '专业',
+    formatter: (value: any, row: any) => {
+      const majorGrade = row.appUser?.majorGrade || '';
+      // majorGrade 格式: "专业-年级" 或只有"专业"
+      const parts = majorGrade.split('-');
+      return parts[0] || '';
+    },
+  })
+  @IsString()
+  major: string;
+
+  /* 年级 */
+  @Excel({
+    name: '年级',
+    formatter: (value: any, row: any) => {
+      const majorGrade = row.appUser?.majorGrade || '';
+      const parts = majorGrade.split('-');
+      return parts[1] || '';
+    },
+  })
+  @IsString()
+  grade: string;
+
+  /* 姓名 */
+  @Excel({ name: '姓名' })
   @IsString()
   nickName: string;
-
-  /* 手机号码 */
-  @Excel({
-    name: '手机号码',
-    formatter: (value: any, row: any) => row.appUser?.phonenumber,
-  })
-  @IsOptional()
-  @IsString()
-  phonenumber?: string;
-
-  /* 联系方式 */
-  @Excel({
-    name: '联系方式',
-    formatter: (value: any, row: any) => row.appUser?.contact,
-  })
-  @IsOptional()
-  @IsString()
-  contact?: string;
-
-  /* 用户类型 */
-  @Excel({
-    name: '用户类型',
-    formatter: (value: any, row: any) => row.appUser?.userType,
-  })
-  @IsOptional()
-  @IsString()
-  userType?: string;
-
-  /* 年级班级 */
-  @Excel({
-    name: '年级班级',
-    formatter: (value: any, row: any) => row.appUser?.majorGrade,
-  })
-  @IsOptional()
-  @IsString()
-  majorGrade?: string;
 
   /* 学号 */
   @Excel({
     name: '学号',
-    formatter: (value: any, row: any) => row.appUser?.studentNo,
+    formatter: (value: any, row: any) => row.appUser?.studentNo || '',
   })
   @IsOptional()
   @IsString()
   studentNo?: string;
 
-  /* 用户邮箱 */
-  @Excel({ name: '用户邮箱' })
+  /* 身份证号 */
+  @Excel({
+    name: '身份证号',
+    formatter: (value: any, row: any) => row.appUser?.identity || '',
+  })
   @IsOptional()
   @IsString()
-  email?: string;
+  identity?: string;
 
-  /* 帐号状态 */
-  @Excel({ name: '帐号状态', dictType: 'sys_normal_disable' })
+  /* 手机号 */
+  @Excel({
+    name: '手机号',
+    formatter: (value: any, row: any) => row.appUser?.phone || '',
+  })
+  @IsOptional()
   @IsString()
-  status: string;
-
-  /* 用户部门 */
-  @Excel({ name: '所属部门id', t: ColumnTypeEnum.number })
-  deptId: number;
+  phone?: string;
 }

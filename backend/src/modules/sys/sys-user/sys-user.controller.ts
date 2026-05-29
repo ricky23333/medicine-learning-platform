@@ -275,6 +275,12 @@ export class SysUserController {
       file,
     );
 
-    await this.sysUserService.importData(data, updateSupportDto.updateSupport);
+    try {
+      await this.sysUserService.importData(data, updateSupportDto.updateSupport);
+    } catch (e) {
+      throw new ApiException(
+        e.toString(),
+      );
+    }
   }
 }

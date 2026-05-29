@@ -400,6 +400,7 @@ model AppUser {
   institution    String    @db.VarChar(100)
   majorGrade     String?   @db.VarChar(50)
   studentNo      String?   @db.VarChar(30)
+  identity       String?   @db.VarChar(18)
   contact        String?   @db.VarChar(50)
   vipStatus      String    @default("0") @db.Char(1)
   vipApplyTime   DateTime?

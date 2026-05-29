@@ -314,68 +314,82 @@ export class SysUserService {
 
   /* 导入用户列表 */
   async importData(importSysUserDtoArr: ImportSysUserDto[], isUpdate: boolean) {
-    return await this.prisma.$transaction(async (prisma) => {
+    // 获取默认密码
+    const defaultPassword = process.env.DEFAULT_USER_PASSWORD || '123456';
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
+    return await this.prisma.$transaction(async (prisma) => {
       for (const item of importSysUserDtoArr) {
-        // 加密密码
-        const salt = await bcrypt.genSalt();
-        item.password = await bcrypt.hash(item.password, salt);
+        // 根据院校名称查找部门ID
+        const dept = await prisma.sysDept.findFirst({
+          where: { deptName: item.institution, delFlag: '0' },
+        });
+        if (!dept) {
+          throw new ApiException('院校：' + item.institution + ' 不存在，请先创建部门');
+        }
+        const deptId = dept.deptId;
+
+        // 拼接 majorGrade: "专业-年级"
+        const majorGrade = item.grade ? `${item.major}-${item.grade}` : item.major;
+
+        // 生成用户账号：优先使用学号，如果没有学号则生成随机账号
+        const userName = item.phone;
+        if (!userName || userName == '') {
+          throw new ApiException('用户手机号不能为空');
+        }
+
         if (!isUpdate) {
-     
           const user = await prisma.sysUser.findUnique({
-            where: {
-              userName: item.userName,
-            },
+            where: { userName },
           });
-          if (user)
-            throw new ApiException(
-              '用户名：' + item.userName + ' 已经存在，请更换后再试。',
-            );
+          if (user) {
+            throw new ApiException('用户手机：' + userName + ' 已经注册，请更换后再试。');
+          }
+
           // 创建 sysUser
           const sysUser = await prisma.sysUser.create({
             data: {
-              userName: item.userName,
-              password: item.password,
+              userName,
+              password: hashedPassword,
               nickName: item.nickName,
-              deptId: item.deptId,
+              deptId: Number(deptId),
               createTime: new Date(),
             },
           });
-      
+
           // 创建 appUser
           await prisma.appUser.create({
             data: {
               userId: sysUser.userId,
-              phone: item.phonenumber,
-              contact: item.contact,
-              userType: item.userType,
-              majorGrade: item.majorGrade,
+              phone: item.phone,
               studentNo: item.studentNo,
-              institution: String(item.deptId),
+              identity: item.identity,
+              majorGrade,
+              institution: deptId + '',
               realName: item.nickName,
               regStatus: '1',
               regApplyTime: sysUser.createTime,
             },
           });
         } else {
-       
           const existingUser = await prisma.sysUser.findUnique({
-            where: { userName: item.userName },
+            where: { userName },
           });
           // 更新 sysUser
           await prisma.sysUser.upsert({
-            where: {
-              userName: item.userName,
-            },
+            where: { userName },
             update: {
               nickName: item.nickName,
-              deptId: item.deptId,
+              deptId,
+              realName: item.nickName,
             },
             create: {
-              userName: item.userName,
-              password: item.password,
+              userName,
+              password: hashedPassword,
               nickName: item.nickName,
-              deptId: item.deptId,
+              deptId,
+              realName: item.nickName,
               createTime: new Date(),
             },
           });
@@ -384,22 +398,20 @@ export class SysUserService {
             await prisma.appUser.upsert({
               where: { userId: existingUser.userId },
               update: {
-                phone: item.phonenumber,
-                contact: item.contact,
-                userType: item.userType,
-                majorGrade: item.majorGrade,
+                phone: item.phone,
                 studentNo: item.studentNo,
-                institution: String(item.deptId),
+                identity: item.identity,
+                majorGrade,
+                institution: item.institution,
                 realName: item.nickName,
               },
               create: {
                 userId: existingUser.userId,
-                phone: item.phonenumber,
-                contact: item.contact,
-                userType: item.userType,
-                majorGrade: item.majorGrade,
+                phone: item.phone,
                 studentNo: item.studentNo,
-                institution: String(item.deptId),
+                identity: item.identity,
+                majorGrade,
+                institution: item.institution,
                 realName: item.nickName,
                 regStatus: '1',
                 regApplyTime: existingUser.createTime,

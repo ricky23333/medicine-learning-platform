@@ -223,75 +223,56 @@ export class CancelAllDto {
 
 /* 导入模板 */
 export class ImportSysUserDto {
-  /* 用户账号 */
+  /* 院校 */
   @IsString()
   @Excel({
-    name: '用户账号',
+    name: '院校',
   })
-  userName: string;
+  institution: string;
 
-  /* 密码 */
-  @Excel({
-    name: '密码',
-  })
+  /* 专业 */
   @IsString()
-  password: string;
-
-  /* 用户部门 */
   @Excel({
-    name: '所属部门id',
-    t: ColumnTypeEnum.number,
+    name: '专业',
   })
-  @IsNumber()
-  @Type()
-  deptId: number;
+  major: string;
 
-  /* 用户昵称 */
-  @Excel({
-    name: '用户昵称',
-  })
+  /* 年级 */
   @IsString()
+  @Excel({
+    name: '年级',
+  })
+  grade: string;
+
+  /* 姓名 */
+  @IsString()
+  @Excel({
+    name: '姓名',
+  })
   nickName: string;
 
-  /* 手机号码 */
-  @Excel({
-    name: '手机号码',
-  })
-  @IsOptional()
-  @IsString()
-  phonenumber?: string;
-
-  /* 联系方式 */
-  @Excel({
-    name: '联系方式',
-  })
-  @IsOptional()
-  @IsString()
-  contact?: string;
-
-  /* 用户类型 */
-  @Excel({
-    name: '用户类型',
-  })
-  @IsOptional()
-  @IsString()
-  userType?: string;
-
-  /* 年级班级 */
-  @Excel({
-    name: '年级班级',
-  })
-  @IsOptional()
-  @IsString()
-  majorGrade?: string;
-
   /* 学号 */
+  @IsString()
   @Excel({
     name: '学号',
   })
+  studentNo: string;
+
+  /* 身份证号 */
   @IsOptional()
   @IsString()
-  studentNo?: string;
+  @Excel({
+    name: '身份证号',
+  })
+  identity?: string;
+
+  /* 手机号 */
+  @IsOptional()
+  @IsString()
+  @Excel({
+    name: '手机号',
+  })
+  phone: string;
 
   createTime?: Date | string;
 }

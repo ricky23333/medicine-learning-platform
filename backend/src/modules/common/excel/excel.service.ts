@@ -164,7 +164,13 @@ export class ExcelService {
     for (let index = 0; index < list.length; index++) {
       const element = list[index];
       const inArr = optionArr.map((option) => {
-        let dataItem = element[option.propertyKey];
+        let dataItem;
+        // 如果有 formatter，使用 formatter；否则直接取值
+        if (option.formatter) {
+          dataItem = option.formatter(element[option.propertyKey], element);
+        } else {
+          dataItem = element[option.propertyKey];
+        }
         if (option.dateFormat) {
           dataItem = dayjs(dataItem).format(option.dateFormat);
         }
