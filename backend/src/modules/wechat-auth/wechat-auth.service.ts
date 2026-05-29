@@ -27,7 +27,7 @@ export class WechatAuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectRedis() private readonly redis: Redis,
-  ) {}
+  ) { }
 
   /* 微信登录 */
   async wechatLogin(dto: ReqWechatLoginDto) {
@@ -183,6 +183,7 @@ export class WechatAuthService {
         deptId: Number(deptId),
         status: '0',
         delFlag: '0',
+        createTime: new Date(),
       },
     });
 
