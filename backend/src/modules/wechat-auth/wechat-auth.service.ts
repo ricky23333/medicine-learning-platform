@@ -227,6 +227,7 @@ export class WechatAuthService {
 
       return data.openid;
     } catch (error) {
+      console.log('微信服务调用失败', error.toString());
       throw new ApiException('微信服务调用失败，请稍后再试');
     }
   }
