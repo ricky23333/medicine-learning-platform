@@ -135,7 +135,7 @@
         <div class="chart-card">
           <h3 class="chart-title">标本分类分布</h3>
           <div ref="categoryChartRef" style="height: 180px"></div>
-          <div class="category-legend" :class="{ 'is-scroll': categoryLegend.length > 5 }">
+          <div class="category-legend">
             <div v-for="(item, idx) in categoryLegend" :key="item.name" class="legend-item">
               <div class="legend-dot" :style="{ background: item.color }"></div>
               <span class="legend-name">{{ item.name }}</span>
@@ -849,51 +849,16 @@
   /* 分类图例 */
   .category-legend {
     margin-top: 8px;
-  }
-
-  .category-legend.is-scroll {
-    max-height: 130px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .category-legend.is-scroll .legend-item {
-    display: inline-flex;
-    min-width: 50%;
-    box-sizing: border-box;
-    padding-right: 12px;
-  }
-
-  .category-legend:not(.is-scroll) {
     display: flex;
     flex-wrap: wrap;
-  }
-
-  .category-legend:not(.is-scroll) .legend-item {
-    min-width: 50%;
-    box-sizing: border-box;
-  }
-
-  .category-legend.is-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .category-legend.is-scroll::-webkit-scrollbar-track {
-    background: #f3f4f6;
-    border-radius: 2px;
-  }
-
-  .category-legend.is-scroll::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 2px;
   }
 
   .legend-item {
     display: flex;
     align-items: center;
+    width: 50%;
     gap: 8px;
-    padding: 2px 0;
+    padding: 2px 10px 2px 0px;
   }
 
   .legend-dot {
