@@ -132,10 +132,10 @@ export class WechatAuthService {
       throw new ApiException('手机号和微信openid至少需要填写一个');
     }
 
-    // 0.1 如果只有openid没有手机号，且身份为教师，必须填写手机号
-    if (!phone && openid && userType === 'teacher') {
-      throw new ApiException('教师用户注册必须填写手机号');
-    }
+    // // 0.1 如果只有openid没有手机号，且身份为教师，必须填写手机号
+    // if (!phone && openid && userType === 'teacher') {
+    //   throw new ApiException('教师用户注册必须填写手机号');
+    // }
 
     // 0.2 校验组织ID是否存在
     const dept = await this.prisma.sysDept.findUnique({
