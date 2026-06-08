@@ -269,7 +269,7 @@
 
 <script setup lang="uts">
 	import { ref, reactive, onMounted } from 'vue'
-	import { wechatLoginByCode, wechatRegister, getSchoolList, getUserInfo, registerByPassword, simplifiedLogin, getCaptcha, loginByPassword, registerWithCaptcha, type DeptItem } from '../../utils/auth'
+	import { wechatLoginByCode, wechatRegister, getSchoolList, getUserInfo, simplifiedLogin, getCaptcha, loginByPassword, registerWithCaptcha, type DeptItem } from '../../utils/auth'
 
 	// 当前Tab
 	const currentTab = ref<'login' | 'register'>('login')

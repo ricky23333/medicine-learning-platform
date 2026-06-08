@@ -12,136 +12,138 @@
     </div>
 
     <template v-else>
-    <!-- 页面标题 -->
-    <div class="index-header">
-      <h1 class="text-gray-800">系统概况</h1>
-      <p class="text-gray-500 mt-1">欢迎回来，查看系统实时数据</p>
-    </div>
+      <!-- 页面标题 -->
+      <div class="index-header">
+        <h1 class="text-gray-800">系统概况</h1>
+        <p class="text-gray-500 mt-1">欢迎回来，查看系统实时数据</p>
+      </div>
 
-    <!-- 指标卡片 -->
-    <div class="stat-grid">
-      <div v-for="card in statCards" :key="card.label" class="stat-card">
-        <div class="stat-card-header">
-          <div class="stat-icon" :style="{ background: card.bg }">
-            <el-icon :size="20" :style="{ color: card.color }">
-              <component :is="card.icon" />
-            </el-icon>
-          </div>
-          <!-- <span class="stat-trend">
+      <!-- 指标卡片 -->
+      <div class="stat-grid">
+        <div v-for="card in statCards" :key="card.label" class="stat-card">
+          <div class="stat-card-header">
+            <div class="stat-icon" :style="{ background: card.bg }">
+              <el-icon :size="20" :style="{ color: card.color }">
+                <component :is="card.icon" />
+              </el-icon>
+            </div>
+            <!-- <span class="stat-trend">
             <el-icon :size="12"><Top /></el-icon>
             {{ card.trend }}
           </span> -->
+          </div>
+          <div class="stat-value">{{ card.value }}</div>
+          <div class="stat-label">{{ card.label }}</div>
         </div>
-        <div class="stat-value">{{ card.value }}</div>
-        <div class="stat-label">{{ card.label }}</div>
-      </div>
-    </div>
-
-    <!-- 图表区域 -->
-    <div class="charts-grid">
-      <!-- 访问趋势图 -->
-      <div class="chart-card chart-card-wide">
-        <h3 class="chart-title">近{{ visitDays }}天访问趋势</h3>
-        <div class="chart-period-btns">
-          <span
-            v-for="p in [7, 14, 30]"
-            :key="p"
-            :class="['period-btn', { active: visitDays === p }]"
-            @click="changeVisitDays(p)"
-          >
-            近{{ p }}天
-          </span>
-        </div>
-        <div ref="visitChartRef" style="height: 220px"></div>
       </div>
 
-      <!-- 学校用户统计图 -->
-      <div class="chart-card">
-        <div class="chart-title-row">
-          <h3 class="chart-title">学校用户统计</h3>
-          <el-button size="small" type="primary" plain icon="Download" @click="handleExport">导出</el-button>
+      <!-- 底部卡片 -->
+      <div class="bottom-grid">
+        <!-- 待处理事项 -->
+        <div class="info-card">
+          <h3 class="info-card-title">
+            <el-icon :size="16" style="color: #f59e0b"><Clock /></el-icon>
+            待处理事项
+          </h3>
+          <div class="pending-list">
+            <div v-for="item in pendingItems" :key="item.label" class="pending-item">
+              <span class="pending-label">{{ item.label }}</span>
+              <span
+                class="pending-badge"
+                :style="{ background: item.count > 0 ? item.color : '#ccc' }"
+              >
+                {{ item.count }}
+              </span>
+            </div>
+          </div>
         </div>
-        <div ref="schoolUserChartRef" style="height: 220px"></div>
-      </div>
 
-      <!-- 分类分布图 -->
-      <div class="chart-card">
-        <h3 class="chart-title">标本分类分布</h3>
-        <div ref="categoryChartRef" style="height: 180px"></div>
-        <div class="category-legend">
-          <div v-for="(item, idx) in categoryLegend" :key="item.name" class="legend-item">
-            <div class="legend-dot" :style="{ background: item.color }"></div>
-            <span class="legend-name">{{ item.name }}</span>
-            <span class="legend-count">{{ item.count }}</span>
+        <!-- 标本目录概览 -->
+        <div class="info-card">
+          <h3 class="info-card-title">
+            <el-icon :size="16" style="color: #2d6a4f"><Collection /></el-icon>
+            标本目录概览
+          </h3>
+          <div class="museum-list">
+            <div v-for="museum in museumStats" :key="museum.id" class="museum-item">
+              <div class="museum-header">
+                <span class="museum-name">{{ museum.icon }} {{ museum.name }}</span>
+                <span class="museum-count">{{ museum.specimenCount }}种</span>
+              </div>
+              <div class="museum-progress">
+                <div class="museum-progress-bar" :style="{ width: museum.percentage + '%' }"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 用户构成 -->
+        <div class="info-card">
+          <h3 class="info-card-title">
+            <el-icon :size="16" style="color: #2d6a4f"><User /></el-icon>
+            用户构成
+          </h3>
+          <div class="user-list">
+            <div v-for="item in userStats" :key="item.label" class="user-item">
+              <div class="user-dot" :style="{ background: item.color }"></div>
+              <span class="user-label">
+                <el-icon v-if="item.label === 'VIP教师'" :size="12"><Star /></el-icon>
+                {{ item.label }}
+              </span>
+              <span class="user-count">{{ item.count }}</span>
+            </div>
+          </div>
+          <div class="pending-user">
+            <span>待审核用户</span>
+            <span :style="{ color: pendingUserCount > 0 ? '#f59e0b' : '#888', fontWeight: 600 }">{{
+              pendingUserCount
+            }}</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 底部卡片 -->
-    <div class="bottom-grid">
-      <!-- 待处理事项 -->
-      <div class="info-card">
-        <h3 class="info-card-title">
-          <el-icon :size="16" style="color: #f59e0b"><Clock /></el-icon>
-          待处理事项
-        </h3>
-        <div class="pending-list">
-          <div v-for="item in pendingItems" :key="item.label" class="pending-item">
-            <span class="pending-label">{{ item.label }}</span>
+      <!-- 图表区域 -->
+      <div class="charts-grid">
+        <!-- 访问趋势图 -->
+        <div class="chart-card chart-card-wide">
+          <h3 class="chart-title">近{{ visitDays }}天访问趋势</h3>
+          <div class="chart-period-btns">
             <span
-              class="pending-badge"
-              :style="{ background: item.count > 0 ? item.color : '#ccc' }"
+              v-for="p in [7, 14, 30]"
+              :key="p"
+              :class="['period-btn', { active: visitDays === p }]"
+              @click="changeVisitDays(p)"
             >
-              {{ item.count }}
+              近{{ p }}天
             </span>
           </div>
+          <div ref="visitChartRef" style="height: 220px"></div>
         </div>
-      </div>
 
-      <!-- 标本目录概览 -->
-      <div class="info-card">
-        <h3 class="info-card-title">
-          <el-icon :size="16" style="color: #2d6a4f"><Collection /></el-icon>
-          标本目录概览
-        </h3>
-        <div class="museum-list">
-          <div v-for="museum in museumStats" :key="museum.id" class="museum-item">
-            <div class="museum-header">
-              <span class="museum-name">{{ museum.icon }} {{ museum.name }}</span>
-              <span class="museum-count">{{ museum.specimenCount }}种</span>
-            </div>
-            <div class="museum-progress">
-              <div class="museum-progress-bar" :style="{ width: museum.percentage + '%' }"></div>
+        <!-- 学校用户统计图 -->
+        <div class="chart-card">
+          <div class="chart-title-row">
+            <h3 class="chart-title">学校用户统计</h3>
+            <el-button size="small" type="primary" plain icon="Download" @click="handleExport"
+              >导出</el-button
+            >
+          </div>
+          <div ref="schoolUserChartRef" style="height: 220px"></div>
+        </div>
+
+        <!-- 分类分布图 -->
+        <div class="chart-card">
+          <h3 class="chart-title">标本分类分布</h3>
+          <div ref="categoryChartRef" style="height: 180px"></div>
+          <div class="category-legend">
+            <div v-for="(item, idx) in categoryLegend" :key="item.name" class="legend-item">
+              <div class="legend-dot" :style="{ background: item.color }"></div>
+              <span class="legend-name">{{ item.name }}</span>
+              <span class="legend-count">{{ item.count }}</span>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 用户构成 -->
-      <div class="info-card">
-        <h3 class="info-card-title">
-          <el-icon :size="16" style="color: #2d6a4f"><User /></el-icon>
-          用户构成
-        </h3>
-        <div class="user-list">
-          <div v-for="item in userStats" :key="item.label" class="user-item">
-            <div class="user-dot" :style="{ background: item.color }"></div>
-            <span class="user-label">
-              <el-icon v-if="item.label === 'VIP教师'" :size="12"><Star /></el-icon>
-              {{ item.label }}
-            </span>
-            <span class="user-count">{{ item.count }}</span>
-          </div>
-        </div>
-        <div class="pending-user">
-          <span>待审核用户</span>
-          <span :style="{ color: pendingUserCount > 0 ? '#f59e0b' : '#888', fontWeight: 600 }">{{
-            pendingUserCount
-          }}</span>
-        </div>
-      </div>
-    </div>
     </template>
   </div>
 </template>
@@ -302,7 +304,7 @@
           icon: '🌿',
           specimenCount: m.categories.reduce((sum: number, m: any) => sum + (m.specCount || 0), 0),
           percentage: totalCount > 0 ? Math.round(((m.specimenCount || 0) / totalCount) * 100) : 0,
-          color: colors[index % colors.length]
+          color: colors[0]
         }))
 
         // 计算分类分布
@@ -322,13 +324,11 @@
           itemStyle: { color: categoryColors[index % categoryColors.length] }
         }))
 
-        categoryLegend.value = categoryChartData.value
-          .slice(0, 4)
-          .map((item: any, index: number) => ({
-            name: item.name,
-            count: item.value,
-            color: categoryColors[index]
-          }))
+        categoryLegend.value = categoryChartData.value.map((item: any, index: number) => ({
+          name: item.name,
+          count: item.value,
+          color: categoryColors[index]
+        }))
 
         updateCategoryChart()
       }
@@ -401,7 +401,7 @@
     try {
       const res: any = await userStatistics()
       if (res.code === 200 && res.data) {
-        schoolUserData.value = res.data
+        schoolUserData.value = res.data.filter((item: any) => item.total > 0)
         updateSchoolUserChart()
       }
     } catch (error) {
@@ -629,10 +629,12 @@
     padding: 20px;
     max-width: 1400px;
     margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
   }
 
   .index-header {
-    margin-bottom: 24px;
+    width: 100%;
   }
 
   .index-header h1 {
@@ -647,6 +649,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin-bottom: 24px;
+    width: 100%;
   }
 
   @media (min-width: 1280px) {
@@ -701,10 +704,9 @@
 
   /* 图表区域 */
   .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   @media (min-width: 1280px) {
@@ -718,6 +720,8 @@
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    margin-bottom: 24px;
   }
 
   .chart-title {
@@ -805,6 +809,8 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
+    width: 100%;
+    margin-bottom: 24px;
   }
 
   @media (min-width: 1280px) {
