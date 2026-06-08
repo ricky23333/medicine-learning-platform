@@ -135,7 +135,7 @@
         <div class="chart-card">
           <h3 class="chart-title">标本分类分布</h3>
           <div ref="categoryChartRef" style="height: 180px"></div>
-          <div class="category-legend">
+          <div class="category-legend" :class="{ 'is-scroll': categoryLegend.length > 5 }">
             <div v-for="(item, idx) in categoryLegend" :key="item.name" class="legend-item">
               <div class="legend-dot" :style="{ background: item.color }"></div>
               <span class="legend-name">{{ item.name }}</span>
@@ -297,14 +297,14 @@
         const museums = museumRes.data
         const totalCount = museums.reduce((sum: number, m: any) => sum + (m.specimenCount || 0), 0)
 
-        const colors = ['#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7']
+        const museumColors = ['#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7']
         museumStats.value = museums.map((m: any, index: number) => ({
           id: m.museumId,
           name: m.museumName,
           icon: '🌿',
           specimenCount: m.categories.reduce((sum: number, m: any) => sum + (m.specCount || 0), 0),
           percentage: totalCount > 0 ? Math.round(((m.specimenCount || 0) / totalCount) * 100) : 0,
-          color: colors[0]
+          color: museumColors[0]
         }))
 
         // 计算分类分布
@@ -317,17 +317,90 @@
           }
         })
 
-        const categoryColors = ['#2d6a4f', '#40916c', '#52b788', '#74c69d', '#95d5b2', '#b7e4c7']
-        categoryChartData.value = Array.from(categoryMap.entries()).map(([name, count], index) => ({
+        // 生成足够多的颜色（支持大量分类）
+        function generateColors(count: number): string[] {
+          const baseColors = [
+            '#2d6a4f',
+            '#40916c',
+            '#52b788',
+            '#74c69d',
+            '#95d5b2',
+            '#b7e4c7',
+            '#1b3a2d',
+            '#3b5a4d',
+            '#5a7a6d',
+            '#7a9a8d',
+            '#9abaad',
+            '#badac7',
+            '#8b5cf6',
+            '#a78bfa',
+            '#c4b5fd',
+            '#7c3aed',
+            '#6d28d9',
+            '#5b21b6',
+            '#2563eb',
+            '#3b82f6',
+            '#60a5fa',
+            '#93c5fd',
+            '#1d4ed8',
+            '#1e40af',
+            '#d97706',
+            '#f59e0b',
+            '#fbbf24',
+            '#fcd34d',
+            '#b45309',
+            '#92400e',
+            '#dc2626',
+            '#ef4444',
+            '#f87171',
+            '#fca5a5',
+            '#b91c1c',
+            '#991b1b',
+            '#059669',
+            '#10b981',
+            '#34d399',
+            '#6ee7b7',
+            '#047857',
+            '#065f46',
+            '#db2777',
+            '#ec4899',
+            '#f472b6',
+            '#f9a8d4',
+            '#be185d',
+            '#9d174d'
+          ]
+          if (count <= baseColors.length) {
+            return baseColors.slice(0, count)
+          }
+          // 如果颜色不够，使用HSL算法生成
+          const colors: string[] = [...baseColors]
+          for (let i = baseColors.length; i < count; i++) {
+            const hue = (i * 137.508) % 360 // 黄金角度分布
+            const sat = 50 + (i % 3) * 15
+            const light = 35 + (i % 3) * 10
+            colors.push(`hsl(${hue}, ${sat}%, ${light}%)`)
+          }
+          return colors
+        }
+
+        const categoryArray = Array.from(categoryMap.entries()).map(([name, count]) => ({
           name,
-          value: count,
-          itemStyle: { color: categoryColors[index % categoryColors.length] }
+          value: count
+        }))
+        // 按标本数量降序排序
+        categoryArray.sort((a, b) => b.value - a.value)
+
+        const colors = generateColors(categoryArray.length)
+        categoryChartData.value = categoryArray.map((item, index) => ({
+          name: item.name,
+          value: item.value,
+          itemStyle: { color: colors[index] }
         }))
 
         categoryLegend.value = categoryChartData.value.map((item: any, index: number) => ({
           name: item.name,
           count: item.value,
-          color: categoryColors[index]
+          color: colors[index]
         }))
 
         updateCategoryChart()
@@ -341,10 +414,10 @@
   async function loadPendingCounts() {
     try {
       const [regRes, vipRes, userRes, imgRes]: any = await Promise.all([
-        getRegisterAuditList({ pageNum: 1, pageSize: 1 }),
-        getVipAuditList({ pageNum: 1, pageSize: 1 }),
-        getAppUserList({ pageNum: 1, pageSize: 1 }),
-        listSpecimen({ pageNum: 1, pageSize: 100, status: '0' })
+        getRegisterAuditList({ pageNum: 1, pageSize: 9999 }),
+        getVipAuditList({ pageNum: 1, pageSize: 9999 }),
+        getAppUserList({ pageNum: 1, pageSize: 9999 }),
+        listSpecimen({ pageNum: 1, pageSize: 9999, status: '0' })
       ])
 
       if (regRes.code === 200 && regRes && regRes.total) {
@@ -776,6 +849,44 @@
   /* 分类图例 */
   .category-legend {
     margin-top: 8px;
+  }
+
+  .category-legend.is-scroll {
+    max-height: 130px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .category-legend.is-scroll .legend-item {
+    display: inline-flex;
+    min-width: 50%;
+    box-sizing: border-box;
+    padding-right: 12px;
+  }
+
+  .category-legend:not(.is-scroll) {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .category-legend:not(.is-scroll) .legend-item {
+    min-width: 50%;
+    box-sizing: border-box;
+  }
+
+  .category-legend.is-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .category-legend.is-scroll::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 2px;
+  }
+
+  .category-legend.is-scroll::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
   }
 
   .legend-item {
