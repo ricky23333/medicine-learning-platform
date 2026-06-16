@@ -135,6 +135,15 @@ export function deptTreeSelect() {
   })
 }
 
+// 查询组织下所有用户的专业年级
+export function getMajorGrades(deptId) {
+  return request({
+    url: '/system/user/majorGrades',
+    method: 'get',
+    params: { deptId }
+  })
+}
+
 //获取用户表格设置
 export function getTableConfig(params) {
   return request({

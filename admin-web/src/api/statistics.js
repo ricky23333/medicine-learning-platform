@@ -36,11 +36,11 @@ export function getSchoolStats(params) {
 }
 
 // 导出学生成绩
-export function exportStudentScores(data) {
+export function exportStudentScores(params) {
   return request({
     url: '/admin/stats/exportStudentScores',
     method: 'post',
-    data,
+    params,
     responseType: 'blob'
   })
 }

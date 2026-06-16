@@ -12,9 +12,19 @@
         <p class="page-desc">系统运行数据分析</p>
       </div>
       <div class="header-right">
-        <el-select v-model="queryParams.deptId" placeholder="选择学校" clearable style="width: 180px; margin-right: 12px" @change="handleQuery">
+        <el-select v-model="queryParams.deptId" placeholder="选择学校" clearable style="width: 180px; margin-right: 12px" @change="handleDeptChange">
           <el-option label="全部学校" :value="undefined" />
           <el-option v-for="dept in schoolOptions" :key="dept.deptId" :label="dept.deptName" :value="dept.deptId" />
+        </el-select>
+        <el-select
+          v-if="queryParams.deptId"
+          v-model="selectedMajorGrade"
+          placeholder="选择专业年级"
+          style="width: 180px; margin-right: 12px"
+          @change="handleQuery"
+        >
+          <el-option label="全部专业年级" value="" />
+          <el-option v-for="majorGrade in majorGradeOptions" :key="majorGrade" :label="majorGrade" :value="majorGrade" />
         </el-select>
         <el-date-picker
           v-model="dateRange"
@@ -82,6 +92,7 @@ import { User, View, Document, TrendCharts, Download } from '@element-plus/icons
 import * as echarts from 'echarts'
 import { getSchoolStats, exportStudentScores } from '@/api/statistics'
 import { listDept } from '@/api/system/dept'
+import { getMajorGrades } from '@/api/system/user'
 import dayjs from 'dayjs'
 
 // 类型定义
@@ -101,6 +112,8 @@ const queryParams = reactive({
   endDate: ''
 })
 const schoolOptions = ref<any[]>([])
+const selectedMajorGrade = ref('')
+const majorGradeOptions = ref<string[]>([])
 
 const visitChartRef = ref<HTMLDivElement>()
 const examChartRef = ref<HTMLDivElement>()
@@ -166,6 +179,16 @@ function handleQuery() {
   loadData()
 }
 
+// 学校变化后加载专业年级
+async function handleDeptChange() {
+  selectedMajorGrade.value = ''
+  majorGradeOptions.value = []
+  if (queryParams.deptId) {
+    await loadMajorGrades(queryParams.deptId)
+  }
+  loadData()
+}
+
 // 加载学校列表
 async function loadSchools() {
   try {
@@ -178,10 +201,26 @@ async function loadSchools() {
   }
 }
 
+// 加载专业年级列表
+async function loadMajorGrades(deptId: number) {
+  try {
+    const res: any = await getMajorGrades(deptId)
+    if (res.code === 200 && res.data) {
+      majorGradeOptions.value = res.data
+    }
+  } catch (error) {
+    console.error('加载专业年级列表失败', error)
+  }
+}
+
 // 加载统计数据
 async function loadData() {
   try {
-    const res: any = await getSchoolStats(queryParams)
+    const params = {
+      ...queryParams,
+      majorGrade: selectedMajorGrade.value || undefined
+    }
+    const res: any = await getSchoolStats(params)
     if (res.code === 200 && res.data) {
       const dataList = res.data as any[]
 
@@ -192,6 +231,19 @@ async function loadData() {
       const allExamDaily: any[] = []
       let teachers = 0
       let students = 0
+      chartData.rawScoreDist = {
+        hundred: 0,
+        ninetyToHundred: 0,
+        eightyToNinety: 0,
+        seventyToEighty: 0,
+        sixtyToSeventy: 0,
+        fiftyToSixty: 0,
+        fortyToFifty: 0,
+        thirtyToForty: 0,
+        twentyToThirty: 0,
+        tenToTwenty: 0,
+        zeroToTen: 0
+      }
 
       dataList.forEach((data: any) => {
         totalExams += data.totalExams || 0
@@ -359,7 +411,8 @@ async function handleExport() {
     const res: any = await exportStudentScores({
       deptId: queryParams.deptId,
       startDate: queryParams.startDate,
-      endDate: queryParams.endDate
+      endDate: queryParams.endDate,
+      majorGrade: selectedMajorGrade.value || undefined
     })
     const blob = new Blob([res], { type: 'application/vnd.ms-excel' })
     const url = window.URL.createObjectURL(blob)
