@@ -93,6 +93,13 @@ export class SysUserController {
     return await this.sysUserService.treeselect(dataScope);
   }
 
+  /* 获取组织下所有用户的专业年级 */
+  @Get('majorGrades')
+  @RequiresPermissions('system:user:query')
+  async majorGrades(@Query('deptId') deptId: number) {
+    return await this.sysUserService.getMajorGradesByDeptId(Number(deptId));
+  }
+
   /* 获取用户个人信息 */
   @Get('profile')
   async profile(@User(UserEnum.userId) userId: number) {

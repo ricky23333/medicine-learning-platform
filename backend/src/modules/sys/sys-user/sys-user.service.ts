@@ -83,6 +83,36 @@ export class SysUserService {
     });
   }
 
+  /* 查询组织下所有用户的专业年级 */
+  async getMajorGradesByDeptId(deptId: number) {
+    const users = await this.prisma.sysUser.findMany({
+      where: {
+        delFlag: '0',
+        OR: [
+          { deptId },
+          {
+            dept: {
+              ancestors: {
+                contains: `,${deptId},`,
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        appUser: {
+          select: {
+            majorGrade: true,
+          },
+        },
+      },
+    });
+
+    return [...new Set(users
+      .map((user) => user.appUser?.majorGrade)
+      .filter((majorGrade) => majorGrade && majorGrade.trim()))];
+  }
+
   /* 查询岗位和角色列表 */
   async postAndRole() {
     return await Promise.all([

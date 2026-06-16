@@ -104,18 +104,27 @@ export class StatsService {
     for (const dept of depts) {
       // 获取该部门的所有用户ID
       const users = await this.prisma.sysUser.findMany({
-        where: { deptId: dept.deptId, delFlag: '0' },
-        select: { userId: true },
+        where: {
+          deptId: dept.deptId,
+          delFlag: '0',
+          appUser: query.majorGrade
+            ? { majorGrade: query.majorGrade }
+            : undefined,
+        },
+        select: {
+          userId: true,
+          appUser: {
+            select: {
+              userType: true,
+            },
+          },
+        },
       });
       const userIds = users.map((u) => u.userId);
 
       // 获取该部门用户数统计（区分教师和学生）
-      const teacherCount = await this.prisma.appUser.count({
-        where: { userId: { in: userIds }, userType: 'teacher' },
-      });
-      const studentCount = await this.prisma.appUser.count({
-        where: { userId: { in: userIds }, userType: 'student' },
-      });
+      const teacherCount = users.filter((u) => u.appUser?.userType === 'teacher').length;
+      const studentCount = users.filter((u) => u.appUser?.userType === 'student').length;
 
       // 获取考试记录统计
       const examWhere: any = {
@@ -219,16 +228,19 @@ export class StatsService {
     }
 
     const students = await this.prisma.sysUser.findMany({
-      where: deptWhere,
+      where: {
+        ...deptWhere,
+        appUser: {
+          userType: 'student',
+          majorGrade: query.majorGrade || undefined,
+        },
+      },
       include: {
         appUser: true,
       },
     });
 
-    // 过滤出学生用户
-    const studentUsers = students.filter(
-      (s) => s.appUser && s.appUser.userType === 'student',
-    );
+    const studentUsers = students.filter((s) => s.appUser);
 
     const results: ExportStudentScoreDto[] = [];
 

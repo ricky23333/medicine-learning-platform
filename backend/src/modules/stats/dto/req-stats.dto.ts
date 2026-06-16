@@ -20,6 +20,10 @@ export class GetSchoolStatsDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  majorGrade?: string;
 }
 
 /* 导出学生成绩查询 */
@@ -36,4 +40,8 @@ export class ExportStudentScoresDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  majorGrade?: string;
 }
