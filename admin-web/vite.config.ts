@@ -41,7 +41,7 @@ export default defineConfig(({ mode, command }) => {
         // https://cn.vitejs.dev/config/#server-proxy
         "/dev-api": {
           // target: 'http://192.168.3.38:8080',
-          target: "http://127.0.0.1:5880",
+          target: "https://dhtcm.cn/api",
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/dev-api/, ""),
         },
